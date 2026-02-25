@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 
 interface GameScreenProps {
   state: GameState;
+  engineLabel: string;
   makeChoice: (choice: DialogueChoice) => void;
   resetGame: () => void;
   saveSlots: SaveSlotInfo[];
@@ -20,6 +21,7 @@ interface GameScreenProps {
 
 const GameScreen = ({
   state,
+  engineLabel,
   makeChoice,
   resetGame,
   saveSlots,
@@ -38,6 +40,9 @@ const GameScreen = ({
         </h1>
         <div className="flex items-center gap-3">
           <span className="font-display text-xs text-muted-foreground">Turn {state.turnNumber}</span>
+          <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
+            Engine: {engineLabel}
+          </span>
 
           <SaveLoadDialog
             slots={saveSlots}

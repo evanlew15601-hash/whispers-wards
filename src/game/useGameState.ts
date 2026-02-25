@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { GameState, DialogueChoice } from './types';
 import { dialogueTree } from './data';
 import {
@@ -9,17 +9,41 @@ import {
   deleteSaveSlot,
 } from './storage';
 import { tsConversationEngine } from './engine/tsConversationEngine';
+import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
+import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 
 export function useGameState() {
-  const [state, setState] = useState<GameState>(() => tsConversationEngine.createInitialState());
+  const engineRef = useRef(tsConversationEngine);
+
+  const [engineLabel, setEngineLabel] = useState<'TS' | 'UQM WASM'>('TS');
+
+  const [state, setState] = useState<GameState>(() => engineRef.current.createInitialState());
   const [saveSlots, setSaveSlots] = useState<SaveSlotInfo[]>(() => listSaveSlots());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadUqmWasmRuntime()
+      .then(uqm => {
+        if (cancelled) return;
+        engineRef.current = createUqmWasmConversationEngine(uqm);
+        setEngineLabel('UQM WASM');
+      })
+      .catch(() => {
+        // Ignore; we simply stay on the TS engine.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const refreshSlots = useCallback(() => {
     setSaveSlots(listSaveSlots());
   }, []);
 
   const startGame = useCallback(() => {
-    setState(tsConversationEngine.startNewGame());
+    setState(engineRef.current.startNewGame());
   }, []);
 
   const openLoadScreen = useCallback(() => {
@@ -48,7 +72,7 @@ export function useGameState() {
     if (!loaded) return;
 
     // Back/forward compatibility: hydrate missing fields and refresh dialogue from the current tree when possible.
-    const base = tsConversationEngine.createInitialState();
+    const base = engineRef.current.createInitialState();
     const loadedAny = loaded as unknown as Partial<GameState> & { currentDialogue?: { id?: string } | null };
 
     const hydrated: GameState = {
@@ -82,15 +106,16 @@ export function useGameState() {
   const listSlots = useCallback(() => saveSlots, [saveSlots]);
 
   const makeChoice = useCallback((choice: DialogueChoice) => {
-    setState(prev => tsConversationEngine.applyChoice(prev, choice));
+    setState(prev => engineRef.current.applyChoice(prev, choice));
   }, []);
 
   const resetGame = useCallback(() => {
-    setState(tsConversationEngine.createInitialState());
+    setState(engineRef.current.createInitialState());
   }, []);
 
   return {
     state,
+    engineLabel,
     startGame,
     openLoadScreen,
     backToTitle,

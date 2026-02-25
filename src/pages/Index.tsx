@@ -6,6 +6,7 @@ import { useGameState } from '@/game/useGameState';
 const Index = () => {
   const {
     state,
+    engineLabel,
     startGame,
     openLoadScreen,
     backToTitle,
@@ -38,6 +39,7 @@ const Index = () => {
   return (
     <GameScreen
       state={state}
+      engineLabel={engineLabel}
       makeChoice={makeChoice}
       resetGame={resetGame}
       saveSlots={slots}

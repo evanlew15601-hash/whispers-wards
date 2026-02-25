@@ -28,6 +28,16 @@ describe('UQM minimal wasm module', () => {
     expect(typeof exp.uqm_version_ptr).toBe('function');
     expect(typeof exp.uqm_version_len).toBe('function');
     expect(typeof exp.uqm_line_fit_chars).toBe('function');
+
+    // Conversation core exports
+    expect(typeof exp.uqm_conv_reset).toBe('function');
+    expect(typeof exp.uqm_conv_set_graph).toBe('function');
+    expect(typeof exp.uqm_conv_get_current_node).toBe('function');
+    expect(typeof exp.uqm_conv_get_rep).toBe('function');
+    expect(typeof exp.uqm_conv_get_secrets).toBe('function');
+    expect(typeof exp.uqm_conv_get_choice_count).toBe('function');
+    expect(typeof exp.uqm_conv_choice_is_locked).toBe('function');
+    expect(typeof exp.uqm_conv_choose).toBe('function');
   });
 
   it('line-fit demo behaves reasonably', async () => {

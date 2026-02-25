@@ -31,6 +31,11 @@
  *   with tiny stubs that treat width in monospace "character columns".
  * - Added a tiny bump allocator and version string exports so JS can call
  *   into this module in-browser.
+ * - Added a minimal conversation state machine API.
+ *
+ * Note: The conversation functions added below are newly written for this
+ * project, but they live inside this GPL-licensed, UQM-derived file and are
+ * therefore distributed under the same GPL terms.
  */
 
 #include <stdint.h>
@@ -199,4 +204,249 @@ uqm_line_fit_chars (const char *str, uint32_t maxWidth)
 	t.CharCount = 0;
 	getLineWithinWidth (&t, &next, (SIZE) maxWidth, (COUNT) ~0u);
 	return t.CharCount;
+}
+
+/*
+ * Minimal conversation core
+ *
+ * Graph layout (written by JS into wasm linear memory):
+ *
+ * nodesPtr points at:
+ *   u32 nodeCount;
+ *   u32 totalChoices;
+ *   NodeMeta nodes[nodeCount];  // each: { u32 firstChoice; u32 choiceCount }
+ *
+ * choicesPtr points at an array of packed ChoiceMeta structs:
+ *   ChoiceMeta {
+ *     i32 nextNode;
+ *     i16 d0, d1, d2;
+ *     i16 reqFaction;
+ *     i16 reqMin;
+ *     u32 revealSecretMask;
+ *   }
+ *
+ * ChoiceMeta is treated as packed (18 bytes).
+ */
+
+static int32_t conv_currentNode;
+static int32_t conv_rep[3];
+static uint32_t conv_secretsMask;
+
+static uint32_t conv_nodesPtr;
+static uint32_t conv_choicesPtr;
+
+static uint32_t
+load_u32_le (uint32_t p)
+{
+	const uint8_t *b = (const uint8_t *) (uintptr_t) p;
+	return (uint32_t) b[0]
+			| ((uint32_t) b[1] << 8)
+			| ((uint32_t) b[2] << 16)
+			| ((uint32_t) b[3] << 24);
+}
+
+static uint16_t
+load_u16_le (uint32_t p)
+{
+	const uint8_t *b = (const uint8_t *) (uintptr_t) p;
+	return (uint16_t) ((uint16_t) b[0] | ((uint16_t) b[1] << 8));
+}
+
+static int32_t
+load_i32_le (uint32_t p)
+{
+	return (int32_t) load_u32_le (p);
+}
+
+static int32_t
+load_i16_le (uint32_t p)
+{
+	return (int32_t) (int16_t) load_u16_le (p);
+}
+
+static uint32_t
+conv_graph_node_count (void)
+{
+	if (conv_nodesPtr == 0)
+		return 0;
+	return load_u32_le (conv_nodesPtr + 0u);
+}
+
+static uint32_t
+conv_graph_total_choices (void)
+{
+	if (conv_nodesPtr == 0)
+		return 0;
+	return load_u32_le (conv_nodesPtr + 4u);
+}
+
+static uint32_t
+conv_graph_node_meta_ptr (uint32_t nodeIdx)
+{
+	return conv_nodesPtr + 8u + nodeIdx * 8u;
+}
+
+static uint32_t
+conv_graph_choice_ptr (uint32_t choiceIdx)
+{
+	return conv_choicesPtr + choiceIdx * 18u;
+}
+
+static uint32_t
+conv_is_current_node_valid (void)
+{
+	uint32_t nodeCount;
+	if (conv_nodesPtr == 0)
+		return 0;
+	if (conv_currentNode < 0)
+		return 0;
+	nodeCount = conv_graph_node_count ();
+	return (uint32_t) conv_currentNode < nodeCount;
+}
+
+static uint32_t
+conv_current_node_choice_count (void)
+{
+	uint32_t nodeMetaPtr;
+	if (!conv_is_current_node_valid ())
+		return 0;
+	nodeMetaPtr = conv_graph_node_meta_ptr ((uint32_t) conv_currentNode);
+	return load_u32_le (nodeMetaPtr + 4u);
+}
+
+static uint32_t
+conv_choice_is_locked_internal (uint32_t localIdx)
+{
+	uint32_t nodeMetaPtr;
+	uint32_t firstChoice;
+	uint32_t choiceCount;
+	uint32_t absChoice;
+	uint32_t choicePtr;
+	int32_t reqFaction;
+	int32_t reqMin;
+	int32_t rep;
+
+	if (!conv_is_current_node_valid () || conv_choicesPtr == 0)
+		return 1;
+
+	nodeMetaPtr = conv_graph_node_meta_ptr ((uint32_t) conv_currentNode);
+	firstChoice = load_u32_le (nodeMetaPtr + 0u);
+	choiceCount = load_u32_le (nodeMetaPtr + 4u);
+
+	if (localIdx >= choiceCount)
+		return 1;
+
+	absChoice = firstChoice + localIdx;
+	if (absChoice >= conv_graph_total_choices ())
+		return 1;
+	choicePtr = conv_graph_choice_ptr (absChoice);
+
+	reqFaction = load_i16_le (choicePtr + 10u);
+	reqMin = load_i16_le (choicePtr + 12u);
+
+	if (reqFaction < 0)
+		return 0;
+
+	rep = 0;
+	if (reqFaction == 0)
+		rep = conv_rep[0];
+	else if (reqFaction == 1)
+		rep = conv_rep[1];
+	else if (reqFaction == 2)
+		rep = conv_rep[2];
+	else
+		return 1;
+
+	return rep < reqMin;
+}
+
+void
+uqm_conv_reset (int32_t startNode, int32_t rep0, int32_t rep1, int32_t rep2,
+		uint32_t secrets)
+{
+	conv_currentNode = startNode;
+	conv_rep[0] = rep0;
+	conv_rep[1] = rep1;
+	conv_rep[2] = rep2;
+	conv_secretsMask = secrets;
+}
+
+void
+uqm_conv_set_graph (uint32_t nodesPtr, uint32_t choicesPtr)
+{
+	conv_nodesPtr = nodesPtr;
+	conv_choicesPtr = choicesPtr;
+}
+
+int32_t
+uqm_conv_get_current_node (void)
+{
+	return conv_currentNode;
+}
+
+int32_t
+uqm_conv_get_rep (int32_t idx)
+{
+	if (idx < 0 || idx >= 3)
+		return 0;
+	return conv_rep[(uint32_t) idx];
+}
+
+uint32_t
+uqm_conv_get_secrets (void)
+{
+	return conv_secretsMask;
+}
+
+uint32_t
+uqm_conv_get_choice_count (void)
+{
+	return conv_current_node_choice_count ();
+}
+
+uint32_t
+uqm_conv_choice_is_locked (uint32_t localIdx)
+{
+	return conv_choice_is_locked_internal (localIdx);
+}
+
+int32_t
+uqm_conv_choose (uint32_t localIdx)
+{
+	uint32_t nodeMetaPtr;
+	uint32_t firstChoice;
+	uint32_t choiceCount;
+	uint32_t absChoice;
+	uint32_t choicePtr;
+	int32_t nextNode;
+	int32_t d0, d1, d2;
+	uint32_t reveal;
+
+	if (conv_choice_is_locked_internal (localIdx))
+		return -1;
+
+	nodeMetaPtr = conv_graph_node_meta_ptr ((uint32_t) conv_currentNode);
+	firstChoice = load_u32_le (nodeMetaPtr + 0u);
+	choiceCount = load_u32_le (nodeMetaPtr + 4u);
+	if (localIdx >= choiceCount)
+		return -1;
+
+	absChoice = firstChoice + localIdx;
+	if (absChoice >= conv_graph_total_choices ())
+		return -1;
+	choicePtr = conv_graph_choice_ptr (absChoice);
+
+	nextNode = load_i32_le (choicePtr + 0u);
+	d0 = load_i16_le (choicePtr + 4u);
+	d1 = load_i16_le (choicePtr + 6u);
+	d2 = load_i16_le (choicePtr + 8u);
+	reveal = load_u32_le (choicePtr + 14u);
+
+	conv_rep[0] += d0;
+	conv_rep[1] += d1;
+	conv_rep[2] += d2;
+	conv_secretsMask |= reveal;
+	conv_currentNode = nextNode;
+
+	return nextNode;
 }

@@ -4,9 +4,21 @@ export type UqmWasmExports = {
   uqm_version_ptr: () => number;
   uqm_version_len: () => number;
   uqm_line_fit_chars: (strPtr: number, maxWidth: number) => number;
+
+  uqm_conv_reset: (startNode: number, rep0: number, rep1: number, rep2: number, secrets: number) => void;
+  uqm_conv_set_graph: (nodesPtr: number, choicesPtr: number) => void;
+  uqm_conv_get_current_node: () => number;
+  uqm_conv_get_rep: (idx: number) => number;
+  uqm_conv_get_secrets: () => number;
+  uqm_conv_get_choice_count: () => number;
+  uqm_conv_choice_is_locked: (localIdx: number) => number;
+  uqm_conv_choose: (localIdx: number) => number;
 };
 
 export type UqmWasmRuntime = {
+  /** Raw wasm exports (memory + functions). */
+  exports: UqmWasmExports;
+
   getVersionString: () => string;
   lineFitChars: (text: string, maxWidth: number) => number;
 };
@@ -30,7 +42,46 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
     | ((strPtr: number, maxWidth: number) => number)
     | undefined;
 
-  if (!memory || !uqm_alloc || !uqm_version_ptr || !uqm_version_len || !uqm_line_fit_chars) {
+  const uqm_conv_reset = (raw.uqm_conv_reset ?? raw._uqm_conv_reset) as
+    | ((startNode: number, rep0: number, rep1: number, rep2: number, secrets: number) => void)
+    | undefined;
+  const uqm_conv_set_graph = (raw.uqm_conv_set_graph ?? raw._uqm_conv_set_graph) as
+    | ((nodesPtr: number, choicesPtr: number) => void)
+    | undefined;
+  const uqm_conv_get_current_node = (raw.uqm_conv_get_current_node ?? raw._uqm_conv_get_current_node) as
+    | (() => number)
+    | undefined;
+  const uqm_conv_get_rep = (raw.uqm_conv_get_rep ?? raw._uqm_conv_get_rep) as
+    | ((idx: number) => number)
+    | undefined;
+  const uqm_conv_get_secrets = (raw.uqm_conv_get_secrets ?? raw._uqm_conv_get_secrets) as
+    | (() => number)
+    | undefined;
+  const uqm_conv_get_choice_count = (raw.uqm_conv_get_choice_count ?? raw._uqm_conv_get_choice_count) as
+    | (() => number)
+    | undefined;
+  const uqm_conv_choice_is_locked = (raw.uqm_conv_choice_is_locked ?? raw._uqm_conv_choice_is_locked) as
+    | ((localIdx: number) => number)
+    | undefined;
+  const uqm_conv_choose = (raw.uqm_conv_choose ?? raw._uqm_conv_choose) as
+    | ((localIdx: number) => number)
+    | undefined;
+
+  if (
+    !memory ||
+    !uqm_alloc ||
+    !uqm_version_ptr ||
+    !uqm_version_len ||
+    !uqm_line_fit_chars ||
+    !uqm_conv_reset ||
+    !uqm_conv_set_graph ||
+    !uqm_conv_get_current_node ||
+    !uqm_conv_get_rep ||
+    !uqm_conv_get_secrets ||
+    !uqm_conv_get_choice_count ||
+    !uqm_conv_choice_is_locked ||
+    !uqm_conv_choose
+  ) {
     throw new Error('UQM wasm module exports missing expected symbols');
   }
 
@@ -40,6 +91,15 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
     uqm_version_ptr,
     uqm_version_len,
     uqm_line_fit_chars,
+
+    uqm_conv_reset,
+    uqm_conv_set_graph,
+    uqm_conv_get_current_node,
+    uqm_conv_get_rep,
+    uqm_conv_get_secrets,
+    uqm_conv_get_choice_count,
+    uqm_conv_choice_is_locked,
+    uqm_conv_choose,
   };
 }
 
@@ -72,6 +132,7 @@ async function instantiateUqmWasm(): Promise<UqmWasmRuntime> {
   const decoder = new TextDecoder();
 
   return {
+    exports,
     getVersionString() {
       const ptr = exports.uqm_version_ptr();
       const len = exports.uqm_version_len();
