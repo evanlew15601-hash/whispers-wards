@@ -3,7 +3,7 @@ import type { DialogueChoice, GameState } from '../types';
 
 import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
-import { parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
+import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
@@ -141,22 +141,38 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   const nextTurnNumber = prev.turnNumber + 1;
 
-  // Turn-based world simulation runs after each player choice.
-  const sim = simulateWorldTurn({
-    world: prev.world,
-    factions: newFactions,
-    turnNumber: nextTurnNumber,
-    rngSeed: prev.rngSeed,
-  });
-
   // `expiresOnTurn` is inclusive: the encounter expires only after turn N resolves
   // (i.e. it is still retained when `expiresOnTurn === nextTurnNumber`).
   const existingEncounter =
     prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn >= nextTurnNumber ? prev.pendingEncounter : null;
 
-  const nextEncounter = existingEncounter ?? sim.pendingEncounter;
+  const expiredEncounter =
+    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn < nextTurnNumber ? prev.pendingEncounter : null;
+
+  // If an encounter just expired this turn, apply a deterministic consequence *before*
+  // running the world's simulation so that the consequence can influence the sim.
+  let worldBeforeSim = prev.world;
+  let expiryLog: string[] = [];
+  if (expiredEncounter) {
+    const expired = applyExpiredEncounterConsequence({
+      world: worldBeforeSim,
+      encounter: expiredEncounter,
+      turnNumber: nextTurnNumber,
+    });
+    worldBeforeSim = expired.world;
+    expiryLog = expired.logEntries;
+  }
+
+  // Turn-based world simulation runs after each player choice.
+  const sim = simulateWorldTurn({
+    world: worldBeforeSim,
+    factions: newFactions,
+    turnNumber: nextTurnNumber,
+    rngSeed: prev.rngSeed,
+  });
 
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
+  const nextEncounter = existingEncounter ?? sim.pendingEncounter;
 
   return {
     ...prev,
@@ -165,7 +181,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     events: newEvents,
     knownSecrets: [...new Set(newSecrets)],
     turnNumber: nextTurnNumber,
-    log: [...newLog, ...worldLog],
+    log: [...newLog, ...worldLog, ...expiryLog],
     world: sim.world,
     rngSeed: sim.rngSeed,
     pendingEncounter: nextEncounter,

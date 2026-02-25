@@ -1,5 +1,7 @@
 import type { DialogueChoice, DialogueNode, SecondaryEncounter, SecondaryEncounterKind, WorldState } from './types';
 
+import { pickEncounterVignette } from './encounterVignettes';
+
 type EncounterResolutionKey =
   | 'embargo-lift'
   | 'embargo-extend'
@@ -82,7 +84,11 @@ export function parseEncounterResolutionChoiceId(choiceId: string): { encounterI
   return { encounterId, resolution };
 }
 
-function resolutionChoicesFor(kind: SecondaryEncounterKind, encounterId: string): DialogueChoice[] {
+function resolutionChoicesFor(
+  kind: SecondaryEncounterKind,
+  encounterId: string,
+  choiceTexts?: [string, string, string],
+): DialogueChoice[] {
   const mk = (resolution: EncounterResolutionKey, text: string): DialogueChoice => ({
     id: choiceIdFor(encounterId, resolution),
     text,
@@ -91,46 +97,103 @@ function resolutionChoicesFor(kind: SecondaryEncounterKind, encounterId: string)
   });
 
   if (kind === 'embargo') {
-    return [
-      mk('embargo-lift', 'Broker a swift lifting of the embargo.'),
-      mk('embargo-compromise', 'Negotiate a compromise charter and reopen trade.'),
-      mk('embargo-extend', 'Stand firm; let the embargo bite until concessions are made.'),
+    const texts = choiceTexts ?? [
+      'Broker a swift lifting of the embargo.',
+      'Negotiate a compromise charter and reopen trade.',
+      'Stand firm; let the embargo bite until concessions are made.',
     ];
+
+    return [mk('embargo-lift', texts[0]), mk('embargo-compromise', texts[1]), mk('embargo-extend', texts[2])];
   }
 
   if (kind === 'raid') {
-    return [
-      mk('raid-patrol', 'Deploy patrols and restore safe passage immediately.'),
-      mk('raid-compensate', 'Demand compensation and guarantee escorts for future caravans.'),
-      mk('raid-retaliate', 'Authorize reprisals; make an example of the raiders.'),
+    const texts = choiceTexts ?? [
+      'Deploy patrols and restore safe passage immediately.',
+      'Demand compensation and guarantee escorts for future caravans.',
+      'Authorize reprisals; make an example of the raiders.',
     ];
+
+    return [mk('raid-patrol', texts[0]), mk('raid-compensate', texts[1]), mk('raid-retaliate', texts[2])];
   }
 
   if (kind === 'skirmish') {
-    return [
-      mk('skirmish-ceasefire', 'Call for a ceasefire and neutral observers.'),
-      mk('skirmish-back-a', 'Endorse the first claimant and press their advantage.'),
-      mk('skirmish-back-b', 'Endorse the second claimant and press their advantage.'),
+    const texts = choiceTexts ?? [
+      'Call for a ceasefire and neutral observers.',
+      'Endorse the first claimant and press their advantage.',
+      'Endorse the second claimant and press their advantage.',
     ];
+
+    return [mk('skirmish-ceasefire', texts[0]), mk('skirmish-back-a', texts[1]), mk('skirmish-back-b', texts[2])];
   }
 
   // summit
-  return [
-    mk('summit-accord', 'Draft a binding accord and have both sides sign.'),
-    mk('summit-slight-a', 'Publicly rebuke the first delegation.'),
-    mk('summit-slight-b', 'Publicly rebuke the second delegation.'),
+  const texts = choiceTexts ?? [
+    'Draft a binding accord and have both sides sign.',
+    'Publicly rebuke the first delegation.',
+    'Publicly rebuke the second delegation.',
   ];
+
+  return [mk('summit-accord', texts[0]), mk('summit-slight-a', texts[1]), mk('summit-slight-b', texts[2])];
 }
 
 export function buildEncounterDialogueNode(encounter: SecondaryEncounter): DialogueNode {
   const kind: SecondaryEncounterKind = encounter.kind ?? 'summit';
+  const vignette = pickEncounterVignette(encounter);
 
   return {
     id: `encounter:${encounter.id}`,
-    speaker: 'Concord Hall',
-    text: `${encounter.title}\n\n${encounter.description}`,
-    choices: resolutionChoicesFor(kind, encounter.id),
+    speaker: vignette.speaker,
+    text: `${vignette.preface}\n\n${encounter.title}\n\n${encounter.description}\n\n${vignette.prompt}`,
+    choices: resolutionChoicesFor(kind, encounter.id, vignette.choiceTexts),
   };
+}
+
+export function applyExpiredEncounterConsequence(args: {
+  world: WorldState;
+  encounter: SecondaryEncounter;
+  turnNumber: number;
+}): { world: WorldState; logEntries: string[] } {
+  const nextWorld = cloneWorld(args.world);
+
+  const kind: SecondaryEncounterKind = args.encounter.kind ?? 'summit';
+  const a = args.encounter.relatedFactions[0] ?? 'unknown-a';
+  const b = args.encounter.relatedFactions[1] ?? 'unknown-b';
+
+  const routeId = args.encounter.routeId;
+  const regionId = args.encounter.regionId;
+
+  const logEntries: string[] = [];
+
+  if ((kind === 'embargo' || kind === 'raid') && routeId && nextWorld.tradeRoutes[routeId]) {
+    const route = nextWorld.tradeRoutes[routeId];
+    const untilTurn = Math.max(route.untilTurn ?? -Infinity, args.turnNumber + 1);
+
+    if (kind === 'embargo') {
+      nextWorld.tradeRoutes[routeId] = {
+        ...route,
+        status: 'embargoed',
+        embargoedBy: a,
+        untilTurn,
+      };
+    } else {
+      nextWorld.tradeRoutes[routeId] = {
+        ...route,
+        status: 'raided',
+        embargoedBy: undefined,
+        untilTurn,
+      };
+    }
+  }
+
+  if (kind === 'skirmish' && regionId && nextWorld.regions[regionId]) {
+    const region = nextWorld.regions[regionId];
+    nextWorld.regions[regionId] = { ...region, contested: true };
+  }
+
+  adjustTensionPair(nextWorld, a, b, 5);
+  logEntries.push(`⏳ Encounter expired: ${args.encounter.title} (+5 tension)`);
+
+  return { world: nextWorld, logEntries };
 }
 
 export function resolveEncounter(args: {

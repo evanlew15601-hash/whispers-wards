@@ -7,7 +7,7 @@ describe('pendingEncounter expiry semantics', () => {
     vi.resetModules();
   });
 
-  it('retains an existing encounter when expiresOnTurn === nextTurnNumber', async () => {
+  it('retains an existing encounter when expiresOnTurn === nextTurnNumber, then applies expiry consequences', async () => {
     const simPending: SecondaryEncounter = {
       id: 'enc-sim',
       kind: 'summit',
@@ -17,7 +17,7 @@ describe('pendingEncounter expiry semantics', () => {
       expiresOnTurn: 999,
     };
 
-    const simulateWorldTurn = vi.fn((args: { world: unknown; rngSeed: number }) => ({
+    const simulateWorldTurn = vi.fn((args: { world: any; rngSeed: number }) => ({
       world: args.world,
       pendingEncounter: simPending,
       logEntries: [],
@@ -57,5 +57,11 @@ describe('pendingEncounter expiry semantics', () => {
     // Next step should expire the existing encounter (since expiresOnTurn < nextTurnNumber).
     const next2 = tsConversationEngine.applyChoice({ ...next, pendingEncounter: existing, rngSeed: 1 }, choice);
     expect(next2.pendingEncounter).toEqual(simPending);
+
+    // Expiry should add a log entry and deterministic world consequences.
+    expect(next2.log).toContain('⏳ Encounter expired: existing (+5 tension)');
+    expect(next2.world.tensions['iron-pact']?.['verdant-court']).toBe(5);
+    expect(next2.world.tradeRoutes['passcourier']?.status).toBe('raided');
+    expect(next2.world.tradeRoutes['passcourier']?.untilTurn).toBe(next2.turnNumber + 1);
   });
 });

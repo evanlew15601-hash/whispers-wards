@@ -1,3 +1,4 @@
+import { useState, type KeyboardEvent } from 'react';
 import { Faction, WorldState, TradeRouteState, RegionState, SecondaryEncounter } from '@/game/types';
 
 interface WorldMapProps {
@@ -73,6 +74,24 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
 
   const factionById = new Map(factions.map(f => [f.id, f] as const));
 
+  type MapSelection =
+    | { kind: 'region'; id: string }
+    | { kind: 'route'; id: string }
+    | null;
+
+  const [selection, setSelection] = useState<MapSelection>(null);
+
+  const toggleSelection = (next: Exclude<MapSelection, null>) => {
+    setSelection(prev => (prev?.kind === next.kind && prev.id === next.id ? null : next));
+  };
+
+  const handleSvgActivate = (event: KeyboardEvent, onActivate: () => void) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onActivate();
+    }
+  };
+
   const viewBox = { w: 320, h: 220 };
   const center = { x: viewBox.w / 2, y: viewBox.h / 2 };
 
@@ -135,6 +154,36 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
     return factionFill(faction.color);
   };
 
+  const routeGeometry = (route: TradeRouteState) => {
+    const endpoints = inferRouteEndpoints(route, regions);
+    if (!endpoints) return null;
+
+    const a = positions.get(endpoints[0]);
+    const b = positions.get(endpoints[1]);
+    if (!a || !b) return null;
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.max(1, Math.hypot(dx, dy));
+    const nx = -dy / len;
+    const ny = dx / len;
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const bendSign = hashToUnit(route.id) > 0.5 ? 1 : -1;
+    const bend = route.status === 'raided' ? 26 : 18;
+    const control = { x: mid.x + nx * bend * bendSign, y: mid.y + ny * bend * bendSign };
+
+    const d = `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} Q ${control.x.toFixed(1)} ${control.y.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+
+    return { d, mid };
+  };
+
+  const selectedRegion = selection?.kind === 'region' ? world.regions[selection.id] ?? null : null;
+  const selectedRoute = selection?.kind === 'route' ? world.tradeRoutes[selection.id] ?? null : null;
+
+  const selectedRouteEndpoints = selectedRoute ? inferRouteEndpoints(selectedRoute, regions) : null;
+
+  const formatFactionNames = (ids: string[]) => ids.map(id => factionById.get(id)?.name ?? id).join(', ');
+
   return (
     <div className="parchment-border rounded-sm bg-card p-3">
       <div className="flex items-center justify-between">
@@ -164,24 +213,10 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
         {/* Trade routes */}
         <g>
           {routes.map(route => {
-            const endpoints = inferRouteEndpoints(route, regions);
-            if (!endpoints) return null;
+            const geom = routeGeometry(route);
+            if (!geom) return null;
 
-            const a = positions.get(endpoints[0]);
-            const b = positions.get(endpoints[1]);
-            if (!a || !b) return null;
-
-            const dx = b.x - a.x;
-            const dy = b.y - a.y;
-            const len = Math.max(1, Math.hypot(dx, dy));
-            const nx = -dy / len;
-            const ny = dx / len;
-            const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-            const bendSign = hashToUnit(route.id) > 0.5 ? 1 : -1;
-            const bend = route.status === 'raided' ? 26 : 18;
-            const control = { x: mid.x + nx * bend * bendSign, y: mid.y + ny * bend * bendSign };
-
-            const d = `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} Q ${control.x.toFixed(1)} ${control.y.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
+            const { d, mid } = geom;
 
             const stroke =
               route.status === 'embargoed'
@@ -261,8 +296,19 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
 
             const pos = positions.get(region.id)!;
 
+            const isSelected = selection?.kind === 'region' && selection.id === region.id;
+
             return (
-              <g key={region.id}>
+              <g
+                key={region.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Select region ${region.name}`}
+                aria-pressed={isSelected}
+                onClick={() => toggleSelection({ kind: 'region', id: region.id })}
+                onKeyDown={event => handleSvgActivate(event, () => toggleSelection({ kind: 'region', id: region.id }))}
+                style={{ cursor: 'pointer' }}
+              >
                 <polygon
                   points={points}
                   fill={fill}
@@ -311,7 +357,74 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
             );
           })}
         </g>
+
+        {/* Route interaction layer (keeps visual routes underneath regions) */}
+        <g>
+          {routes.map(route => {
+            const geom = routeGeometry(route);
+            if (!geom) return null;
+
+            const isSelected = selection?.kind === 'route' && selection.id === route.id;
+
+            return (
+              <path
+                key={`route-hit:${route.id}`}
+                d={geom.d}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={14}
+                pointerEvents="stroke"
+                role="button"
+                tabIndex={0}
+                aria-label={`Select route ${route.name}`}
+                aria-pressed={isSelected}
+                onClick={() => toggleSelection({ kind: 'route', id: route.id })}
+                onKeyDown={event => handleSvgActivate(event, () => toggleSelection({ kind: 'route', id: route.id }))}
+                style={{ cursor: 'pointer' }}
+              />
+            );
+          })}
+        </g>
       </svg>
+
+      {(selectedRegion || selectedRoute) && (
+        <div className="mt-3 rounded-sm border border-border bg-background/20 p-2 text-[11px]" aria-live="polite">
+          {selectedRegion && (() => {
+            const controlLabel =
+              selectedRegion.control === 'neutral'
+                ? 'Neutral'
+                : factionById.get(selectedRegion.control)?.name ?? selectedRegion.control;
+
+            return (
+              <div className="flex flex-col gap-1">
+                <div className="font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase">Selected Region</div>
+                <div className="text-xs text-foreground">{selectedRegion.name}</div>
+                <div className="text-[10px] text-muted-foreground">Control: {controlLabel}</div>
+                <div className="text-[10px] text-muted-foreground">Status: {selectedRegion.contested ? 'Contested' : 'Stable'}</div>
+              </div>
+            );
+          })()}
+
+          {selectedRoute && (() => {
+            const affected = formatFactionNames(selectedRoute.affectedFactions);
+            const endpoints = selectedRouteEndpoints
+              ? selectedRouteEndpoints
+                  .map(id => world.regions[id]?.name ?? id)
+                  .join(' ↔ ')
+              : 'Unknown';
+
+            return (
+              <div className="flex flex-col gap-1">
+                <div className="font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase">Selected Route</div>
+                <div className="text-xs text-foreground">{selectedRoute.name}</div>
+                <div className="text-[10px] text-muted-foreground">Status: {selectedRoute.status}</div>
+                <div className="text-[10px] text-muted-foreground">Affected: {affected || '—'}</div>
+                <div className="text-[10px] text-muted-foreground">Endpoints: {endpoints}</div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       <div className="mt-3 flex flex-col gap-2">
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
