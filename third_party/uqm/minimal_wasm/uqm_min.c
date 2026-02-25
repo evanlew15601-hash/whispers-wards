@@ -209,6 +209,10 @@ uqm_line_fit_chars (const char *str, uint32_t maxWidth)
 /*
  * Minimal conversation core
  *
+ * The line-fitting code above is derived from UQM (comm.c). Everything below
+ * is newly written for this project, but it intentionally mirrors the logic
+ * in uqm_min.wat so that different wasm toolchains expose the same ABI.
+ *
  * Graph layout (written by JS into wasm linear memory):
  *
  * nodesPtr points at:
@@ -227,6 +231,12 @@ uqm_line_fit_chars (const char *str, uint32_t maxWidth)
  *
  * ChoiceMeta is treated as packed (18 bytes).
  */
+
+#if defined(__wasm__) || defined(__wasm32__) || defined(__wasm64__) || defined(__EMSCRIPTEN__)
+#define UQM_WASM_EXPORT(name) __attribute__((export_name(name))) __attribute__((used))
+#else
+#define UQM_WASM_EXPORT(name)
+#endif
 
 static int32_t conv_currentNode;
 static int32_t conv_rep[3];
@@ -315,8 +325,9 @@ conv_current_node_choice_count (void)
 }
 
 static uint32_t
-conv_choice_is_locked_internal (uint32_t localIdx)
+conv_choice_is_locked_internal (int32_t localIdx)
 {
+	uint32_t uLocalIdx;
 	uint32_t nodeMetaPtr;
 	uint32_t firstChoice;
 	uint32_t choiceCount;
@@ -329,14 +340,16 @@ conv_choice_is_locked_internal (uint32_t localIdx)
 	if (!conv_is_current_node_valid () || conv_choicesPtr == 0)
 		return 1;
 
+	uLocalIdx = (uint32_t) localIdx;
+
 	nodeMetaPtr = conv_graph_node_meta_ptr ((uint32_t) conv_currentNode);
 	firstChoice = load_u32_le (nodeMetaPtr + 0u);
 	choiceCount = load_u32_le (nodeMetaPtr + 4u);
 
-	if (localIdx >= choiceCount)
+	if (uLocalIdx >= choiceCount)
 		return 1;
 
-	absChoice = firstChoice + localIdx;
+	absChoice = firstChoice + uLocalIdx;
 	if (absChoice >= conv_graph_total_choices ())
 		return 1;
 	choicePtr = conv_graph_choice_ptr (absChoice);
@@ -360,6 +373,7 @@ conv_choice_is_locked_internal (uint32_t localIdx)
 	return rep < reqMin;
 }
 
+UQM_WASM_EXPORT("uqm_conv_reset")
 void
 uqm_conv_reset (int32_t startNode, int32_t rep0, int32_t rep1, int32_t rep2,
 		uint32_t secrets)
@@ -371,6 +385,7 @@ uqm_conv_reset (int32_t startNode, int32_t rep0, int32_t rep1, int32_t rep2,
 	conv_secretsMask = secrets;
 }
 
+UQM_WASM_EXPORT("uqm_conv_set_graph")
 void
 uqm_conv_set_graph (uint32_t nodesPtr, uint32_t choicesPtr)
 {
@@ -378,12 +393,14 @@ uqm_conv_set_graph (uint32_t nodesPtr, uint32_t choicesPtr)
 	conv_choicesPtr = choicesPtr;
 }
 
+UQM_WASM_EXPORT("uqm_conv_get_current_node")
 int32_t
 uqm_conv_get_current_node (void)
 {
 	return conv_currentNode;
 }
 
+UQM_WASM_EXPORT("uqm_conv_get_rep")
 int32_t
 uqm_conv_get_rep (int32_t idx)
 {
@@ -392,27 +409,32 @@ uqm_conv_get_rep (int32_t idx)
 	return conv_rep[(uint32_t) idx];
 }
 
+UQM_WASM_EXPORT("uqm_conv_get_secrets")
 uint32_t
 uqm_conv_get_secrets (void)
 {
 	return conv_secretsMask;
 }
 
+UQM_WASM_EXPORT("uqm_conv_get_choice_count")
 uint32_t
 uqm_conv_get_choice_count (void)
 {
 	return conv_current_node_choice_count ();
 }
 
-uint32_t
-uqm_conv_choice_is_locked (uint32_t localIdx)
+UQM_WASM_EXPORT("uqm_conv_choice_is_locked")
+int32_t
+uqm_conv_choice_is_locked (int32_t localIdx)
 {
-	return conv_choice_is_locked_internal (localIdx);
+	return (int32_t) conv_choice_is_locked_internal (localIdx);
 }
 
+UQM_WASM_EXPORT("uqm_conv_choose")
 int32_t
-uqm_conv_choose (uint32_t localIdx)
+uqm_conv_choose (int32_t localIdx)
 {
+	uint32_t uLocalIdx;
 	uint32_t nodeMetaPtr;
 	uint32_t firstChoice;
 	uint32_t choiceCount;
@@ -425,13 +447,15 @@ uqm_conv_choose (uint32_t localIdx)
 	if (conv_choice_is_locked_internal (localIdx))
 		return -1;
 
+	uLocalIdx = (uint32_t) localIdx;
+
 	nodeMetaPtr = conv_graph_node_meta_ptr ((uint32_t) conv_currentNode);
 	firstChoice = load_u32_le (nodeMetaPtr + 0u);
 	choiceCount = load_u32_le (nodeMetaPtr + 4u);
-	if (localIdx >= choiceCount)
+	if (uLocalIdx >= choiceCount)
 		return -1;
 
-	absChoice = firstChoice + localIdx;
+	absChoice = firstChoice + uLocalIdx;
 	if (absChoice >= conv_graph_total_choices ())
 		return -1;
 	choicePtr = conv_graph_choice_ptr (absChoice);

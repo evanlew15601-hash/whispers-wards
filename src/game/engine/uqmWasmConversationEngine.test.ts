@@ -1,28 +1,11 @@
 import { describe, expect, it, beforeAll } from 'vitest';
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 
 import { createUqmWasmConversationEngine } from './uqmWasmConversationEngine';
 import { tsConversationEngine } from './tsConversationEngine';
-import type { UqmWasmExports, UqmWasmRuntime } from './uqmWasmRuntime';
+import type { UqmWasmRuntime } from './uqmWasmRuntime';
+import { loadUqmMinimalWasmExports } from '@/test/uqmWasmTestUtils';
 
-async function instantiateUqmMinimalFromWat(): Promise<UqmWasmExports> {
-  const watUrl = new URL('../../../third_party/uqm/minimal_wasm/uqm_min.wat', import.meta.url);
-  const watPath = fileURLToPath(watUrl);
-  const watSource = fs.readFileSync(watPath, 'utf8');
-
-  const wabtModule = await import('wabt');
-  const wabtFactory = (wabtModule as any).default ?? wabtModule;
-  const wabt = await wabtFactory();
-
-  const parsed = wabt.parseWat(watPath, watSource, { features: { mutable_globals: true } });
-  const { buffer } = parsed.toBinary({ log: false, write_debug_names: false });
-
-  const { instance } = await WebAssembly.instantiate(buffer, {});
-  return instance.exports as unknown as UqmWasmExports;
-}
-
-function makeRuntime(exports: UqmWasmExports): UqmWasmRuntime {
+function makeRuntime(exports: Awaited<ReturnType<typeof loadUqmMinimalWasmExports>>): UqmWasmRuntime {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -48,7 +31,7 @@ describe('uqmWasmConversationEngine', () => {
   let uqmRuntime: UqmWasmRuntime;
 
   beforeAll(async () => {
-    const exports = await instantiateUqmMinimalFromWat();
+    const exports = await loadUqmMinimalWasmExports();
     uqmRuntime = makeRuntime(exports);
   });
 

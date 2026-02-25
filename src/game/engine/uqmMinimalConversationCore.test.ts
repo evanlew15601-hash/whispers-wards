@@ -1,38 +1,9 @@
 import { describe, expect, it, beforeAll } from 'vitest';
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 
-type UqmMinimalExports = {
-  memory: WebAssembly.Memory;
-  uqm_alloc: (size: number) => number;
+import type { UqmMinimalNormalizedExports } from '@/test/uqmWasmTestUtils';
+import { loadUqmMinimalWasmExports } from '@/test/uqmWasmTestUtils';
 
-  uqm_conv_reset: (startNode: number, rep0: number, rep1: number, rep2: number, secrets: number) => void;
-  uqm_conv_set_graph: (nodesPtr: number, choicesPtr: number) => void;
-  uqm_conv_get_current_node: () => number;
-  uqm_conv_get_rep: (idx: number) => number;
-  uqm_conv_get_secrets: () => number;
-  uqm_conv_get_choice_count: () => number;
-  uqm_conv_choice_is_locked: (localIdx: number) => number;
-  uqm_conv_choose: (localIdx: number) => number;
-};
-
-async function instantiateUqmMinimalFromWat(): Promise<UqmMinimalExports> {
-  const watUrl = new URL('../../../third_party/uqm/minimal_wasm/uqm_min.wat', import.meta.url);
-  const watPath = fileURLToPath(watUrl);
-  const watSource = fs.readFileSync(watPath, 'utf8');
-
-  const wabtModule = await import('wabt');
-  const wabtFactory = (wabtModule as unknown as { default?: () => Promise<any> }).default ?? (wabtModule as unknown as (() => Promise<any>));
-  const wabt = await wabtFactory();
-
-  const parsed = wabt.parseWat(watPath, watSource, { features: { mutable_globals: true } });
-  const { buffer } = parsed.toBinary({ log: false, write_debug_names: false });
-
-  const { instance } = await WebAssembly.instantiate(buffer, {});
-  return instance.exports as unknown as UqmMinimalExports;
-}
-
-function writeGraph(exports: UqmMinimalExports) {
+function writeGraph(exports: UqmMinimalNormalizedExports) {
   const nodeCount = 2;
   const totalChoices = 2;
 
@@ -86,10 +57,10 @@ function writeGraph(exports: UqmMinimalExports) {
 }
 
 describe('uqm minimal wasm conversation core', () => {
-  let exp: UqmMinimalExports;
+  let exp: UqmMinimalNormalizedExports;
 
   beforeAll(async () => {
-    exp = await instantiateUqmMinimalFromWat();
+    exp = await loadUqmMinimalWasmExports();
   });
 
   it('uses the expected packed ChoiceMeta (18 bytes) with little-endian loads', () => {

@@ -5,8 +5,15 @@ This directory vendors a small subset of The Ur-Quan Masters (UQM) engine **sour
 - https://github.com/juj/sc2-uqm
   - Snapshot: `ff2444088d42e80612fd28f79d368783e244a606` (master)
 
-The upstream snapshot files under `sc2/src/uqm/` are copied verbatim and retain their original upstream file headers.
-Any locally-modified derivative code is listed explicitly below.
+## Manifest (what is committed vs fetched)
+
+See `third_party/uqm/VENDORED_MANIFEST.json` for the authoritative list of:
+
+- `vendored_files`: verbatim upstream files committed under `third_party/uqm/`
+- `derived_files`: locally-maintained files (currently the `minimal_wasm/` demo)
+
+A minimal set of upstream files under `sc2/src/uqm/` is committed to this repo (verbatim, retaining original headers).
+To avoid bloating the repository, the full upstream snapshot is fetched on-demand into `third_party/uqm/upstream/` (not committed).
 
 ## Licensing
 
@@ -19,29 +26,23 @@ This repository intentionally vendors **engine code only**.
 
 We do **not** vendor or ship any UQM content/dialogue assets (including race scripts, strings, voice, images, sounds, music, or other packaged content).
 
-## What is vendored
+## Fetching the full upstream source snapshot (engine-only)
 
-### Verbatim upstream engine files
+If you need to browse or diff against the full upstream source tree, you can download and extract the pinned revision into:
 
-- `sc2/src/uqm/comm.c`
-  - https://github.com/juj/sc2-uqm/blob/ff2444088d42e80612fd28f79d368783e244a606/sc2/src/uqm/comm.c
-- `sc2/src/uqm/comm.h`
-  - https://github.com/juj/sc2-uqm/blob/ff2444088d42e80612fd28f79d368783e244a606/sc2/src/uqm/comm.h
-- `sc2/src/uqm/commglue.c`
-  - https://github.com/juj/sc2-uqm/blob/ff2444088d42e80612fd28f79d368783e244a606/sc2/src/uqm/commglue.c
-- `sc2/src/uqm/commglue.h`
-  - https://github.com/juj/sc2-uqm/blob/ff2444088d42e80612fd28f79d368783e244a606/sc2/src/uqm/commglue.h
-- `sc2/src/uqm/cnctdlg.c`
-  - https://github.com/juj/sc2-uqm/blob/ff2444088d42e80612fd28f79d368783e244a606/sc2/src/uqm/cnctdlg.c
-- `sc2/src/uqm/cnctdlg.h`
-  - https://github.com/juj/sc2-uqm/blob/ff2444088d42e80612fd28f79d368783e244a606/sc2/src/uqm/cnctdlg.h
+- `third_party/uqm/upstream/`
 
-### Minimal runtime demo (UQM-derived)
+The fetch step intentionally excludes content assets. The installed snapshot is identified by:
 
-This repo also includes a tiny, self-contained module under `minimal_wasm/` which is **derived from** the `comm.c` conversation sizing logic (not a verbatim copy), and is used to compile a small WebAssembly module for an in-app runtime demo.
+- `third_party/uqm/upstream/.pinned-revision` (contains the exact commit SHA)
 
-- `minimal_wasm/uqm_min.c` (derived)
-- `minimal_wasm/uqm_min.wat` (derived)
+Commands:
+
+```sh
+node scripts/fetch-uqm-upstream.mjs
+# or (idempotent)
+node scripts/ensure-uqm-upstream.mjs
+```
 
 ## Upstream license text
 
