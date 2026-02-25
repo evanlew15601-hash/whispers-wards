@@ -145,4 +145,6 @@ describe('useGameState', () => {
     expect(result.current.state.currentDialogue?.id).toBe('encounter:enc-test');
     expect(result.current.state.currentDialogue?.choices.length).toBeGreaterThan(0);
   });
+
+  
 });

@@ -90,7 +90,7 @@ export function useGameState() {
       typeof loadedAny.currentDialogueId === 'string'
         ? loadedAny.currentDialogueId
         : loadedAny.currentDialogue && typeof loadedAny.currentDialogue === 'object'
-          ? loadedAny.currentDialogue.id ?? null
+          ? (loadedAny.currentDialogue as { id?: string }).id ?? null
           : null;
 
     const hydrated: GameState = {

@@ -66,10 +66,26 @@ const LoadScreen = ({ slots, onLoad, onDelete, onBack, onNewGame }: LoadScreenPr
             const meta = slot.meta;
             const empty = !meta;
 
+            const handleLoad = () => {
+              if (!empty) onLoad(slot.id);
+            };
+
             return (
               <div
                 key={slot.id}
-                className="parchment-border rounded-sm bg-card p-4 flex flex-col gap-3"
+                className={`parchment-border rounded-sm bg-card p-4 flex flex-col gap-3 ${
+                  empty ? '' : 'cursor-pointer hover:bg-card/80 transition-colors'
+                }`}
+                role={empty ? undefined : 'button'}
+                tabIndex={empty ? undefined : 0}
+                onClick={handleLoad}
+                onKeyDown={e => {
+                  if (empty) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleLoad();
+                  }
+                }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -79,9 +95,7 @@ const LoadScreen = ({ slots, onLoad, onDelete, onBack, onNewGame }: LoadScreenPr
                     {empty ? (
                       <div className="mt-1 text-sm text-muted-foreground">Empty</div>
                     ) : (
-                      <div className="mt-1 text-sm text-card-foreground">
-                        Turn {meta.turnNumber}
-                      </div>
+                      <div className="mt-1 text-sm text-card-foreground">Turn {meta.turnNumber}</div>
                     )}
                     {!empty && (
                       <div className="mt-1 text-[11px] text-muted-foreground">
@@ -95,7 +109,10 @@ const LoadScreen = ({ slots, onLoad, onDelete, onBack, onNewGame }: LoadScreenPr
                       size="sm"
                       variant={empty ? 'secondary' : 'default'}
                       disabled={empty}
-                      onClick={() => onLoad(slot.id)}
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleLoad();
+                      }}
                     >
                       Load
                     </Button>
@@ -103,7 +120,13 @@ const LoadScreen = ({ slots, onLoad, onDelete, onBack, onNewGame }: LoadScreenPr
                     {!empty && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="destructive">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={e => {
+                              e.stopPropagation();
+                            }}
+                          >
                             Delete
                           </Button>
                         </AlertDialogTrigger>
@@ -116,7 +139,12 @@ const LoadScreen = ({ slots, onLoad, onDelete, onBack, onNewGame }: LoadScreenPr
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDelete(slot.id)}>
+                            <AlertDialogAction
+                              onClick={e => {
+                                e.stopPropagation();
+                                onDelete(slot.id);
+                              }}
+                            >
                               Delete
                             </AlertDialogAction>
                           </AlertDialogFooter>

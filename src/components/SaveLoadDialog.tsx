@@ -37,11 +37,25 @@ const formatSavedAt = (iso: string) => {
 
 const SaveLoadDialog = ({ slots, onSave, onLoad, onDelete }: SaveLoadDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'save' | 'load'>('save');
+  const [confirmOverwriteSlotId, setConfirmOverwriteSlotId] = useState<number | null>(null);
 
   const anySaves = useMemo(() => slots.some(s => s.meta), [slots]);
 
+  const doSave = (slotId: number) => {
+    onSave(slotId);
+    setConfirmOverwriteSlotId(null);
+    setOpen(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={next => {
+        setOpen(next);
+        if (!next) setConfirmOverwriteSlotId(null);
+      }}
+    >
       <DialogTrigger asChild>
         <Button size="sm" variant="secondary">
           Save / Load
@@ -51,12 +65,10 @@ const SaveLoadDialog = ({ slots, onSave, onLoad, onDelete }: SaveLoadDialogProps
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-display tracking-[0.2em] uppercase">Save & Load</DialogTitle>
-          <DialogDescription>
-            Manage local save slots. Saves are stored in your browser.
-          </DialogDescription>
+          <DialogDescription>Manage local save slots. Saves are stored in your browser.</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="save" className="w-full">
+        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'save' | 'load')} className="w-full">
           <TabsList className="w-full">
             <TabsTrigger value="save" className="flex-1 font-display text-xs tracking-[0.2em] uppercase">
               Save
@@ -81,17 +93,18 @@ const SaveLoadDialog = ({ slots, onSave, onLoad, onDelete }: SaveLoadDialogProps
                         <div className="mt-1 text-sm text-muted-foreground">Empty</div>
                       )}
                       {slot.meta && (
-                        <div className="mt-1 text-[11px] text-muted-foreground">
-                          Saved {formatSavedAt(slot.meta.savedAt)}
-                        </div>
+                        <div className="mt-1 text-[11px] text-muted-foreground">Saved {formatSavedAt(slot.meta.savedAt)}</div>
                       )}
                     </div>
 
                     <Button
                       size="sm"
                       onClick={() => {
-                        onSave(slot.id);
-                        setOpen(false);
+                        if (slot.meta) {
+                          setConfirmOverwriteSlotId(slot.id);
+                        } else {
+                          doSave(slot.id);
+                        }
                       }}
                     >
                       Save
@@ -100,6 +113,32 @@ const SaveLoadDialog = ({ slots, onSave, onLoad, onDelete }: SaveLoadDialogProps
                 </div>
               ))}
             </div>
+
+            <AlertDialog
+              open={confirmOverwriteSlotId !== null}
+              onOpenChange={next => {
+                if (!next) setConfirmOverwriteSlotId(null);
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Overwrite save?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This slot already contains a save. Overwriting cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      if (confirmOverwriteSlotId != null) doSave(confirmOverwriteSlotId);
+                    }}
+                  >
+                    Overwrite
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </TabsContent>
 
           <TabsContent value="load" className="mt-4">
@@ -126,9 +165,7 @@ const SaveLoadDialog = ({ slots, onSave, onLoad, onDelete }: SaveLoadDialogProps
                         ) : (
                           <>
                             <div className="mt-1 text-sm text-card-foreground">Turn {meta.turnNumber}</div>
-                            <div className="mt-1 text-[11px] text-muted-foreground">
-                              Saved {formatSavedAt(meta.savedAt)}
-                            </div>
+                            <div className="mt-1 text-[11px] text-muted-foreground">Saved {formatSavedAt(meta.savedAt)}</div>
                           </>
                         )}
                       </div>
@@ -184,12 +221,8 @@ const SaveLoadDialog = ({ slots, onSave, onLoad, onDelete }: SaveLoadDialogProps
                             className="rounded-sm bg-secondary px-2 py-1 text-[10px] text-secondary-foreground"
                             title={f.name}
                           >
-                            <span className="font-display tracking-[0.12em] uppercase">
-                              {f.name.split(' ')[0]}
-                            </span>
-                            <span className="ml-2 font-mono">
-                              {f.reputation > 0 ? '+' : ''}{f.reputation}
-                            </span>
+                            <span className="font-display tracking-[0.12em] uppercase">{f.name.split(' ')[0]}</span>
+                            <span className="ml-2 font-mono">{f.reputation > 0 ? '+' : ''}{f.reputation}</span>
                           </div>
                         ))}
                       </div>

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import heroImage from '@/assets/hero-throne.jpg';
 import { useEffect, useState } from 'react';
 import { loadUqmWasmRuntime } from '@/game/engine/uqmWasmRuntime';
+import { Button } from '@/components/ui/button';
 
 interface TitleScreenProps {
   onStart: () => void;
@@ -9,19 +10,17 @@ interface TitleScreenProps {
 }
 
 const TitleScreen = ({ onStart, onLoad }: TitleScreenProps) => {
-  const [uqmStatus, setUqmStatus] = useState<string>('UQM core: loading…');
+  const [uqmStatus, setUqmStatus] = useState<string>('Conversation core: loading…');
 
   useEffect(() => {
     let cancelled = false;
 
     void (async () => {
       try {
-        const uqm = await loadUqmWasmRuntime();
-        const version = uqm.getVersionString();
-        const demo = uqm.lineFitChars('Hello from UQM', 8);
-        if (!cancelled) setUqmStatus(`UQM core loaded: ${version} (fit=${demo})`);
+        await loadUqmWasmRuntime();
+        if (!cancelled) setUqmStatus('Conversation core ready');
       } catch {
-        if (!cancelled) setUqmStatus('UQM core: not available (wasm build missing)');
+        if (!cancelled) setUqmStatus('Conversation core (basic)');
       }
     })();
 
@@ -32,26 +31,24 @@ const TitleScreen = ({ onStart, onLoad }: TitleScreenProps) => {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background">
-      {/* Background image */}
       <div
         className="absolute inset-0 bg-cover bg-center opacity-30"
         style={{ backgroundImage: `url(${heroImage})` }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
 
-      {/* Content */}
       <motion.div
         className="relative z-10 flex flex-col items-center gap-8 px-6 text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 2 }}
       >
-        {/* Crown ornament */}
         <motion.div
           className="text-5xl animate-slow-pulse"
           initial={{ y: -20 }}
           animate={{ y: 0 }}
           transition={{ duration: 1.5 }}
+          aria-hidden="true"
         >
           ⚜
         </motion.div>
@@ -84,31 +81,32 @@ const TitleScreen = ({ onStart, onLoad }: TitleScreenProps) => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.8, duration: 1 }}
         >
-          <motion.button
-            onClick={onStart}
-            className="group relative font-display text-lg tracking-[0.3em] text-primary transition-all hover:text-gold-glow sm:text-xl"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <span className="relative z-10">BEGIN YOUR EMBASSY</span>
-            <span className="absolute -bottom-1 left-0 h-px w-full bg-primary/30 transition-all group-hover:bg-primary/60" />
-          </motion.button>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.99 }}>
+            <Button
+              size="lg"
+              onClick={onStart}
+              className="h-auto rounded-sm px-8 py-3 font-display text-sm tracking-[0.3em] uppercase"
+            >
+              New Game
+            </Button>
+          </motion.div>
 
           {onLoad && (
-            <motion.button
-              onClick={onLoad}
-              className="group relative font-display text-sm tracking-[0.28em] text-muted-foreground transition-all hover:text-primary sm:text-base"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <span className="relative z-10">LOAD GAME</span>
-              <span className="absolute -bottom-1 left-0 h-px w-full bg-muted-foreground/30 transition-all group-hover:bg-primary/60" />
-            </motion.button>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.99 }}>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={onLoad}
+                className="h-auto rounded-sm px-8 py-3 font-display text-sm tracking-[0.3em] uppercase"
+              >
+                Load Game
+              </Button>
+            </motion.div>
           )}
         </motion.div>
 
         <motion.div
-          className="mt-16 text-xs tracking-[0.5em] text-muted-foreground/40 font-display uppercase"
+          className="mt-16 text-xs font-display tracking-[0.5em] text-muted-foreground/40 uppercase"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2.5, duration: 1 }}
@@ -117,7 +115,7 @@ const TitleScreen = ({ onStart, onLoad }: TitleScreenProps) => {
         </motion.div>
 
         <motion.div
-          className="text-[10px] tracking-[0.35em] text-muted-foreground/30 font-display uppercase"
+          className="text-[10px] font-display tracking-[0.35em] text-muted-foreground/30 uppercase"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2.7, duration: 1 }}

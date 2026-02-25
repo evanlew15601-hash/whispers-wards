@@ -72,6 +72,8 @@ describe('game storage', () => {
     expect(listSaveSlots().every(s => s.meta === null)).toBe(true);
   });
 
+  
+
   it('handles corrupted JSON in STORAGE_KEY_V2 without throwing', () => {
     localStorage.setItem(STORAGE_KEY_V2, '{not json');
 
