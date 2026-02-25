@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
-import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // This test ensures our minimal UQM-derived wasm module can be compiled and executed
 // without requiring a system C toolchain. The WAT source lives under third_party/uqm.
+
+const watPath = fileURLToPath(
+  new URL('../../third_party/uqm/minimal_wasm/uqm_min.wat', import.meta.url),
+);
 
 describe('UQM minimal wasm module', () => {
   it('compiles and exposes expected exports', async () => {
@@ -11,7 +15,6 @@ describe('UQM minimal wasm module', () => {
     const wabtFactory = (wabtModule as any).default ?? wabtModule;
     const wabt = await wabtFactory();
 
-    const watPath = path.resolve(process.cwd(), 'third_party/uqm/minimal_wasm/uqm_min.wat');
     const watSource = fs.readFileSync(watPath, 'utf8');
 
     const parsed = wabt.parseWat(watPath, watSource, { features: { mutable_globals: true } });
@@ -32,7 +35,6 @@ describe('UQM minimal wasm module', () => {
     const wabtFactory = (wabtModule as any).default ?? wabtModule;
     const wabt = await wabtFactory();
 
-    const watPath = path.resolve(process.cwd(), 'third_party/uqm/minimal_wasm/uqm_min.wat');
     const watSource = fs.readFileSync(watPath, 'utf8');
 
     const parsed = wabt.parseWat(watPath, watSource, { features: { mutable_globals: true } });
