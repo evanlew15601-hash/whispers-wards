@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Generated WASM (built via scripts/build-uqm-minimal-wasm.mjs)
+public/wasm/*.wasm
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

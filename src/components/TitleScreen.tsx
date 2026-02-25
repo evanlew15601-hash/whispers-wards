@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import heroImage from '@/assets/hero-throne.jpg';
+import { useEffect, useState } from 'react';
+import { loadUqmWasmRuntime } from '@/game/engine/uqmWasmRuntime';
 
 interface TitleScreenProps {
   onStart: () => void;
@@ -7,6 +9,27 @@ interface TitleScreenProps {
 }
 
 const TitleScreen = ({ onStart, onLoad }: TitleScreenProps) => {
+  const [uqmStatus, setUqmStatus] = useState<string>('UQM core: loading…');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const uqm = await loadUqmWasmRuntime();
+        const version = uqm.getVersionString();
+        const demo = uqm.lineFitChars('Hello from UQM', 8);
+        if (!cancelled) setUqmStatus(`UQM core loaded: ${version} (fit=${demo})`);
+      } catch {
+        if (!cancelled) setUqmStatus('UQM core: not available (wasm build missing)');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background">
       {/* Background image */}
@@ -91,6 +114,15 @@ const TitleScreen = ({ onStart, onLoad }: TitleScreenProps) => {
           transition={{ delay: 2.5, duration: 1 }}
         >
           High Fantasy Diplomacy
+        </motion.div>
+
+        <motion.div
+          className="text-[10px] tracking-[0.35em] text-muted-foreground/30 font-display uppercase"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2.7, duration: 1 }}
+        >
+          {uqmStatus}
         </motion.div>
       </motion.div>
     </div>

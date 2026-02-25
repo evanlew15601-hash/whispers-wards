@@ -18,6 +18,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ---
 
 Vendored upstream code:
-- third_party/uqm/ contains a small subset of The Ur-Quan Masters (UQM) engine source code.
-  See third_party/uqm/COPYING for upstream licensing terms.
-  This repository does NOT include any UQM content (dialogue, voice, images, etc.).
+
+- The Ur-Quan Masters (UQM) engine source code (GPL-2.0-or-later)
+  - Upstream project: The Ur-Quan Masters (UQM)
+  - Upstream URL: https://github.com/juj/sc2-uqm
+  - Upstream revision: ff2444088d42e80612fd28f79d368783e244a606
+  - Vendored path: third_party/uqm/
+  - Upstream license text: third_party/uqm/COPYING
+
+This repository does NOT include any UQM content (dialogue, voice, images, sounds, music, etc.).
