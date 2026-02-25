@@ -10,6 +10,7 @@ describe('pendingEncounter expiry semantics', () => {
   it('retains an existing encounter when expiresOnTurn === nextTurnNumber', async () => {
     const simPending: SecondaryEncounter = {
       id: 'enc-sim',
+      kind: 'summit',
       title: 'simulated',
       description: 'simulated',
       relatedFactions: ['iron-pact', 'ember-throne'],
@@ -34,6 +35,8 @@ describe('pendingEncounter expiry semantics', () => {
 
     const existing: SecondaryEncounter = {
       id: 'enc-existing',
+      kind: 'raid',
+      routeId: 'passcourier',
       title: 'existing',
       description: 'existing',
       relatedFactions: ['iron-pact', 'verdant-court'],

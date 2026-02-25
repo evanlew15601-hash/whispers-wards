@@ -11,6 +11,7 @@ import {
 import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
+import { buildEncounterDialogueNode } from './encounters';
 
 export function useGameState() {
   const engineRef = useRef(tsConversationEngine);
@@ -113,6 +114,16 @@ export function useGameState() {
     setState(engineRef.current.createInitialState());
   }, []);
 
+  const enterPendingEncounter = useCallback(() => {
+    setState(prev => {
+      if (!prev.pendingEncounter) return prev;
+      return {
+        ...prev,
+        currentDialogue: buildEncounterDialogueNode(prev.pendingEncounter),
+      };
+    });
+  }, []);
+
   return {
     state,
     engineLabel,
@@ -125,5 +136,6 @@ export function useGameState() {
     listSlots,
     makeChoice,
     resetGame,
+    enterPendingEncounter,
   };
 }

@@ -17,6 +17,7 @@ interface GameScreenProps {
   loadFromSlot: (slotId: number) => void;
   deleteSlot: (slotId: number) => void;
   exitToTitle: () => void;
+  enterPendingEncounter: () => void;
 }
 
 const GameScreen = ({
@@ -29,6 +30,7 @@ const GameScreen = ({
   loadFromSlot,
   deleteSlot,
   exitToTitle,
+  enterPendingEncounter,
 }: GameScreenProps) => {
   const conversationEnded = !state.currentDialogue;
 
@@ -71,9 +73,13 @@ const GameScreen = ({
             <motion.div className="flex flex-col items-center justify-center gap-6 py-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <p className="font-display text-lg text-muted-foreground text-center">The conversation has reached its conclusion.</p>
               <p className="font-body text-sm italic text-muted-foreground/60 text-center max-w-md">Your choices have shaped the realm's future. The factions remember.</p>
-              <button onClick={resetGame} className="font-display text-sm tracking-[0.2em] text-primary hover:text-gold-glow transition-colors border border-primary/30 px-6 py-2 rounded-sm hover:border-primary/60">
+              <Button
+                onClick={resetGame}
+                variant="outline"
+                className="h-auto rounded-sm border-primary/30 px-6 py-2 font-display text-sm tracking-[0.2em] text-primary transition-colors hover:border-primary/60 hover:text-gold-glow"
+              >
                 Begin Again
-              </button>
+              </Button>
             </motion.div>
           ) : (
             <DialoguePanel
@@ -93,6 +99,8 @@ const GameScreen = ({
             world={state.world}
             factions={state.factions}
             pendingEncounter={state.pendingEncounter}
+            canAddressEncounter={state.currentDialogue?.id === 'concord-hub'}
+            onAddressEncounter={enterPendingEncounter}
           />
         </motion.aside>
       </div>

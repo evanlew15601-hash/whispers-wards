@@ -118,11 +118,18 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
             const override = knownSecrets.includes('override');
             const locked = Boolean(repReq) && !repOk && !override;
 
+            const reqFactionName = repReq
+              ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
+              : null;
+
             const lines = choiceLines[choice.id] ?? [choice.text];
 
             return (
               <motion.button
                 key={choice.id}
+                type="button"
+                disabled={locked}
+                title={locked && repReq ? `Requires ${reqFactionName} reputation ≥ ${repReq.min}` : undefined}
                 onClick={() => !locked && onChoice(choice)}
                 className={`group relative rounded-sm border border-border bg-secondary/50 p-4 text-left font-body text-sm transition-all sm:text-base
                   ${locked

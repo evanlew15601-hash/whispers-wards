@@ -62,7 +62,7 @@ const routesBetween = (world: WorldState, a: string, b: string): TradeRouteState
 
 type FactionActionType = 'offer' | 'embargo' | 'raid' | 'skirmish' | 'consolidate';
 
-interface EncounterCandidate {
+export interface EncounterCandidate {
   kind: 'embargo' | 'raid' | 'skirmish' | 'summit';
   a: string;
   b: string;
@@ -407,7 +407,7 @@ export const simulateWorldTurn = (args: SimulateWorldTurnArgs): SimulateWorldTur
   };
 };
 
-const createEncounterFromCandidate = (
+export const createEncounterFromCandidate = (
   c: EncounterCandidate,
   turnNumber: number,
   seed: number,
@@ -424,6 +424,8 @@ const createEncounterFromCandidate = (
     const routeName = route?.name ?? c.routeId;
     return {
       id,
+      kind: 'embargo',
+      routeId: c.routeId,
       title: `Embargo crisis on ${routeName}`,
       description: `${aName} has cut commerce along ${routeName}, and ${bName} is searching for leverage in return. A mediator could defuse this before it escalates into raids.`,
       relatedFactions: [c.a, c.b],
@@ -436,6 +438,8 @@ const createEncounterFromCandidate = (
     const routeName = route?.name ?? c.routeId;
     return {
       id,
+      kind: 'raid',
+      routeId: c.routeId,
       title: `Caravans attacked on ${routeName}`,
       description: `Bandits bearing ${aName}'s colors have struck along ${routeName}. ${bName} demands restitution, while merchants whisper that this was no mere crime of opportunity.`,
       relatedFactions: [c.a, c.b],
@@ -448,6 +452,8 @@ const createEncounterFromCandidate = (
     const regionName = region?.name ?? c.regionId;
     return {
       id,
+      kind: 'skirmish',
+      regionId: c.regionId,
       title: `Skirmish rumors in ${regionName}`,
       description: `Scouts report rising violence around ${regionName}. ${aName} and ${bName} accuse each other of provocation, and the next clash could draw in allies.`,
       relatedFactions: [c.a, c.b],
@@ -458,6 +464,7 @@ const createEncounterFromCandidate = (
   // summit (or fallback)
   return {
     id,
+    kind: 'summit',
     title: 'A quiet diplomatic summit',
     description: `${aName} signals willingness to negotiate with ${bName}. If either side is publicly slighted, tensions may rebound — but a durable accord is possible.`,
     relatedFactions: [c.a, c.b],

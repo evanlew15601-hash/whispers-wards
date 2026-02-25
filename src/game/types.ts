@@ -74,8 +74,16 @@ export interface WorldState {
   };
 }
 
+export type SecondaryEncounterKind = 'embargo' | 'raid' | 'skirmish' | 'summit';
+
 export interface SecondaryEncounter {
   id: string;
+  /** Optional for backward compatibility with older saves. */
+  kind?: SecondaryEncounterKind;
+  /** Optional for backward compatibility with older saves. */
+  routeId?: string;
+  /** Optional for backward compatibility with older saves. */
+  regionId?: string;
   title: string;
   description: string;
   relatedFactions: string[];

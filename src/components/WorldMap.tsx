@@ -1,8 +1,9 @@
-import { Faction, WorldState, TradeRouteState, RegionState } from '@/game/types';
+import { Faction, WorldState, TradeRouteState, RegionState, SecondaryEncounter } from '@/game/types';
 
 interface WorldMapProps {
   world: WorldState;
   factions: Faction[];
+  highlightEncounter?: SecondaryEncounter | null;
 }
 
 const factionFill = (faction: Faction['color']) => {
@@ -63,9 +64,12 @@ const inferRouteEndpoints = (
   return [regionList[first], regionList[second]];
 };
 
-const WorldMap = ({ world, factions }: WorldMapProps) => {
+const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
   const regions = Object.values(world.regions).sort((a, b) => a.name.localeCompare(b.name));
   const routes = Object.values(world.tradeRoutes).sort((a, b) => a.name.localeCompare(b.name));
+
+  const highlightRouteId = highlightEncounter?.routeId;
+  const highlightRegionId = highlightEncounter?.regionId;
 
   const factionById = new Map(factions.map(f => [f.id, f] as const));
 
@@ -195,17 +199,32 @@ const WorldMap = ({ world, factions }: WorldMapProps) => {
 
             const width = route.status === 'raided' ? 2.6 : 2.1;
 
+            const isHighlighted = route.id === highlightRouteId;
+            const groupOpacity = isHighlighted ? 1 : route.status === 'open' ? 0.55 : 0.9;
+            const displayWidth = isHighlighted ? width + 0.7 : width;
+
             const crossAt = { x: mid.x, y: mid.y };
 
             return (
-              <g key={route.id} opacity={route.status === 'open' ? 0.55 : 0.9}>
+              <g key={route.id} opacity={groupOpacity}>
+                {isHighlighted && (
+                  <path
+                    d={d}
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={displayWidth + 2.6}
+                    opacity={0.18}
+                    filter="url(#route-glow)"
+                  />
+                )}
+
                 <path
                   d={d}
                   fill="none"
                   stroke={stroke}
-                  strokeWidth={width}
+                  strokeWidth={displayWidth}
                   strokeDasharray={dash}
-                  filter={route.status === 'raided' ? 'url(#route-glow)' : undefined}
+                  filter={route.status === 'raided' || isHighlighted ? 'url(#route-glow)' : undefined}
                 >
                   <title>{`${route.name} — ${route.status}`}</title>
                 </path>
@@ -233,6 +252,7 @@ const WorldMap = ({ world, factions }: WorldMapProps) => {
 
             const fill = resolveRegionFill(region);
             const contested = Boolean(region.contested);
+            const isHighlighted = region.id === highlightRegionId;
 
             const controlLabel =
               region.control === 'neutral'
@@ -261,6 +281,17 @@ const WorldMap = ({ world, factions }: WorldMapProps) => {
                     stroke="hsl(var(--primary))"
                     strokeWidth={1}
                     strokeDasharray="3 3"
+                  />
+                )}
+
+                {isHighlighted && (
+                  <polygon
+                    points={points}
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.4}
+                    opacity={0.65}
+                    strokeLinejoin="round"
                   />
                 )}
 

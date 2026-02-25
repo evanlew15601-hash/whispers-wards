@@ -3,6 +3,7 @@ import type { DialogueChoice, GameState } from '../types';
 
 import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
+import { parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
@@ -33,6 +34,73 @@ const startNewGame = (): GameState => {
 };
 
 const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
+  const overrideLocked = prev.knownSecrets.includes('override');
+  const repReq = choice.requiredReputation;
+  if (repReq && !overrideLocked) {
+    const rep = prev.factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity;
+    if (rep < repReq.min) {
+      return prev;
+    }
+  }
+
+  const encounterPick = prev.pendingEncounter ? parseEncounterResolutionChoiceId(choice.id) : null;
+  if (prev.pendingEncounter && encounterPick && encounterPick.encounterId === prev.pendingEncounter.id) {
+    // Even though encounter choices are dynamically generated, we still want to apply
+    // any standard choice side-effects (rep, secrets, event triggers).
+    const newFactions = prev.factions.map(f => {
+      const effect = choice.effects.find(e => e.factionId === f.id);
+      if (!effect) return f;
+
+      return {
+        ...f,
+        reputation: clamp(f.reputation + effect.reputationChange, -100, 100),
+      };
+    });
+
+    const newSecrets = choice.revealsInfo ? [...prev.knownSecrets, choice.revealsInfo] : prev.knownSecrets;
+
+    const newEvents = prev.events.map(event => {
+      if (event.triggered || !event.triggerCondition) return event;
+
+      const faction = newFactions.find(f => f.id === event.triggerCondition!.factionId);
+      if (!faction) return event;
+
+      const met =
+        event.triggerCondition.direction === 'above'
+          ? faction.reputation >= event.triggerCondition.reputationThreshold
+          : faction.reputation <= event.triggerCondition.reputationThreshold;
+
+      return met ? { ...event, triggered: true } : event;
+    });
+
+    const triggeredEvents = newEvents.filter((e, i) => e.triggered && !prev.events[i].triggered);
+
+    const resolved = resolveEncounter({
+      world: prev.world,
+      encounter: prev.pendingEncounter,
+      turnNumber: prev.turnNumber,
+      resolution: encounterPick.resolution,
+    });
+
+    return {
+      ...prev,
+      factions: newFactions,
+      events: newEvents,
+      knownSecrets: [...new Set(newSecrets)],
+      // Return to the main hall hub so the campaign continues.
+      currentDialogue: dialogueTree['concord-hub'] ?? prev.currentDialogue,
+      pendingEncounter: null,
+      log: [
+        ...prev.log,
+        `> ${choice.text}`,
+        ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
+        ...(choice.revealsInfo ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+        ...resolved.logEntries,
+      ],
+      world: resolved.world,
+    };
+  }
+
   const newFactions = prev.factions.map(f => {
     const effect = choice.effects.find(e => e.factionId === f.id);
     if (!effect) return f;

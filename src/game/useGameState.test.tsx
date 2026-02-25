@@ -79,4 +79,63 @@ describe('useGameState', () => {
     });
     expect(result.current.state.currentScene).toBe('title');
   });
+
+  it('enterPendingEncounter swaps dialogue to a generated encounter node when pendingEncounter exists', async () => {
+    const partialState = {
+      currentScene: 'game',
+      factions: initialFactions.map(f => ({ ...f })),
+      currentDialogue: { id: 'concord-hub' },
+      events: initialEvents.map(e => ({ ...e })),
+      knownSecrets: [],
+      turnNumber: 10,
+      log: [],
+      pendingEncounter: {
+        id: 'enc-test',
+        kind: 'embargo',
+        routeId: 'ashroad',
+        title: 'Embargo crisis on Ash Road',
+        description: 'Test encounter.',
+        relatedFactions: ['ember-throne', 'iron-pact'],
+        expiresOnTurn: 12,
+      },
+      // rngSeed/world intentionally omitted to exercise hydration.
+    };
+
+    const meta = {
+      savedAt: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+      turnNumber: partialState.turnNumber,
+      factions: partialState.factions.map((f: { id: string; name: string; reputation: number }) => ({
+        id: f.id,
+        name: f.name,
+        reputation: f.reputation,
+      })),
+    };
+
+    localStorage.setItem(
+      STORAGE_KEY_V1,
+      JSON.stringify({
+        version: 1,
+        slots: {
+          '1': { meta, state: partialState },
+        },
+      }),
+    );
+
+    const { useGameState } = await import('./useGameState');
+    const { result } = renderHook(() => useGameState());
+
+    await act(async () => {
+      result.current.loadFromSlot(1);
+    });
+
+    expect(result.current.state.pendingEncounter?.id).toBe('enc-test');
+    expect(result.current.state.currentDialogue?.id).toBe('concord-hub');
+
+    await act(async () => {
+      result.current.enterPendingEncounter();
+    });
+
+    expect(result.current.state.currentDialogue?.id).toBe('encounter:enc-test');
+    expect(result.current.state.currentDialogue?.choices.length).toBeGreaterThan(0);
+  });
 });

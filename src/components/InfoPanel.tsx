@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { Faction, WorldState, SecondaryEncounter } from '@/game/types';
 import WorldMap from '@/components/WorldMap';
 
@@ -9,10 +10,16 @@ interface InfoPanelProps {
   log: string[];
   world: WorldState;
   factions: Faction[];
-  pendingEncounter?: SecondaryEncounter | null;
+  pendingEncounter: SecondaryEncounter | null;
+  canAddressEncounter?: boolean;
+  onAddressEncounter?: () => void;
 }
 
-const InfoPanel = ({ knownSecrets, turnNumber, log, world, factions, pendingEncounter }: InfoPanelProps) => {
+const InfoPanel = (
+  { knownSecrets, turnNumber, log, world, factions, pendingEncounter, canAddressEncounter = false, onAddressEncounter }: InfoPanelProps,
+) => {
+  const encounterTurnsLeft = pendingEncounter ? pendingEncounter.expiresOnTurn - turnNumber : null;
+
   return (
     <Tabs defaultValue="chronicle" className="flex flex-col gap-4">
       {/* Turn counter */}
@@ -39,7 +46,7 @@ const InfoPanel = ({ knownSecrets, turnNumber, log, world, factions, pendingEnco
         {knownSecrets.length > 0 && (
           <div className="parchment-border rounded-sm bg-card p-4">
             <h3 className="mb-3 font-display text-xs tracking-[0.2em] text-accent uppercase">
-              🔍 Intelligence ({knownSecrets.length})
+              <span aria-hidden="true">🔍</span> Intelligence ({knownSecrets.length})
             </h3>
             <div className="flex flex-col gap-2">
               {knownSecrets.map((secret, i) => (
@@ -60,15 +67,36 @@ const InfoPanel = ({ knownSecrets, turnNumber, log, world, factions, pendingEnco
         {/* Pending encounter */}
         {pendingEncounter && (
           <div className="parchment-border rounded-sm bg-card p-4">
-            <h3 className="mb-2 font-display text-xs tracking-[0.2em] text-primary uppercase">
-              ⚔ Encounter
-            </h3>
-            <div className="text-sm text-card-foreground">{pendingEncounter.title}</div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              {pendingEncounter.description}
-            </div>
-            <div className="mt-2 text-[11px] text-muted-foreground">
-              Expires on turn {pendingEncounter.expiresOnTurn}
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="mb-2 font-display text-xs tracking-[0.2em] text-primary uppercase">
+                  <span aria-hidden="true">⚔</span> Pending Encounter
+                </h3>
+                <div className="text-sm text-card-foreground">{pendingEncounter.title}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{pendingEncounter.description}</div>
+
+                <div
+                  className={`mt-2 text-[11px] ${
+                    encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'text-destructive' : 'text-muted-foreground'
+                  }`}
+                >
+                  {encounterTurnsLeft !== null && encounterTurnsLeft >= 0
+                    ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${pendingEncounter.expiresOnTurn})`
+                    : `Expires on turn ${pendingEncounter.expiresOnTurn}`}
+                </div>
+              </div>
+
+              {onAddressEncounter && (
+                <Button
+                  size="sm"
+                  variant={canAddressEncounter ? 'default' : 'secondary'}
+                  disabled={!canAddressEncounter}
+                  onClick={onAddressEncounter}
+                  title={canAddressEncounter ? 'Address this encounter' : 'Return to the Concord Hall hub to address this encounter'}
+                >
+                  Address
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -100,7 +128,7 @@ const InfoPanel = ({ knownSecrets, turnNumber, log, world, factions, pendingEnco
       </TabsContent>
 
       <TabsContent value="world" className="mt-0">
-        <WorldMap world={world} factions={factions} />
+        <WorldMap world={world} factions={factions} highlightEncounter={pendingEncounter ?? null} />
       </TabsContent>
     </Tabs>
   );
