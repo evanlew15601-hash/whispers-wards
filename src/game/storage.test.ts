@@ -55,6 +55,58 @@ describe('game storage', () => {
     expect(listSaveSlots()[0].meta).toBeNull();
   });
 
+  it('loads a v2 slot containing legacy pendingEncounter into pendingEncounters', async () => {
+    const { STORAGE_KEY_V2, loadGameFromSlot } = await importStorage();
+
+    const base = tsConversationEngine.startNewGame();
+
+    const legacyPendingEncounter = {
+      id: 'enc-legacy',
+      kind: 'embargo' as const,
+      routeId: 'ashroad',
+      title: 'Embargo crisis',
+      description: 'Legacy pendingEncounter field.',
+      relatedFactions: ['ember-throne', 'iron-pact'],
+      expiresOnTurn: 5,
+    };
+
+    localStorage.setItem(
+      STORAGE_KEY_V2,
+      JSON.stringify({
+        version: 2,
+        slots: {
+          '1': {
+            meta: {
+              savedAt: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+              turnNumber: base.turnNumber,
+              factions: base.factions.map(f => ({ id: f.id, name: f.name, reputation: f.reputation })),
+            },
+            state: {
+              factions: base.factions,
+              events: base.events,
+              knownSecrets: base.knownSecrets,
+              turnNumber: base.turnNumber,
+              log: base.log,
+              rngSeed: base.rngSeed,
+              world: base.world,
+              pendingEncounter: legacyPendingEncounter,
+              encounterResolvedOnTurn: null,
+              currentScene: 'game',
+              currentDialogueId: base.currentDialogue?.id ?? null,
+            },
+          },
+        },
+      }),
+    );
+
+    const loaded = loadGameFromSlot(1);
+    expect(loaded.ok).toBe(true);
+
+    if (loaded.ok) {
+      expect(loaded.state.pendingEncounters?.map(e => e.id)).toEqual(['enc-legacy']);
+    }
+  });
+
   it('ignores invalid slot ids', async () => {
     const { deleteSaveSlot, listSaveSlots, loadGameFromSlot, saveGameToSlot } = await importStorage();
 

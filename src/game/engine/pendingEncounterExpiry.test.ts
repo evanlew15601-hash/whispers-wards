@@ -19,7 +19,7 @@ describe('pendingEncounters expiry semantics', () => {
 
     const simulateWorldTurn = vi.fn((args: { world: any; rngSeed: number }) => ({
       world: args.world,
-      pendingEncounter: simPending,
+      pendingEncounters: [simPending],
       logEntries: [],
       rngSeed: args.rngSeed,
     }));

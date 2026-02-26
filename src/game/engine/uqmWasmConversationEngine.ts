@@ -4,7 +4,7 @@ import type { DialogueChoice, GameState } from '../types';
 import { dialogueTree } from '../data';
 import { applyExpiredEncounterConsequence } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { createTsConversationEngine, tsConversationEngine } from './tsConversationEngine';
+import { createTsConversationEngine, MAX_PENDING_ENCOUNTERS, tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { getDialogueChoiceLock, getDialogueChoiceSecretsToAdd } from './dialogueChoiceLocks';
 
@@ -251,8 +251,12 @@ function applyChoiceUsingWasm(
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
 
   const nextPendingEncounters = retainedEncounters.slice();
-  if (sim.pendingEncounter && !nextPendingEncounters.some(e => e.id === sim.pendingEncounter!.id)) {
-    nextPendingEncounters.push(sim.pendingEncounter);
+
+  for (const encounter of sim.pendingEncounters) {
+    if (nextPendingEncounters.length >= MAX_PENDING_ENCOUNTERS) break;
+    if (!nextPendingEncounters.some(e => e.id === encounter.id)) {
+      nextPendingEncounters.push(encounter);
+    }
   }
 
   return {

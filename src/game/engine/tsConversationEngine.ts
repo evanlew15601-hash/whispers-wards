@@ -9,6 +9,8 @@ import { getDialogueChoiceLock, getDialogueChoiceSecretsToAdd } from './dialogue
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
 
+export const MAX_PENDING_ENCOUNTERS = 3;
+
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
 const createInitialState = (): GameState => ({
@@ -187,8 +189,12 @@ function applyChoiceWithTree(prev: GameState, choice: DialogueChoice, tree: type
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
 
   const nextPendingEncounters = retainedEncounters.slice();
-  if (sim.pendingEncounter && !nextPendingEncounters.some(e => e.id === sim.pendingEncounter!.id)) {
-    nextPendingEncounters.push(sim.pendingEncounter);
+
+  for (const encounter of sim.pendingEncounters) {
+    if (nextPendingEncounters.length >= MAX_PENDING_ENCOUNTERS) break;
+    if (!nextPendingEncounters.some(e => e.id === encounter.id)) {
+      nextPendingEncounters.push(encounter);
+    }
   }
 
   return {
