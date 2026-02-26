@@ -88,4 +88,41 @@ describe('world simulation', () => {
     const embargoSeed = findSeed(() => makeWorld(55), log => log.some(l => l.includes('imposes an embargo')));
     expect(embargoSeed).not.toBeNull();
   });
+
+  it('can generate multiple pending encounters in a single turn', () => {
+    const factions = [
+      initialFactions.find(f => f.id === 'ember-throne')!,
+      initialFactions.find(f => f.id === 'iron-pact')!,
+    ];
+
+    const makeWorld = () => {
+      const world = createInitialWorldState(factions);
+      // Remove unrelated RNG consumption from contested-region cooling.
+      world.regions.greenmarch = { ...world.regions.greenmarch, contested: false };
+      world.tensions['ember-throne']['iron-pact'] = 80;
+      world.tensions['iron-pact']['ember-throne'] = 80;
+      return world;
+    };
+
+    let found: { seed: number; result: ReturnType<typeof simulateWorldTurn> } | null = null;
+    for (let seed = 1; seed <= 5000; seed++) {
+      const result = simulateWorldTurn({
+        world: makeWorld(),
+        factions,
+        turnNumber: 1,
+        rngSeed: seed,
+      });
+
+      if (result.pendingEncounters.length >= 2) {
+        found = { seed, result };
+        break;
+      }
+    }
+
+    expect(found).not.toBeNull();
+    if (!found) return;
+
+    expect(found.result.pendingEncounters).toHaveLength(2);
+    expect(new Set(found.result.pendingEncounters.map(e => e.id)).size).toBe(2);
+  });
 });

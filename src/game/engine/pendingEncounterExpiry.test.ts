@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import type { SecondaryEncounter } from '../types';
 
-describe('pendingEncounter expiry semantics', () => {
+describe('pendingEncounters expiry semantics', () => {
   beforeEach(() => {
     vi.resetModules();
   });
@@ -19,7 +19,7 @@ describe('pendingEncounter expiry semantics', () => {
 
     const simulateWorldTurn = vi.fn((args: { world: any; rngSeed: number }) => ({
       world: args.world,
-      pendingEncounter: simPending,
+      pendingEncounters: [simPending],
       logEntries: [],
       rngSeed: args.rngSeed,
     }));
@@ -51,12 +51,14 @@ describe('pendingEncounter expiry semantics', () => {
       nextNodeId: null,
     };
 
-    const next = tsConversationEngine.applyChoice({ ...start, pendingEncounter: existing, rngSeed: 1 }, choice);
-    expect(next.pendingEncounter).toEqual(existing);
+    const next = tsConversationEngine.applyChoice({ ...start, pendingEncounters: [existing], rngSeed: 1 }, choice);
+
+    // Existing is retained (boundary) and a new sim encounter is appended.
+    expect(next.pendingEncounters).toEqual([existing, simPending]);
 
     // Next step should expire the existing encounter (since expiresOnTurn < nextTurnNumber).
-    const next2 = tsConversationEngine.applyChoice({ ...next, pendingEncounter: existing, rngSeed: 1 }, choice);
-    expect(next2.pendingEncounter).toEqual(simPending);
+    const next2 = tsConversationEngine.applyChoice({ ...next, rngSeed: 1 }, choice);
+    expect(next2.pendingEncounters).toEqual([simPending]);
 
     // Expiry should add a log entry and deterministic world consequences.
     expect(next2.log).toContain('⏳ Encounter expired: existing (+5 tension)');

@@ -15,4 +15,13 @@ export interface ConversationEngine {
 
   /** Apply a player choice and return the next state (pure). */
   applyChoice(prev: GameState, choice: DialogueChoice): GameState;
+
+  /**
+   * Optional post-processing step that can alter how a dialogue node is *presented*.
+   *
+   * Example: the UQM WASM engine uses this to enforce "response pool" semantics
+   * (hide locked choices + cap to 8 visible choices) while keeping authored data
+   * in `src/game/data.ts`.
+   */
+  presentState?(state: GameState): GameState;
 }

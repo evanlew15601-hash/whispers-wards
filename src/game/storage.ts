@@ -132,7 +132,15 @@ export const persistedStateV2Schema = z
     log: z.array(z.string()).optional(),
     rngSeed: z.number().optional(),
     world: worldStateSchema.optional(),
+
+    // v2+ inbox format
+    pendingEncounters: z.array(secondaryEncounterSchema).optional(),
+
+    // Legacy saves stored a single pending encounter.
     pendingEncounter: secondaryEncounterSchema.nullable().optional(),
+
+    encounterResolvedOnTurn: z.number().nullable().optional(),
+
     currentScene: z.enum(['title', 'load', 'game']).optional(),
     currentDialogueId: z.string().nullable(),
   })
@@ -289,6 +297,9 @@ const migrateSlotV1ToV2 = (slot: PersistedSlotV1 | undefined): PersistedSlotV2 |
   if (!metaParsed.success) return null;
 
   const s = (slot as PersistedSlotV1).state as Record<string, unknown> | null;
+
+  const legacyPendingEncounter = (s?.pendingEncounter as unknown) ?? null;
+
   const stateCandidate = {
     factions: s?.factions,
     events: s?.events,
@@ -297,7 +308,12 @@ const migrateSlotV1ToV2 = (slot: PersistedSlotV1 | undefined): PersistedSlotV2 |
     log: s?.log,
     rngSeed: s?.rngSeed,
     world: s?.world,
-    pendingEncounter: (s?.pendingEncounter as unknown) ?? null,
+
+    pendingEncounters:
+      (s?.pendingEncounters as unknown) ?? (legacyPendingEncounter ? [legacyPendingEncounter] : []),
+
+    encounterResolvedOnTurn: (s?.encounterResolvedOnTurn as unknown) ?? null,
+
     currentScene: s?.currentScene,
     currentDialogueId:
       s && typeof s.currentDialogue === 'object' && s.currentDialogue && 'id' in s.currentDialogue
@@ -405,7 +421,8 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
       log: state.log,
       rngSeed: state.rngSeed,
       world: state.world,
-      pendingEncounter: state.pendingEncounter,
+      pendingEncounters: state.pendingEncounters,
+      encounterResolvedOnTurn: state.encounterResolvedOnTurn,
       currentScene: state.currentScene,
       currentDialogueId: state.currentDialogue?.id ?? null,
     },
@@ -414,20 +431,133 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
   return writeStoreV2(store);
 };
 
-export const loadGameFromSlot = (slotId: number): LoadableGameState | null => {
+export type LoadGameFailureReason = 'empty' | 'unavailable' | 'corrupt';
+
+export type LoadGameResult =
+  | { ok: true; state: LoadableGameState }
+  | { ok: false; reason: LoadGameFailureReason };
+
+export const loadGameFromSlot = (slotId: number): LoadGameResult => {
   const id = normalizeSlotId(slotId);
-  if (!id) return null;
+  if (!id) return { ok: false, reason: 'empty' };
 
-  const store = readStoreV2();
-  const slot = store.slots[String(id)];
-  if (!slot) return null;
+  if (!getLocalStorage()) return { ok: false, reason: 'unavailable' };
 
-  const { currentDialogueId, ...state } = slot.state;
+  const key = String(id);
 
-  return {
-    ...state,
-    currentDialogue: currentDialogueId ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue']) : null,
-  };
+  let v2Corrupt = false;
+
+  const rawV2 = safeGetItem(STORAGE_KEY_V2);
+  if (rawV2) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawV2);
+    } catch {
+      v2Corrupt = true;
+      parsed = null;
+    }
+
+    if (parsed !== null) {
+      const storeParsed = persistedStoreV2Schema.safeParse(parsed);
+      if (!storeParsed.success) {
+        v2Corrupt = true;
+      } else {
+        const rawSlot = (storeParsed.data.slots as Record<string, unknown>)[key];
+        if (!rawSlot) return { ok: false, reason: 'empty' };
+
+        const slotParsed = persistedSlotV2Schema.safeParse(rawSlot);
+        if (!slotParsed.success) {
+          v2Corrupt = true;
+        } else {
+          const {
+            currentDialogueId,
+            pendingEncounter,
+            pendingEncounters,
+            ...state
+          } = slotParsed.data.state as unknown as {
+            currentDialogueId: string | null;
+            pendingEncounter?: unknown;
+            pendingEncounters?: unknown;
+          } & Record<string, unknown>;
+
+          const normalizedPendingEncounters =
+            Array.isArray(pendingEncounters)
+              ? pendingEncounters
+              : pendingEncounter
+                ? [pendingEncounter]
+                : [];
+
+          return {
+            ok: true,
+            state: {
+              ...state,
+              pendingEncounters: normalizedPendingEncounters,
+              currentDialogue: currentDialogueId
+                ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue'])
+                : null,
+            },
+          };
+        }
+      }
+    }
+  }
+
+  const rawV1 = safeGetItem(STORAGE_KEY_V1);
+  if (rawV1) {
+    const storeV1 = parseStoreV1(rawV1);
+    if (!storeV1) return { ok: false, reason: 'corrupt' };
+
+    const slot = storeV1.slots[key];
+    if (!slot) return { ok: false, reason: v2Corrupt ? 'corrupt' : 'empty' };
+
+    const migratedSlot = migrateSlotV1ToV2(slot);
+    if (!migratedSlot) return { ok: false, reason: 'corrupt' };
+
+    // Best-effort migration to v2 once we have valid data.
+    const migratedStore = migrateStoreV1ToV2(storeV1);
+    writeStoreV2(migratedStore);
+
+    const { currentDialogueId, ...state } = migratedSlot.state;
+
+    return {
+      ok: true,
+      state: {
+        ...state,
+        currentDialogue: currentDialogueId
+          ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue'])
+          : null,
+      },
+    };
+  }
+
+  const rawLegacy = safeGetItem(STORAGE_KEY_PREFIX);
+  if (rawLegacy) {
+    const storeV1 = parseStoreV1(rawLegacy);
+    if (!storeV1) return { ok: false, reason: 'corrupt' };
+
+    const slot = storeV1.slots[key];
+    if (!slot) return { ok: false, reason: v2Corrupt ? 'corrupt' : 'empty' };
+
+    const migratedSlot = migrateSlotV1ToV2(slot);
+    if (!migratedSlot) return { ok: false, reason: 'corrupt' };
+
+    const migratedStore = migrateStoreV1ToV2(storeV1);
+    writeStoreV2(migratedStore);
+
+    const { currentDialogueId, ...state } = migratedSlot.state;
+
+    return {
+      ok: true,
+      state: {
+        ...state,
+        currentDialogue: currentDialogueId
+          ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue'])
+          : null,
+      },
+    };
+  }
+
+  return { ok: false, reason: v2Corrupt ? 'corrupt' : 'empty' };
 };
 
 export const deleteSaveSlot = (slotId: number): boolean => {

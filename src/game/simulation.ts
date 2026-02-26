@@ -10,7 +10,7 @@ export interface SimulateWorldTurnArgs {
 
 export interface SimulateWorldTurnResult {
   world: WorldState;
-  pendingEncounter: SecondaryEncounter | null;
+  pendingEncounters: SecondaryEncounter[];
   logEntries: string[];
   rngSeed: number;
 }
@@ -390,22 +390,34 @@ export const simulateWorldTurn = (args: SimulateWorldTurnArgs): SimulateWorldTur
     }
   }
 
-  let pendingEncounter: SecondaryEncounter | null = null;
-  if (encounterCandidates.length > 0) {
-    const pick = rngPickOne(seed, encounterCandidates);
+  const pendingEncounters: SecondaryEncounter[] = [];
+
+  // Generate multiple encounters per turn to allow the inbox to build pressure.
+  // The engine is responsible for enforcing an inbox size cap.
+  const MAX_NEW_ENCOUNTERS_PER_TURN = 2;
+
+  const remainingCandidates = encounterCandidates.slice();
+  while (pendingEncounters.length < MAX_NEW_ENCOUNTERS_PER_TURN && remainingCandidates.length > 0) {
+    const pick = rngPickOne(seed, remainingCandidates);
     seed = pick.seed;
-    pendingEncounter = createEncounterFromCandidate(
-      pick.value,
-      args.turnNumber,
-      seed,
-      factionNameById,
-      nextWorld
+
+    const idx = remainingCandidates.indexOf(pick.value);
+    if (idx >= 0) remainingCandidates.splice(idx, 1);
+
+    pendingEncounters.push(
+      createEncounterFromCandidate(
+        pick.value,
+        args.turnNumber,
+        seed,
+        factionNameById,
+        nextWorld,
+      ),
     );
   }
 
   return {
     world: nextWorld,
-    pendingEncounter,
+    pendingEncounters,
     logEntries,
     rngSeed: seed,
   };

@@ -9,13 +9,14 @@ import {
   loadGameFromSlot,
   deleteSaveSlot,
 } from './storage';
+import type { ConversationEngine } from './engine/conversationEngine';
 import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 import { buildEncounterDialogueNode } from './encounters';
 
 export function useGameState() {
-  const engineRef = useRef(tsConversationEngine);
+  const engineRef = useRef<ConversationEngine>(tsConversationEngine);
 
   const [engineLabel, setEngineLabel] = useState<'TS' | 'UQM WASM'>('TS');
 
@@ -30,6 +31,8 @@ export function useGameState() {
         if (cancelled) return;
         engineRef.current = createUqmWasmConversationEngine(uqm);
         setEngineLabel('UQM WASM');
+
+        setState(prev => (engineRef.current.presentState ? engineRef.current.presentState(prev) : prev));
       })
       .catch(() => {
         // Ignore; we simply stay on the TS engine.
@@ -45,7 +48,8 @@ export function useGameState() {
   }, []);
 
   const startGame = useCallback(() => {
-    setState(engineRef.current.startNewGame());
+    const started = engineRef.current.startNewGame();
+    setState(engineRef.current.presentState ? engineRef.current.presentState(started) : started);
   }, []);
 
   const openLoadScreen = useCallback(() => {
@@ -76,11 +80,19 @@ export function useGameState() {
   }, [state, refreshSlots]);
 
   const loadFromSlot = useCallback((slotId: number) => {
-    const loaded = loadGameFromSlot(slotId);
-    if (!loaded) {
-      toast.error(`Slot ${slotId} is empty.`);
+    const loadedResult = loadGameFromSlot(slotId);
+    if (!loadedResult.ok) {
+      if (loadedResult.reason === 'unavailable') {
+        toast.error('Browser storage is unavailable. Check privacy settings or use a different browser.');
+      } else if (loadedResult.reason === 'corrupt') {
+        toast.error(`Save data for Slot ${slotId} is corrupted.`);
+      } else {
+        toast.error(`Slot ${slotId} is empty.`);
+      }
       return;
     }
+
+    const loaded = loadedResult.state;
 
     // Back/forward compatibility: hydrate missing fields and refresh dialogue from the current tree when possible.
     const base = engineRef.current.createInitialState();
@@ -89,7 +101,14 @@ export function useGameState() {
       currentDialogueId?: string | null;
     };
 
-    const pendingEncounter = loadedAny.pendingEncounter ?? null;
+    const pendingEncounters = Array.isArray(loadedAny.pendingEncounters)
+      ? loadedAny.pendingEncounters
+      : loadedAny.pendingEncounter
+        ? [loadedAny.pendingEncounter]
+        : [];
+
+    const encounterResolvedOnTurn =
+      typeof loadedAny.encounterResolvedOnTurn === 'number' ? loadedAny.encounterResolvedOnTurn : null;
 
     const loadedDialogueId =
       typeof loadedAny.currentDialogueId === 'string'
@@ -108,17 +127,24 @@ export function useGameState() {
       turnNumber: typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber,
       rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
       world: loadedAny.world ?? base.world,
-      pendingEncounter,
+      pendingEncounters,
+      encounterResolvedOnTurn,
       currentDialogue: loadedDialogueId
-        ? loadedDialogueId.startsWith('encounter:') && pendingEncounter
-          ? buildEncounterDialogueNode(pendingEncounter)
+        ? loadedDialogueId.startsWith('encounter:')
+          ? (() => {
+              const encounterId = loadedDialogueId.slice('encounter:'.length);
+              const encounter = pendingEncounters.find(e => e.id === encounterId) ?? null;
+              return encounter
+                ? buildEncounterDialogueNode(encounter)
+                : dialogueTree[loadedDialogueId] ?? (loadedAny.currentDialogue as GameState['currentDialogue']);
+            })()
           : dialogueTree[loadedDialogueId] ?? (loadedAny.currentDialogue as GameState['currentDialogue'])
         : (loadedAny.currentDialogue as GameState['currentDialogue']) ?? null,
       // Always resume gameplay after loading a save.
       currentScene: 'game',
     };
 
-    setState(hydrated);
+    setState(engineRef.current.presentState ? engineRef.current.presentState(hydrated) : hydrated);
     refreshSlots();
     toast.success(`Loaded Slot ${slotId}`);
   }, [refreshSlots]);
@@ -137,19 +163,24 @@ export function useGameState() {
   const listSlots = useCallback(() => saveSlots, [saveSlots]);
 
   const makeChoice = useCallback((choice: DialogueChoice) => {
-    setState(prev => engineRef.current.applyChoice(prev, choice));
+    setState(prev => {
+      const next = engineRef.current.applyChoice(prev, choice);
+      return engineRef.current.presentState ? engineRef.current.presentState(next) : next;
+    });
   }, []);
 
   const resetGame = useCallback(() => {
-    setState(engineRef.current.createInitialState());
+    const reset = engineRef.current.createInitialState();
+    setState(engineRef.current.presentState ? engineRef.current.presentState(reset) : reset);
   }, []);
 
-  const enterPendingEncounter = useCallback(() => {
+  const enterPendingEncounter = useCallback((encounterId: string) => {
     setState(prev => {
-      if (!prev.pendingEncounter) return prev;
+      const encounter = prev.pendingEncounters.find(e => e.id === encounterId) ?? null;
+      if (!encounter) return prev;
       return {
         ...prev,
-        currentDialogue: buildEncounterDialogueNode(prev.pendingEncounter),
+        currentDialogue: buildEncounterDialogueNode(encounter),
       };
     });
   }, []);

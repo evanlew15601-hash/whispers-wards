@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeAll } from 'vitest';
 
 import { createUqmWasmConversationEngine } from './uqmWasmConversationEngine';
-import { tsConversationEngine } from './tsConversationEngine';
+import { createTsConversationEngine, tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { loadUqmMinimalWasmExports } from '@/test/uqmWasmTestUtils';
 import { dialogueTree } from '../data';
@@ -114,5 +114,230 @@ describe('uqmWasmConversationEngine', () => {
     expect(repWasm).toEqual(repTs);
 
     expect(nextWasmOverride.knownSecrets).toEqual(nextTsOverride.knownSecrets);
+  });
+
+  it('enforces once + requiresInfo + forbidsInfo gating in wasm engine wrapper (parity with TS)', () => {
+    const testTree = {
+      opening: {
+        id: 'opening',
+        speaker: 'Test',
+        speakerFaction: 'iron-pact',
+        text: 'Test opening',
+        choices: [
+          {
+            id: 'learn-intel',
+            text: 'Acquire the intel token.',
+            effects: [],
+            nextNodeId: 'opening',
+            revealsInfo: 'intel-token',
+          },
+          {
+            id: 'one-time-ask',
+            text: 'Ask the one-time question.',
+            effects: [],
+            nextNodeId: 'after',
+            once: true,
+            requiresInfo: 'intel-token',
+            revealsInfo: 'learned-answer',
+          },
+          {
+            id: 'forbidden-if-token',
+            text: 'This becomes blocked once you have the token.',
+            effects: [],
+            nextNodeId: null,
+            forbidsInfo: 'intel-token',
+          },
+        ],
+      },
+      after: {
+        id: 'after',
+        speaker: 'Test',
+        speakerFaction: 'iron-pact',
+        text: 'After node',
+        choices: [
+          {
+            id: 'back',
+            text: 'Back to opening.',
+            effects: [],
+            nextNodeId: 'opening',
+          },
+        ],
+      },
+      'concord-hub': {
+        id: 'concord-hub',
+        speaker: 'Hub',
+        speakerFaction: 'iron-pact',
+        text: 'Hub',
+        choices: [],
+      },
+    } as const;
+
+    const tsEngine = createTsConversationEngine(testTree as any);
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime, testTree as any);
+
+    const start = tsEngine.startNewGame();
+
+    const learnChoice = testTree.opening.choices.find(c => c.id === 'learn-intel')!;
+    const gatedChoice = testTree.opening.choices.find(c => c.id === 'one-time-ask')!;
+    const forbidsChoice = testTree.opening.choices.find(c => c.id === 'forbidden-if-token')!;
+
+    // UQM-style response pool presentation hides unavailable choices.
+    expect(start.currentDialogue!.choices.some(c => c.id === 'one-time-ask')).toBe(false);
+
+    // Both reject gated choice without intel.
+    expect(tsEngine.applyChoice(start, gatedChoice)).toBe(start);
+    expect(wasmEngine.applyChoice(start, gatedChoice)).toBe(start);
+
+    const withTokenTs = tsEngine.applyChoice(start, learnChoice);
+    const withTokenWasm = wasmEngine.applyChoice(start, learnChoice);
+
+    // Locked choices are hidden (TS and WASM parity).
+    expect(withTokenTs.currentDialogue!.choices.some(c => c.id === 'forbidden-if-token')).toBe(false);
+    expect(withTokenWasm.currentDialogue!.choices.some(c => c.id === 'forbidden-if-token')).toBe(false);
+
+    // Both reject forbids choice after token (even if forced).
+    expect(tsEngine.applyChoice(withTokenTs, forbidsChoice)).toBe(withTokenTs);
+    expect(wasmEngine.applyChoice(withTokenWasm, forbidsChoice)).toBe(withTokenWasm);
+
+    const askedTs = tsEngine.applyChoice(withTokenTs, gatedChoice);
+    const askedWasm = wasmEngine.applyChoice(withTokenWasm, gatedChoice);
+
+    expect(askedWasm.currentDialogue?.id).toBe(askedTs.currentDialogue?.id);
+    expect(askedWasm.knownSecrets).toEqual(askedTs.knownSecrets);
+
+    const backChoice = askedTs.currentDialogue!.choices[0];
+    const backTs = tsEngine.applyChoice(askedTs, backChoice);
+    const backWasm = wasmEngine.applyChoice(askedWasm, backChoice);
+
+    expect(backWasm.currentDialogue?.id).toBe(backTs.currentDialogue?.id);
+
+    // Both reject the once choice on revisit.
+    expect(tsEngine.applyChoice(backTs, gatedChoice)).toBe(backTs);
+    expect(wasmEngine.applyChoice(backWasm, gatedChoice)).toBe(backWasm);
+  });
+
+  it('override bypasses once + requiresInfo + forbidsInfo gating (parity)', () => {
+    const testTree = {
+      opening: {
+        id: 'opening',
+        speaker: 'Test',
+        speakerFaction: 'iron-pact',
+        text: 'Test opening',
+        choices: [
+          {
+            id: 'learn-intel',
+            text: 'Acquire the intel token.',
+            effects: [],
+            nextNodeId: 'opening',
+            revealsInfo: 'intel-token',
+          },
+          {
+            id: 'one-time-ask',
+            text: 'Ask the one-time question.',
+            effects: [],
+            nextNodeId: 'after',
+            once: true,
+            requiresInfo: 'intel-token',
+          },
+          {
+            id: 'forbidden-if-token',
+            text: 'This becomes blocked once you have the token.',
+            effects: [],
+            nextNodeId: 'after',
+            forbidsInfo: 'intel-token',
+          },
+        ],
+      },
+      after: {
+        id: 'after',
+        speaker: 'After',
+        speakerFaction: 'iron-pact',
+        text: 'After',
+        choices: [
+          {
+            id: 'back',
+            text: 'Back',
+            effects: [],
+            nextNodeId: 'opening',
+          },
+        ],
+      },
+      'concord-hub': {
+        id: 'concord-hub',
+        speaker: 'Hub',
+        speakerFaction: 'iron-pact',
+        text: 'Hub',
+        choices: [],
+      },
+    } as const;
+
+    const tsEngine = createTsConversationEngine(testTree as any);
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime, testTree as any);
+
+    const startBase = tsEngine.startNewGame();
+    const start = { ...startBase, knownSecrets: ['override'] };
+
+    const gatedChoice = testTree.opening.choices.find(c => c.id === 'one-time-ask')!;
+    const forbidsChoice = testTree.opening.choices.find(c => c.id === 'forbidden-if-token')!;
+    const learnChoice = testTree.opening.choices.find(c => c.id === 'learn-intel')!;
+
+    // With override, both engines allow the requiresInfo-gated choice even without intel.
+    const askedTs = tsEngine.applyChoice(start, gatedChoice);
+    const askedWasm = wasmEngine.applyChoice(start, gatedChoice);
+
+    expect(askedWasm.currentDialogue?.id).toBe(askedTs.currentDialogue?.id);
+    expect(askedWasm.knownSecrets).toEqual(askedTs.knownSecrets);
+
+    // Go back and take the once choice again (override bypasses once).
+    const backChoice = askedTs.currentDialogue!.choices[0];
+    const backTs = tsEngine.applyChoice(askedTs, backChoice);
+    const backWasm = wasmEngine.applyChoice(askedWasm, backChoice);
+
+    const askedTs2 = tsEngine.applyChoice(backTs, gatedChoice);
+    const askedWasm2 = wasmEngine.applyChoice(backWasm, gatedChoice);
+
+    expect(askedWasm2.currentDialogue?.id).toBe(askedTs2.currentDialogue?.id);
+    expect(askedWasm2.knownSecrets).toEqual(askedTs2.knownSecrets);
+
+    // Acquire the intel-token and then take a forbidsInfo choice anyway.
+    const withTokenTs = tsEngine.applyChoice(backTs, learnChoice);
+    const withTokenWasm = wasmEngine.applyChoice(backWasm, learnChoice);
+
+    const forbidsTs = tsEngine.applyChoice(withTokenTs, forbidsChoice);
+    const forbidsWasm = wasmEngine.applyChoice(withTokenWasm, forbidsChoice);
+
+    expect(forbidsWasm.currentDialogue?.id).toBe(forbidsTs.currentDialogue?.id);
+    expect(forbidsWasm.knownSecrets).toEqual(forbidsTs.knownSecrets);
+  });
+
+  it('caps visible choices at 8 (UQM MAX_RESPONSES)', () => {
+    const testTree = {
+      opening: {
+        id: 'opening',
+        speaker: 'Test',
+        speakerFaction: 'iron-pact',
+        text: 'Test opening',
+        choices: Array.from({ length: 10 }, (_, i) => ({
+          id: `c${i + 1}`,
+          text: `Choice ${i + 1}`,
+          effects: [],
+          nextNodeId: null,
+        })),
+      },
+      'concord-hub': {
+        id: 'concord-hub',
+        speaker: 'Hub',
+        speakerFaction: 'iron-pact',
+        text: 'Hub',
+        choices: [],
+      },
+    } as const;
+
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime, testTree as any);
+    const start = wasmEngine.startNewGame();
+
+    expect(start.currentDialogue?.id).toBe('opening');
+    expect(start.currentDialogue?.choices.length).toBe(8);
+    expect(start.currentDialogue?.choices.map(c => c.id)).toEqual(['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8']);
   });
 });

@@ -20,6 +20,7 @@ describe('encounter vignette templates', () => {
     const b = buildEncounterDialogueNode({ ...encounter });
 
     expect(a.text).toBe(b.text);
+    expect(a.textParts?.join('')).toBe(a.text);
     expect(a.text).toMatchInlineSnapshot(`"A clerk lays fresh tariff ledgers on the table. Ink still glistens.\n\nEmbargo crisis\n\nTrade has halted; petitions flood the hall.\n\n“If this embargo holds another week, the docks will choke. What is your instruction?”"`);
   });
 

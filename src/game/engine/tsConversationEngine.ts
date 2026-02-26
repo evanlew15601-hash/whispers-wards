@@ -5,8 +5,11 @@ import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
+import { getDialogueChoiceLock, getDialogueChoiceLockFromStateParts, getDialogueChoiceSecretsToAdd } from './dialogueChoiceLocks';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
+
+export const MAX_PENDING_ENCOUNTERS = 3;
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -20,31 +23,101 @@ const createInitialState = (): GameState => ({
   log: [],
   rngSeed: createInitialRngSeed(),
   world: createInitialWorldState(initialFactions),
-  pendingEncounter: null,
+  pendingEncounters: [],
+  encounterResolvedOnTurn: null,
 });
 
-const startNewGame = (): GameState => {
+function startNewGameWithTree(tree: typeof dialogueTree): GameState {
   const base = createInitialState();
   return {
     ...base,
     currentScene: 'game',
-    currentDialogue: dialogueTree['opening'],
+    currentDialogue: tree['opening'],
     log: [OPENING_LOG_LINE],
   };
-};
+}
 
-const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
-  const overrideLocked = prev.knownSecrets.includes('override');
-  const repReq = choice.requiredReputation;
-  if (repReq && !overrideLocked) {
-    const rep = prev.factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity;
-    if (rep < repReq.min) {
-      return prev;
-    }
+function presentDialogueNodeForResponsePool(state: GameState, tree: typeof dialogueTree): GameState {
+  if (!state.currentDialogue) return state;
+
+  const baseNode = tree[state.currentDialogue.id];
+  if (!baseNode) return state;
+
+  // Escape hatch used by tests/dev tooling: show the canonical node (including locked choices).
+  if (state.knownSecrets.includes('override')) {
+    if (state.currentDialogue === baseNode) return state;
+    return {
+      ...state,
+      currentDialogue: baseNode,
+    };
   }
 
-  const encounterPick = prev.pendingEncounter ? parseEncounterResolutionChoiceId(choice.id) : null;
-  if (prev.pendingEncounter && encounterPick && encounterPick.encounterId === prev.pendingEncounter.id) {
+  const availableChoices = baseNode.choices
+    .filter(choice => {
+      const lock = getDialogueChoiceLockFromStateParts({
+        knownSecrets: state.knownSecrets,
+        factions: state.factions,
+        choice,
+      });
+
+      return !lock.locked;
+    })
+    .slice(0, 8);
+
+  // If no choices are available, keep the base node as-is so the player can see
+  // what they are missing (reputation, intel, etc.).
+  if (availableChoices.length === 0) return state;
+
+  const currentChoices = state.currentDialogue.choices;
+  if (
+    currentChoices.length === availableChoices.length &&
+    currentChoices.every((c, i) => c.id === availableChoices[i]!.id)
+  ) {
+    return state;
+  }
+
+  return {
+    ...state,
+    currentDialogue: {
+      ...baseNode,
+      choices: availableChoices,
+    },
+  };
+}
+
+function applyChoiceWithTree(prev: GameState, choice: DialogueChoice, tree: typeof dialogueTree): GameState {
+  const lock = getDialogueChoiceLock(prev, choice);
+  if (lock.locked) return prev;
+
+  const encounterDeferPrefix = 'encounter-defer:';
+  if (choice.id.startsWith(encounterDeferPrefix)) {
+    const encounterId = choice.id.slice(encounterDeferPrefix.length);
+
+    if (prev.currentDialogue?.id !== `encounter:${encounterId}`) return prev;
+
+    return {
+      ...prev,
+      currentDialogue: tree['concord-hub'] ?? prev.currentDialogue,
+      log: [...prev.log, `> ${choice.text}`],
+    };
+  }
+
+  const encounterPick = parseEncounterResolutionChoiceId(choice.id);
+  const encounterInInbox = encounterPick
+    ? prev.pendingEncounters.find(e => e.id === encounterPick.encounterId) ?? null
+    : null;
+
+  const isEncounterDialogueForPick = encounterPick
+    ? prev.currentDialogue?.id === `encounter:${encounterPick.encounterId}`
+    : false;
+
+  if (encounterPick) {
+    if (!isEncounterDialogueForPick) return prev;
+    if (prev.encounterResolvedOnTurn === prev.turnNumber) return prev;
+
+    const encounter = encounterInInbox;
+    if (!encounter) return prev;
+
     // Even though encounter choices are dynamically generated, we still want to apply
     // any standard choice side-effects (rep, secrets, event triggers).
     const newFactions = prev.factions.map(f => {
@@ -57,7 +130,8 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       };
     });
 
-    const newSecrets = choice.revealsInfo ? [...prev.knownSecrets, choice.revealsInfo] : prev.knownSecrets;
+    const addedSecrets = getDialogueChoiceSecretsToAdd(choice);
+    const newSecrets = addedSecrets.length > 0 ? [...prev.knownSecrets, ...addedSecrets] : prev.knownSecrets;
 
     const newEvents = prev.events.map(event => {
       if (event.triggered || !event.triggerCondition) return event;
@@ -77,7 +151,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
     const resolved = resolveEncounter({
       world: prev.world,
-      encounter: prev.pendingEncounter,
+      encounter,
       turnNumber: prev.turnNumber,
       resolution: encounterPick.resolution,
     });
@@ -88,8 +162,9 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       events: newEvents,
       knownSecrets: [...new Set(newSecrets)],
       // Return to the main hall hub so the campaign continues.
-      currentDialogue: dialogueTree['concord-hub'] ?? prev.currentDialogue,
-      pendingEncounter: null,
+      currentDialogue: tree['concord-hub'] ?? prev.currentDialogue,
+      pendingEncounters: prev.pendingEncounters.filter(e => e.id !== encounter.id),
+      encounterResolvedOnTurn: prev.turnNumber,
       log: [
         ...prev.log,
         `> ${choice.text}`,
@@ -111,7 +186,8 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     };
   });
 
-  const newSecrets = choice.revealsInfo ? [...prev.knownSecrets, choice.revealsInfo] : prev.knownSecrets;
+  const addedSecrets = getDialogueChoiceSecretsToAdd(choice);
+  const newSecrets = addedSecrets.length > 0 ? [...prev.knownSecrets, ...addedSecrets] : prev.knownSecrets;
 
   // Check events
   const newEvents = prev.events.map(event => {
@@ -137,30 +213,31 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     ...(choice.revealsInfo ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
   ];
 
-  const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : null;
+  const nextDialogue = choice.nextNodeId ? tree[choice.nextNodeId] || null : null;
 
   const nextTurnNumber = prev.turnNumber + 1;
 
-  // `expiresOnTurn` is inclusive: the encounter expires only after turn N resolves
+  // `expiresOnTurn` is inclusive: an encounter expires only after turn N resolves
   // (i.e. it is still retained when `expiresOnTurn === nextTurnNumber`).
-  const existingEncounter =
-    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn >= nextTurnNumber ? prev.pendingEncounter : null;
+  const retainedEncounters = prev.pendingEncounters.filter(e => e.expiresOnTurn >= nextTurnNumber);
 
-  const expiredEncounter =
-    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn < nextTurnNumber ? prev.pendingEncounter : null;
+  const expiredEncounters = prev.pendingEncounters
+    .filter(e => e.expiresOnTurn < nextTurnNumber)
+    .slice()
+    .sort((a, b) => (a.expiresOnTurn - b.expiresOnTurn) || a.id.localeCompare(b.id));
 
-  // If an encounter just expired this turn, apply a deterministic consequence *before*
-  // running the world's simulation so that the consequence can influence the sim.
+  // If encounters expired this turn, apply deterministic consequences *before*
+  // running the world's simulation so that the consequences can influence the sim.
   let worldBeforeSim = prev.world;
-  let expiryLog: string[] = [];
-  if (expiredEncounter) {
+  const expiryLog: string[] = [];
+  for (const encounter of expiredEncounters) {
     const expired = applyExpiredEncounterConsequence({
       world: worldBeforeSim,
-      encounter: expiredEncounter,
+      encounter,
       turnNumber: nextTurnNumber,
     });
     worldBeforeSim = expired.world;
-    expiryLog = expired.logEntries;
+    expiryLog.push(...expired.logEntries);
   }
 
   // Turn-based world simulation runs after each player choice.
@@ -172,7 +249,17 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
   });
 
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
-  const nextEncounter = existingEncounter ?? sim.pendingEncounter;
+
+  const nextPendingEncounters = retainedEncounters.slice();
+
+  for (const encounter of sim.pendingEncounters) {
+    if (nextPendingEncounters.length >= MAX_PENDING_ENCOUNTERS) break;
+    if (!nextPendingEncounters.some(e => e.id === encounter.id)) {
+      nextPendingEncounters.push(encounter);
+    }
+  }
+
+  nextPendingEncounters.sort((a, b) => (a.expiresOnTurn - b.expiresOnTurn) || a.id.localeCompare(b.id));
 
   return {
     ...prev,
@@ -184,14 +271,24 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     log: [...newLog, ...worldLog, ...expiryLog],
     world: sim.world,
     rngSeed: sim.rngSeed,
-    pendingEncounter: nextEncounter,
+    pendingEncounters: nextPendingEncounters,
   };
-};
+}
 
-export const tsConversationEngine: ConversationEngine = {
-  createInitialState,
-  startNewGame,
-  applyChoice,
-};
+export function createTsConversationEngine(tree: typeof dialogueTree = dialogueTree): ConversationEngine {
+  const present = (state: GameState) => presentDialogueNodeForResponsePool(state, tree);
+
+  return {
+    createInitialState: () => present(createInitialState()),
+    startNewGame: () => present(startNewGameWithTree(tree)),
+    applyChoice(prev, choice) {
+      const next = applyChoiceWithTree(prev, choice, tree);
+      return next === prev ? prev : present(next);
+    },
+    presentState: present,
+  };
+}
+
+export const tsConversationEngine: ConversationEngine = createTsConversationEngine();
 
 export const TS_OPENING_LOG_LINE = OPENING_LOG_LINE;

@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+.env
+
 # Generated WASM (built via scripts/build-uqm-minimal-wasm.mjs)
 public/wasm/*.wasm
 

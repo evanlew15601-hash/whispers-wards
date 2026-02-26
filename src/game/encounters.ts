@@ -140,11 +140,34 @@ export function buildEncounterDialogueNode(encounter: SecondaryEncounter): Dialo
   const kind: SecondaryEncounterKind = encounter.kind ?? 'summit';
   const vignette = pickEncounterVignette(encounter);
 
+  const textParts = [
+    vignette.preface,
+    '\n\n',
+    encounter.title,
+    '\n\n',
+    encounter.description,
+    '\n\n',
+    vignette.prompt,
+  ];
+
+  const choices = resolutionChoicesFor(kind, encounter.id, vignette.choiceTexts);
+
+  // Allow the player to read an encounter and return to the hall without resolving it.
+  // This is intentionally not an "encounter:"-prefixed id so it cannot be mis-parsed
+  // as a resolution choice.
+  choices.push({
+    id: `encounter-defer:${encounter.id}`,
+    text: 'Defer — return to the Concord Hall.',
+    effects: [],
+    nextNodeId: null,
+  });
+
   return {
     id: `encounter:${encounter.id}`,
     speaker: vignette.speaker,
-    text: `${vignette.preface}\n\n${encounter.title}\n\n${encounter.description}\n\n${vignette.prompt}`,
-    choices: resolutionChoicesFor(kind, encounter.id, vignette.choiceTexts),
+    text: textParts.join(''),
+    textParts,
+    choices,
   };
 }
 

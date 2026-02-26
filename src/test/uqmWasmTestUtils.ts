@@ -5,9 +5,12 @@ import path from 'node:path';
 export type UqmMinimalNormalizedExports = {
   memory: WebAssembly.Memory;
   uqm_alloc: (size: number) => number;
+  uqm_alloc_mark: () => number;
+  uqm_alloc_reset: (mark: number) => void;
   uqm_version_ptr: () => number;
   uqm_version_len: () => number;
   uqm_line_fit_chars: (strPtr: number, maxWidth: number) => number;
+  uqm_construct_response: (outPtr: number, outCap: number, partsPtr: number) => number;
 
   uqm_conv_reset: (startNode: number, rep0: number, rep1: number, rep2: number, secrets: number) => void;
   uqm_conv_set_graph: (nodesPtr: number, choicesPtr: number) => void;
@@ -16,6 +19,9 @@ export type UqmMinimalNormalizedExports = {
   uqm_conv_get_secrets: () => number;
   uqm_conv_get_choice_count: () => number;
   uqm_conv_choice_is_locked: (localIdx: number) => number;
+  uqm_conv_get_available_choice_count: () => number;
+  uqm_conv_get_available_choice_local_index: (visibleIdx: number) => number;
+  uqm_conv_choose_available: (visibleIdx: number) => number;
   uqm_conv_choose: (localIdx: number) => number;
 };
 
@@ -51,11 +57,11 @@ export function ensureUqmMinimalWasmBuilt(): void {
   const wasmPath = path.join(process.cwd(), 'public', 'wasm', 'uqm_minimal.wasm');
   const lockPath = `${wasmPath}.lock`;
 
-  // If a previous step (e.g. `pretest`) already built the artifact, skip spawning.
+  // If a previous step (e.g. `pretest`) already built the artifact, still run
+  // the build script so it can decide if the artifact is up-to-date. This avoids
+  // test flakiness when sources change but an older wasm file is present.
   if (fs.existsSync(wasmPath)) {
     waitForFileReady(wasmPath);
-    g[BUILT_KEY] = true;
-    return;
   }
 
   let lockFd: number | null = null;
@@ -132,9 +138,12 @@ export async function loadUqmMinimalWasmExports(): Promise<UqmMinimalNormalizedE
   return {
     memory,
     uqm_alloc: getFunction(raw, ['uqm_alloc', '_uqm_alloc']),
+    uqm_alloc_mark: getFunction(raw, ['uqm_alloc_mark', '_uqm_alloc_mark']),
+    uqm_alloc_reset: getFunction(raw, ['uqm_alloc_reset', '_uqm_alloc_reset']),
     uqm_version_ptr: getFunction(raw, ['uqm_version_ptr', 'uqm_version', '_uqm_version_ptr', '_uqm_version']),
     uqm_version_len: getFunction(raw, ['uqm_version_len', '_uqm_version_len']),
     uqm_line_fit_chars: getFunction(raw, ['uqm_line_fit_chars', '_uqm_line_fit_chars']),
+    uqm_construct_response: getFunction(raw, ['uqm_construct_response', '_uqm_construct_response']),
 
     uqm_conv_reset: getFunction(raw, ['uqm_conv_reset', '_uqm_conv_reset']),
     uqm_conv_set_graph: getFunction(raw, ['uqm_conv_set_graph', '_uqm_conv_set_graph']),
@@ -143,6 +152,9 @@ export async function loadUqmMinimalWasmExports(): Promise<UqmMinimalNormalizedE
     uqm_conv_get_secrets: getFunction(raw, ['uqm_conv_get_secrets', '_uqm_conv_get_secrets']),
     uqm_conv_get_choice_count: getFunction(raw, ['uqm_conv_get_choice_count', '_uqm_conv_get_choice_count']),
     uqm_conv_choice_is_locked: getFunction(raw, ['uqm_conv_choice_is_locked', '_uqm_conv_choice_is_locked']),
+    uqm_conv_get_available_choice_count: getFunction(raw, ['uqm_conv_get_available_choice_count', '_uqm_conv_get_available_choice_count']),
+    uqm_conv_get_available_choice_local_index: getFunction(raw, ['uqm_conv_get_available_choice_local_index', '_uqm_conv_get_available_choice_local_index']),
+    uqm_conv_choose_available: getFunction(raw, ['uqm_conv_choose_available', '_uqm_conv_choose_available']),
     uqm_conv_choose: getFunction(raw, ['uqm_conv_choose', '_uqm_conv_choose']),
   };
 }

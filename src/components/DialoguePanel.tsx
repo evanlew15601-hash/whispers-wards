@@ -1,7 +1,9 @@
 import { DialogueNode, DialogueChoice, Faction } from '@/game/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Fragment, useEffect, useState } from 'react';
+import { constructResponseUqm } from '@/game/engine/uqmConstructResponse';
 import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } from '@/game/engine/uqmTextWrap';
+import { getDialogueChoiceLockFromStateParts } from '@/game/engine/dialogueChoiceLocks';
 
 interface DialoguePanelProps {
   node: DialogueNode;
@@ -33,7 +35,8 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
     setDialogueLines(wrapTextLinesJs(node.text, DIALOGUE_MAX_COLUMNS));
 
     void (async () => {
-      const lines = await wrapTextLinesUqm(node.text, DIALOGUE_MAX_COLUMNS);
+      const text = node.textParts ? await constructResponseUqm(node.textParts) : node.text;
+      const lines = await wrapTextLinesUqm(text, DIALOGUE_MAX_COLUMNS);
       if (!cancelled) setDialogueLines(lines);
     })();
 
@@ -109,18 +112,29 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
             Your Response
           </span>
           {node.choices.map((choice, i) => {
+            const lock = getDialogueChoiceLockFromStateParts({
+              knownSecrets,
+              factions,
+              choice,
+            });
+
             const repReq = choice.requiredReputation;
-            const repOk = repReq
-              ? (factions.find(f => f.id === repReq.factionId)?.reputation ?? -1000) >= repReq.min
-              : true;
-
-            // Future-proofing: allow certain secrets to override locks.
-            const override = knownSecrets.includes('override');
-            const locked = Boolean(repReq) && !repOk && !override;
-
             const reqFactionName = repReq
               ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
               : null;
+
+            const locked = lock.locked;
+
+            const title =
+              locked && lock.reason === 'requires-reputation' && repReq
+                ? `Requires ${reqFactionName} reputation ≥ ${repReq.min}`
+                : locked && lock.reason === 'requires-info' && choice.requiresInfo
+                ? `Requires info: ${choice.requiresInfo}`
+                : locked && lock.reason === 'forbids-info' && choice.forbidsInfo
+                ? `Blocked by info: ${choice.forbidsInfo}`
+                : locked && lock.reason === 'used'
+                ? 'Already asked'
+                : undefined;
 
             const lines = choiceLines[choice.id] ?? [choice.text];
 
@@ -129,13 +143,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
                 key={choice.id}
                 type="button"
                 disabled={locked}
-                title={locked && repReq ? `Requires ${reqFactionName} reputation ≥ ${repReq.min}` : undefined}
+                title={title}
                 onClick={() => !locked && onChoice(choice)}
                 className={`group relative rounded-sm border border-border bg-secondary/50 p-4 text-left font-body text-sm transition-all sm:text-base
-                  ${locked
-                    ? 'cursor-not-allowed opacity-40'
-                    : 'hover:border-primary/50 hover:bg-secondary'
-                  }`}
+                  ${locked ? 'cursor-not-allowed opacity-40' : 'hover:border-primary/50 hover:bg-secondary'}`}
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.8 + i * 0.15, duration: 0.4 }}
@@ -152,11 +163,27 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
 
                 {/* Effect indicators */}
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {repReq && locked && (
+                  {locked && lock.reason === 'requires-reputation' && repReq && (
                     <span className="text-[10px] font-display tracking-wider text-muted-foreground">
                       🔒 requires {repReq.factionId.replace('-', ' ')} ≥ {repReq.min}
                     </span>
                   )}
+                  {locked && lock.reason === 'requires-info' && choice.requiresInfo && (
+                    <span className="text-[10px] font-display tracking-wider text-muted-foreground">
+                      🔒 requires intel
+                    </span>
+                  )}
+                  {locked && lock.reason === 'forbids-info' && choice.forbidsInfo && (
+                    <span className="text-[10px] font-display tracking-wider text-muted-foreground">
+                      🔒 blocked
+                    </span>
+                  )}
+                  {locked && lock.reason === 'used' && (
+                    <span className="text-[10px] font-display tracking-wider text-muted-foreground">
+                      🔒 already asked
+                    </span>
+                  )}
+
                   {choice.effects.map(effect => (
                     <span
                       key={effect.factionId}
@@ -174,6 +201,11 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
                   {choice.revealsInfo && (
                     <span className="text-[10px] font-display tracking-wider text-accent">
                       🔍 reveals info
+                    </span>
+                  )}
+                  {choice.once && (
+                    <span className="text-[10px] font-display tracking-wider text-muted-foreground">
+                      ⟳ one-time
                     </span>
                   )}
                 </div>

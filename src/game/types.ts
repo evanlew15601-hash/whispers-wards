@@ -18,6 +18,13 @@ export interface DialogueChoice {
   nextNodeId: string | null; // null = end conversation
   requiredReputation?: { factionId: string; min: number };
   revealsInfo?: string;
+
+  /** If true, the response can only be selected once per save; afterwards it becomes locked. */
+  once?: boolean;
+  /** Requires the given info/secret to be present in `knownSecrets`. */
+  requiresInfo?: string;
+  /** Requires the given info/secret to be absent from `knownSecrets`. */
+  forbidsInfo?: string;
 }
 
 export interface DialogueNode {
@@ -25,6 +32,8 @@ export interface DialogueNode {
   speaker: string;
   speakerFaction?: string;
   text: string;
+  /** Optional multi-part source used for UQM wasm response construction in the UI layer. */
+  textParts?: string[];
   choices: DialogueChoice[];
 }
 
@@ -100,5 +109,10 @@ export interface GameState {
   log: string[];
   rngSeed: number;
   world: WorldState;
-  pendingEncounter: SecondaryEncounter | null;
+
+  /** Inbox of currently pending secondary encounters. */
+  pendingEncounters: SecondaryEncounter[];
+
+  /** Turn number on which the player last resolved an encounter (attention budget: max 1 per turn). */
+  encounterResolvedOnTurn: number | null;
 }

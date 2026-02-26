@@ -31,9 +31,12 @@
   Exports:
     - memory
     - uqm_alloc (bump allocator)
+    - uqm_alloc_mark / uqm_alloc_reset (scratch allocator helpers)
     - uqm_version_ptr / uqm_version_len
     - uqm_line_fit_chars(ptr, maxWidth) -> number of characters that fit
       in maxWidth columns without breaking a word.
+    - uqm_construct_response(outPtr, outCap, partsPtr) -> bytesWritten
+      (concatenate a NULL-terminated u32 pointer array of C-strings)
     - uqm_conv_* conversation API (see uqm_min.c for layout details)
 ;)
 
@@ -82,6 +85,22 @@
     )
 
     (local.get $p)
+  )
+
+  ;; uint32_t uqm_alloc_mark(void)
+  (func (export "uqm_alloc_mark") (result i32)
+    (global.get $heap_ptr)
+  )
+
+  ;; void uqm_alloc_reset(uint32_t mark)
+  (func (export "uqm_alloc_reset") (param $mark i32)
+    ;; heap_ptr = align8(mark)
+    (global.set $heap_ptr
+      (i32.and
+        (i32.add (local.get $mark) (i32.const 7))
+        (i32.const -8)
+      )
+    )
   )
 
   ;; Helper: load byte at ptr
@@ -180,6 +199,77 @@
     (local.get $count)
   )
 
+  ;; uint32_t uqm_construct_response(uint8_t* outBuf, uint32_t outCap, const uint32_t* parts)
+  ;; ABI: (outPtr: i32, outCap: i32, partsPtr: i32) -> i32
+  (func (export "uqm_construct_response") (param $outPtr i32) (param $outCap i32) (param $partsPtr i32) (result i32)
+    (local $written i32)
+    (local $maxBytes i32)
+    (local $arr i32)
+    (local $p i32)
+    (local $s i32)
+    (local $b i32)
+
+    (local.set $written (i32.const 0))
+
+    (if (i32.eqz (local.get $outCap))
+      (then (return (i32.const 0)))
+    )
+
+    (local.set $maxBytes (i32.sub (local.get $outCap) (i32.const 1)))
+
+    (block $done
+      (if (i32.eqz (local.get $partsPtr))
+        (then (br $done))
+      )
+
+      (local.set $arr (local.get $partsPtr))
+
+      (block $partsDone
+        (loop $partsLoop
+          (local.set $p (i32.load (local.get $arr)))
+          (if (i32.eqz (local.get $p))
+            (then (br $partsDone))
+          )
+
+          (local.set $arr (i32.add (local.get $arr) (i32.const 4)))
+          (local.set $s (local.get $p))
+
+          (block $stringDone
+            (loop $stringLoop
+              (local.set $b (call $load8 (local.get $s)))
+              (if (i32.eqz (local.get $b))
+                (then (br $stringDone))
+              )
+
+              (if (i32.ge_u (local.get $written) (local.get $maxBytes))
+                (then (br $done))
+              )
+
+              (i32.store8
+                (i32.add (local.get $outPtr) (local.get $written))
+                (local.get $b)
+              )
+
+              (local.set $written (i32.add (local.get $written) (i32.const 1)))
+              (local.set $s (i32.add (local.get $s) (i32.const 1)))
+              (br $stringLoop)
+            )
+          )
+
+          (br $partsLoop)
+        )
+      )
+    )
+
+    ;; Always NUL-terminate when outCap > 0.
+    (i32.store8
+      (i32.add (local.get $outPtr) (local.get $written))
+      (i32.const 0)
+    )
+
+    (local.get $written)
+  )
+
   (func $conv_node_meta_ptr (result i32)
     (local $nodes i32)
     (local $nodeCount i32)
@@ -261,6 +351,9 @@
     (local $reqFaction i32)
     (local $reqMin i32)
     (local $rep i32)
+    (local $requiresMask i32)
+    (local $forbidsMask i32)
+    (local $usedMask i32)
 
     (local.set $nodePtr (call $conv_node_meta_ptr))
     (if (i32.eqz (local.get $nodePtr))
@@ -286,7 +379,27 @@
       (then (return (i32.const 1)))
     )
 
-    (local.set $choicePtr (i32.add (local.get $choicesBase) (i32.mul (local.get $absChoice) (i32.const 18))))
+    ;; ChoiceMeta is packed (30 bytes).
+    (local.set $choicePtr (i32.add (local.get $choicesBase) (i32.mul (local.get $absChoice) (i32.const 30))))
+
+    (local.set $requiresMask (i32.load offset=18 (local.get $choicePtr)))
+    (local.set $forbidsMask (i32.load offset=22 (local.get $choicePtr)))
+    (local.set $usedMask (i32.load offset=26 (local.get $choicePtr)))
+
+    ;; once: locked if any usedMask bit is already present
+    (if (i32.ne (i32.and (local.get $usedMask) (global.get $conv_secrets)) (i32.const 0))
+      (then (return (i32.const 1)))
+    )
+
+    ;; requiresInfo: locked unless all required bits are present
+    (if (i32.ne (i32.and (local.get $requiresMask) (global.get $conv_secrets)) (local.get $requiresMask))
+      (then (return (i32.const 1)))
+    )
+
+    ;; forbidsInfo: locked if any forbidden bit is present
+    (if (i32.ne (i32.and (local.get $forbidsMask) (global.get $conv_secrets)) (i32.const 0))
+      (then (return (i32.const 1)))
+    )
 
     (local.set $reqFaction (i32.load16_s offset=10 (local.get $choicePtr)))
     (local.set $reqMin (i32.load16_s offset=12 (local.get $choicePtr)))
@@ -318,7 +431,7 @@
     (i32.const 0)
   )
 
-  (func (export "uqm_conv_choose") (param $localIdx i32) (result i32)
+  (func $uqm_conv_choose (export "uqm_conv_choose") (param $localIdx i32) (result i32)
     (local $nodePtr i32)
     (local $choicesBase i32)
     (local $firstChoice i32)
@@ -330,6 +443,7 @@
     (local $d1 i32)
     (local $d2 i32)
     (local $reveal i32)
+    (local $usedMask i32)
 
     (if (call $uqm_conv_choice_is_locked (local.get $localIdx))
       (then (return (i32.const -1)))
@@ -346,20 +460,109 @@
       (then (return (i32.const -1)))
     )
 
-    (local.set $choicePtr (i32.add (local.get $choicesBase) (i32.mul (local.get $absChoice) (i32.const 18))))
+    ;; ChoiceMeta is packed (30 bytes).
+    (local.set $choicePtr (i32.add (local.get $choicesBase) (i32.mul (local.get $absChoice) (i32.const 30))))
 
     (local.set $nextNode (i32.load (local.get $choicePtr)))
     (local.set $d0 (i32.load16_s offset=4 (local.get $choicePtr)))
     (local.set $d1 (i32.load16_s offset=6 (local.get $choicePtr)))
     (local.set $d2 (i32.load16_s offset=8 (local.get $choicePtr)))
     (local.set $reveal (i32.load offset=14 (local.get $choicePtr)))
+    (local.set $usedMask (i32.load offset=26 (local.get $choicePtr)))
 
     (global.set $conv_rep0 (i32.add (global.get $conv_rep0) (local.get $d0)))
     (global.set $conv_rep1 (i32.add (global.get $conv_rep1) (local.get $d1)))
     (global.set $conv_rep2 (i32.add (global.get $conv_rep2) (local.get $d2)))
-    (global.set $conv_secrets (i32.or (global.get $conv_secrets) (local.get $reveal)))
+
+    (global.set $conv_secrets
+      (i32.or
+        (global.get $conv_secrets)
+        (i32.or (local.get $reveal) (local.get $usedMask))
+      )
+    )
 
     (global.set $conv_currentNode (local.get $nextNode))
     (local.get $nextNode)
+  )
+
+  ;; UQM-style response list helpers.
+  ;; In Star Control II / UQM, the player response list is capped at MAX_RESPONSES (8).
+  (func $uqm_conv_get_available_choice_count (export "uqm_conv_get_available_choice_count") (result i32)
+    (local $choiceCount i32)
+    (local $i i32)
+    (local $found i32)
+
+    (local.set $choiceCount (call $uqm_conv_get_choice_count))
+    (local.set $i (i32.const 0))
+    (local.set $found (i32.const 0))
+
+    (block $done
+      (loop $loop
+        (br_if $done (i32.ge_u (local.get $i) (local.get $choiceCount)))
+
+        (if (i32.eqz (call $uqm_conv_choice_is_locked (local.get $i)))
+          (then
+            (local.set $found (i32.add (local.get $found) (i32.const 1)))
+            (br_if $done (i32.ge_u (local.get $found) (i32.const 8)))
+          )
+        )
+
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (local.get $found)
+  )
+
+  ;; i32 uqm_conv_get_available_choice_local_index(i32 visibleIdx)
+  ;; Returns the local choice index (0..choiceCount-1) for the Nth available choice,
+  ;; where "available" means "not locked". Returns -1 if not found.
+  (func $uqm_conv_get_available_choice_local_index (export "uqm_conv_get_available_choice_local_index") (param $visibleIdx i32) (result i32)
+    (local $choiceCount i32)
+    (local $i i32)
+    (local $found i32)
+
+    (if (i32.lt_s (local.get $visibleIdx) (i32.const 0))
+      (then (return (i32.const -1)))
+    )
+
+    (local.set $choiceCount (call $uqm_conv_get_choice_count))
+    (local.set $i (i32.const 0))
+    (local.set $found (i32.const 0))
+
+    (block $done
+      (loop $loop
+        (br_if $done (i32.ge_u (local.get $i) (local.get $choiceCount)))
+
+        (if (i32.eqz (call $uqm_conv_choice_is_locked (local.get $i)))
+          (then
+            (if (i32.eq (local.get $found) (local.get $visibleIdx))
+              (then (return (local.get $i)))
+            )
+
+            (local.set $found (i32.add (local.get $found) (i32.const 1)))
+            (br_if $done (i32.ge_u (local.get $found) (i32.const 8)))
+          )
+        )
+
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (i32.const -1)
+  )
+
+  ;; i32 uqm_conv_choose_available(i32 visibleIdx)
+  (func $uqm_conv_choose_available (export "uqm_conv_choose_available") (param $visibleIdx i32) (result i32)
+    (local $localIdx i32)
+
+    (local.set $localIdx (call $uqm_conv_get_available_choice_local_index (local.get $visibleIdx)))
+    (if (i32.lt_s (local.get $localIdx) (i32.const 0))
+      (then (return (i32.const -1)))
+    )
+
+    (call $uqm_conv_choose (local.get $localIdx))
   )
 )

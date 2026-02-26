@@ -6,6 +6,7 @@ import DialoguePanel from '@/components/DialoguePanel';
 import FactionPanel from '@/components/FactionPanel';
 import InfoPanel from '@/components/InfoPanel';
 import GameMenu from '@/components/GameMenu';
+import EncounterInboxDialog from '@/components/EncounterInboxDialog';
 import { Button } from '@/components/ui/button';
 
 interface GameScreenProps {
@@ -18,7 +19,7 @@ interface GameScreenProps {
   loadFromSlot: (slotId: number) => void;
   deleteSlot: (slotId: number) => void;
   exitToTitle: () => void;
-  enterPendingEncounter: () => void;
+  enterPendingEncounter: (encounterId: string) => void;
 }
 
 type GameMenuTab = 'save' | 'load' | 'campaign' | 'about';
@@ -48,10 +49,11 @@ const GameScreen = ({
   const conversationEnded = !state.currentDialogue;
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
+  const [inboxOpen, setInboxOpen] = useState(false);
 
   const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
   const canAddressEncounter = state.currentDialogue?.id === 'concord-hub';
-  const shouldShowEncounterPrompt = Boolean(state.pendingEncounter && canAddressEncounter && !isEncounterDialogue);
+  const shouldShowEncounterPrompt = state.pendingEncounters.length > 0 && canAddressEncounter && !isEncounterDialogue;
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -138,14 +140,27 @@ const GameScreen = ({
               {shouldShowEncounterPrompt && (
                 <div className="parchment-border mb-4 flex items-center justify-between gap-4 rounded-sm bg-card p-4">
                   <div>
-                    <div className="font-display text-xs tracking-[0.2em] text-primary uppercase">Pending encounter</div>
-                    <div className="mt-1 text-sm text-card-foreground">An encounter awaits your attention.</div>
+                    <div className="font-display text-xs tracking-[0.2em] text-primary uppercase">Pending encounters</div>
+                    <div className="mt-1 text-sm text-card-foreground">
+                      {state.pendingEncounters.length} encounter{state.pendingEncounters.length === 1 ? '' : 's'} await your attention.
+                    </div>
                   </div>
-                  <Button onClick={enterPendingEncounter} className="font-display tracking-[0.18em] uppercase">
-                    Address encounter
+                  <Button onClick={() => setInboxOpen(true)} className="font-display tracking-[0.18em] uppercase">
+                    Review
                   </Button>
                 </div>
               )}
+
+              <EncounterInboxDialog
+                open={inboxOpen}
+                onOpenChange={setInboxOpen}
+                encounters={state.pendingEncounters}
+                turnNumber={state.turnNumber}
+                onSelectEncounter={encounterId => {
+                  setInboxOpen(false);
+                  enterPendingEncounter(encounterId);
+                }}
+              />
 
               <DialoguePanel
                 node={state.currentDialogue!}
@@ -164,7 +179,7 @@ const GameScreen = ({
             log={state.log}
             world={state.world}
             factions={state.factions}
-            pendingEncounter={state.pendingEncounter}
+            pendingEncounters={state.pendingEncounters}
             canAddressEncounter={canAddressEncounter}
             onAddressEncounter={enterPendingEncounter}
           />

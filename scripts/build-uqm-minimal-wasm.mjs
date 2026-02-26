@@ -58,9 +58,12 @@ function validateWasm(bytes) {
     const ok = (names) => names.some((n) => n in exp && typeof exp[n] === 'function');
 
     if (!ok(['uqm_alloc', '_uqm_alloc'])) return false;
+    if (!ok(['uqm_alloc_mark', '_uqm_alloc_mark'])) return false;
+    if (!ok(['uqm_alloc_reset', '_uqm_alloc_reset'])) return false;
     if (!ok(['uqm_version_ptr', 'uqm_version', '_uqm_version_ptr', '_uqm_version'])) return false;
     if (!ok(['uqm_version_len', '_uqm_version_len'])) return false;
     if (!ok(['uqm_line_fit_chars', '_uqm_line_fit_chars'])) return false;
+    if (!ok(['uqm_construct_response', '_uqm_construct_response'])) return false;
 
     if (!ok(['uqm_conv_reset', '_uqm_conv_reset'])) return false;
     if (!ok(['uqm_conv_set_graph', '_uqm_conv_set_graph'])) return false;
@@ -69,6 +72,9 @@ function validateWasm(bytes) {
     if (!ok(['uqm_conv_get_secrets', '_uqm_conv_get_secrets'])) return false;
     if (!ok(['uqm_conv_get_choice_count', '_uqm_conv_get_choice_count'])) return false;
     if (!ok(['uqm_conv_choice_is_locked', '_uqm_conv_choice_is_locked'])) return false;
+    if (!ok(['uqm_conv_get_available_choice_count', '_uqm_conv_get_available_choice_count'])) return false;
+    if (!ok(['uqm_conv_get_available_choice_local_index', '_uqm_conv_get_available_choice_local_index'])) return false;
+    if (!ok(['uqm_conv_choose_available', '_uqm_conv_choose_available'])) return false;
     if (!ok(['uqm_conv_choose', '_uqm_conv_choose'])) return false;
 
     return true;
@@ -93,21 +99,44 @@ try {
 
 let built = false;
 
-// Prefer native toolchains if present.
-const clangCandidates = ['clang', 'clang-18', 'clang-17', 'clang-16'];
-for (const clang of clangCandidates) {
-  if (!commandExists(clang)) continue;
+const preferredToolchain = (process.env.UQM_WASM_TOOLCHAIN ?? 'auto').toLowerCase();
 
-  console.log(`[uqm-wasm] trying toolchain: ${clang} (wasm32-unknown-unknown)`);
-  built = tryRun(clang, [
-    '--target=wasm32-unknown-unknown',
+function shouldTry(name) {
+  return preferredToolchain === 'auto' || preferredToolchain === name;
+}
+
+function validateOut() {
+  try {
+    const bytes = fs.readFileSync(outWasm);
+    return validateWasm(bytes);
+  } catch {
+    return false;
+  }
+}
+
+// Option 1 toolchain strategy:
+// - Prefer system toolchains when present (zig/clang/emcc).
+// - Always provide a zero-native-deps fallback via wabt+WAT.
+//
+// For reproducible builds on developer machines, you can install Zig and run:
+//   UQM_WASM_TOOLCHAIN=zig npm run build:uqm-wasm
+if (!built && shouldTry('zig') && commandExists('zig')) {
+  console.log('[uqm-wasm] trying toolchain: zig cc (wasm32-freestanding)');
+
+  built = tryRun('zig', [
+    'cc',
+    '-target',
+    'wasm32-freestanding',
     '-O3',
     '-nostdlib',
     '-Wl,--no-entry',
     '-Wl,--export=uqm_alloc',
+    '-Wl,--export=uqm_alloc_mark',
+    '-Wl,--export=uqm_alloc_reset',
     '-Wl,--export=uqm_version_ptr',
     '-Wl,--export=uqm_version_len',
     '-Wl,--export=uqm_line_fit_chars',
+    '-Wl,--export=uqm_construct_response',
     '-Wl,--export=uqm_conv_reset',
     '-Wl,--export=uqm_conv_set_graph',
     '-Wl,--export=uqm_conv_get_current_node',
@@ -115,6 +144,9 @@ for (const clang of clangCandidates) {
     '-Wl,--export=uqm_conv_get_secrets',
     '-Wl,--export=uqm_conv_get_choice_count',
     '-Wl,--export=uqm_conv_choice_is_locked',
+    '-Wl,--export=uqm_conv_get_available_choice_count',
+    '-Wl,--export=uqm_conv_get_available_choice_local_index',
+    '-Wl,--export=uqm_conv_choose_available',
     '-Wl,--export=uqm_conv_choose',
     '-Wl,--export-memory',
     '-Wl,--strip-all',
@@ -123,20 +155,54 @@ for (const clang of clangCandidates) {
     srcC,
   ]);
 
-  if (built) {
-    try {
-      const bytes = fs.readFileSync(outWasm);
-      built = validateWasm(bytes);
-    } catch {
-      built = false;
-    }
-  }
-
-  if (built) break;
+  if (built) built = validateOut();
 }
 
-if (!built && commandExists('emcc')) {
-  console.log('[uqm-wasm] clang wasm build failed; trying toolchain: emcc');
+// Prefer native toolchains if present.
+if (!built && shouldTry('clang')) {
+  const clangCandidates = ['clang', 'clang-18', 'clang-17', 'clang-16'];
+  for (const clang of clangCandidates) {
+    if (!commandExists(clang)) continue;
+
+    console.log(`[uqm-wasm] trying toolchain: ${clang} (wasm32-unknown-unknown)`);
+    built = tryRun(clang, [
+      '--target=wasm32-unknown-unknown',
+      '-O3',
+      '-nostdlib',
+      '-Wl,--no-entry',
+      '-Wl,--export=uqm_alloc',
+      '-Wl,--export=uqm_alloc_mark',
+      '-Wl,--export=uqm_alloc_reset',
+      '-Wl,--export=uqm_version_ptr',
+      '-Wl,--export=uqm_version_len',
+      '-Wl,--export=uqm_line_fit_chars',
+      '-Wl,--export=uqm_construct_response',
+      '-Wl,--export=uqm_conv_reset',
+      '-Wl,--export=uqm_conv_set_graph',
+      '-Wl,--export=uqm_conv_get_current_node',
+      '-Wl,--export=uqm_conv_get_rep',
+      '-Wl,--export=uqm_conv_get_secrets',
+      '-Wl,--export=uqm_conv_get_choice_count',
+      '-Wl,--export=uqm_conv_choice_is_locked',
+      '-Wl,--export=uqm_conv_get_available_choice_count',
+      '-Wl,--export=uqm_conv_get_available_choice_local_index',
+      '-Wl,--export=uqm_conv_choose_available',
+      '-Wl,--export=uqm_conv_choose',
+      '-Wl,--export-memory',
+      '-Wl,--strip-all',
+      '-o',
+      outWasm,
+      srcC,
+    ]);
+
+    if (built) built = validateOut();
+
+    if (built) break;
+  }
+}
+
+if (!built && shouldTry('emcc') && commandExists('emcc')) {
+  console.log('[uqm-wasm] trying toolchain: emcc');
 
   built = tryRun('emcc', [
     srcC,
@@ -146,23 +212,41 @@ if (!built && commandExists('emcc')) {
     '-s',
     'ERROR_ON_UNDEFINED_SYMBOLS=1',
     '-s',
-    'EXPORTED_FUNCTIONS=["_uqm_alloc","_uqm_version_ptr","_uqm_version_len","_uqm_line_fit_chars","_uqm_conv_reset","_uqm_conv_set_graph","_uqm_conv_get_current_node","_uqm_conv_get_rep","_uqm_conv_get_secrets","_uqm_conv_get_choice_count","_uqm_conv_choice_is_locked","_uqm_conv_choose"]',
+    'EXPORTED_FUNCTIONS=["_uqm_alloc","_uqm_alloc_mark","_uqm_alloc_reset","_uqm_version_ptr","_uqm_version_len","_uqm_line_fit_chars","_uqm_construct_response","_uqm_conv_reset","_uqm_conv_set_graph","_uqm_conv_get_current_node","_uqm_conv_get_rep","_uqm_conv_get_secrets","_uqm_conv_get_choice_count","_uqm_conv_choice_is_locked","_uqm_conv_get_available_choice_count","_uqm_conv_get_available_choice_local_index","_uqm_conv_choose_available","_uqm_conv_choose"]',
     '-Wl,--export-memory',
     '-o',
     outWasm,
   ]);
 
-  if (built) {
-    try {
-      const bytes = fs.readFileSync(outWasm);
-      built = validateWasm(bytes);
-    } catch {
-      built = false;
-    }
-  }
+  if (built) built = validateOut();
 }
 
 // Guaranteed fallback: compile WAT via wabt (no system compiler required).
+if (!built && shouldTry('wabt')) {
+  console.log('[uqm-wasm] compiling WAT via wabt');
+
+  const wabtModule = await import('wabt');
+  const wabtFactory = wabtModule.default ?? wabtModule;
+  const wabt = await wabtFactory();
+
+  const watSource = fs.readFileSync(srcWat, 'utf8');
+  const parsed = wabt.parseWat(srcWat, watSource, { features: { mutable_globals: true } });
+  const { buffer } = parsed.toBinary({ log: false, write_debug_names: false });
+
+  const bytes = Buffer.from(buffer);
+  if (!validateWasm(bytes)) {
+    throw new Error('[uqm-wasm] WAT compilation produced an invalid wasm module');
+  }
+
+  fs.writeFileSync(outWasm, bytes);
+  built = true;
+}
+
+if (!built && preferredToolchain !== 'auto') {
+  throw new Error(`[uqm-wasm] failed to build using toolchain '${preferredToolchain}'`);
+}
+
+// Auto mode: always fall back to wabt if no system toolchain works.
 if (!built) {
   console.log('[uqm-wasm] no native toolchain available; compiling WAT via wabt');
 

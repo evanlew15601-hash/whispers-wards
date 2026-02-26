@@ -43,13 +43,107 @@ describe('game storage', () => {
     expect(slots[0].meta?.turnNumber).toBe(state.turnNumber);
 
     const loaded = loadGameFromSlot(1);
-    expect(loaded?.currentScene).toBe('game');
-    expect(loaded?.turnNumber).toBe(state.turnNumber);
-    expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) {
+      expect(loaded.state.currentScene).toBe('game');
+      expect(loaded.state.turnNumber).toBe(state.turnNumber);
+      expect(loaded.state.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    }
 
     expect(deleteSaveSlot(1)).toBe(true);
-    expect(loadGameFromSlot(1)).toBeNull();
+    expect(loadGameFromSlot(1)).toEqual({ ok: false, reason: 'empty' });
     expect(listSaveSlots()[0].meta).toBeNull();
+  });
+
+  it('loads a v2 slot containing legacy pendingEncounter into pendingEncounters', async () => {
+    const { STORAGE_KEY_V2, loadGameFromSlot } = await importStorage();
+
+    const base = tsConversationEngine.startNewGame();
+
+    const legacyPendingEncounter = {
+      id: 'enc-legacy',
+      kind: 'embargo' as const,
+      routeId: 'ashroad',
+      title: 'Embargo crisis',
+      description: 'Legacy pendingEncounter field.',
+      relatedFactions: ['ember-throne', 'iron-pact'],
+      expiresOnTurn: 5,
+    };
+
+    localStorage.setItem(
+      STORAGE_KEY_V2,
+      JSON.stringify({
+        version: 2,
+        slots: {
+          '1': {
+            meta: {
+              savedAt: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+              turnNumber: base.turnNumber,
+              factions: base.factions.map(f => ({ id: f.id, name: f.name, reputation: f.reputation })),
+            },
+            state: {
+              factions: base.factions,
+              events: base.events,
+              knownSecrets: base.knownSecrets,
+              turnNumber: base.turnNumber,
+              log: base.log,
+              rngSeed: base.rngSeed,
+              world: base.world,
+              pendingEncounter: legacyPendingEncounter,
+              encounterResolvedOnTurn: null,
+              currentScene: 'game',
+              currentDialogueId: base.currentDialogue?.id ?? null,
+            },
+          },
+        },
+      }),
+    );
+
+    const loaded = loadGameFromSlot(1);
+    expect(loaded.ok).toBe(true);
+
+    if (loaded.ok) {
+      expect(loaded.state.pendingEncounters?.map(e => e.id)).toEqual(['enc-legacy']);
+    }
+  });
+
+  it('round-trips multiple pendingEncounters in v2 saves', async () => {
+    const { loadGameFromSlot, saveGameToSlot } = await importStorage();
+
+    const base = tsConversationEngine.startNewGame();
+
+    const state = {
+      ...base,
+      pendingEncounters: [
+        {
+          id: 'enc-a',
+          kind: 'raid' as const,
+          routeId: 'ashroad',
+          title: 'A',
+          description: 'A',
+          relatedFactions: ['iron-pact', 'ember-throne'],
+          expiresOnTurn: base.turnNumber + 2,
+        },
+        {
+          id: 'enc-b',
+          kind: 'summit' as const,
+          regionId: 'greenmarch',
+          title: 'B',
+          description: 'B',
+          relatedFactions: ['verdant-court', 'ember-throne'],
+          expiresOnTurn: base.turnNumber + 3,
+        },
+      ],
+    };
+
+    expect(saveGameToSlot(1, state as any)).toBe(true);
+
+    const loaded = loadGameFromSlot(1);
+    expect(loaded.ok).toBe(true);
+
+    if (loaded.ok) {
+      expect(loaded.state.pendingEncounters?.map(e => e.id)).toEqual(['enc-a', 'enc-b']);
+    }
   });
 
   it('ignores invalid slot ids', async () => {
@@ -63,9 +157,9 @@ describe('game storage', () => {
 
     expect(listSaveSlots().every(s => s.meta === null)).toBe(true);
 
-    expect(loadGameFromSlot(0)).toBeNull();
-    expect(loadGameFromSlot(-1)).toBeNull();
-    expect(loadGameFromSlot(999)).toBeNull();
+    expect(loadGameFromSlot(0)).toEqual({ ok: false, reason: 'empty' });
+    expect(loadGameFromSlot(-1)).toEqual({ ok: false, reason: 'empty' });
+    expect(loadGameFromSlot(999)).toEqual({ ok: false, reason: 'empty' });
 
     expect(deleteSaveSlot(0)).toBe(false);
     expect(deleteSaveSlot(-1)).toBe(false);
@@ -82,6 +176,33 @@ describe('game storage', () => {
     const slots = listSaveSlots();
     expect(slots).toHaveLength(SAVE_SLOT_COUNT);
     expect(slots.every(s => s.meta === null)).toBe(true);
+  });
+
+  it('returns corrupt when STORAGE_KEY_V2 contains invalid JSON', async () => {
+    const { STORAGE_KEY_V2, loadGameFromSlot } = await importStorage();
+
+    localStorage.setItem(STORAGE_KEY_V2, '{not json');
+
+    expect(loadGameFromSlot(1)).toEqual({ ok: false, reason: 'corrupt' });
+  });
+
+  it('returns corrupt when slot exists but fails schema validation (v2)', async () => {
+    const { STORAGE_KEY_V2, loadGameFromSlot } = await importStorage();
+
+    localStorage.setItem(
+      STORAGE_KEY_V2,
+      JSON.stringify({
+        version: 2,
+        slots: {
+          '1': {
+            meta: 'not meta',
+            state: { currentDialogueId: null },
+          },
+        },
+      }),
+    );
+
+    expect(loadGameFromSlot(1)).toEqual({ ok: false, reason: 'corrupt' });
   });
 
   it('treats a schema-invalid slot as empty (v2)', async () => {
@@ -165,7 +286,10 @@ describe('game storage', () => {
     expect(localStorage.getItem(STORAGE_KEY_V2)).toBeNull();
 
     const loaded = loadGameFromSlot(1);
-    expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) {
+      expect(loaded.state.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    }
 
     const migrated = localStorage.getItem(STORAGE_KEY_V2);
     expect(migrated).toBeTruthy();
@@ -191,7 +315,7 @@ describe('game storage', () => {
     });
 
     expect(saveGameToSlot(1, state)).toBe(false);
-    expect(loadGameFromSlot(1)).toBeNull();
+    expect(loadGameFromSlot(1)).toEqual({ ok: false, reason: 'empty' });
   });
 
   it('returns false when localStorage.setItem throws during delete', async () => {
@@ -209,6 +333,8 @@ describe('game storage', () => {
     });
 
     expect(deleteSaveSlot(1)).toBe(false);
-    expect(loadGameFromSlot(1)).not.toBeNull();
+
+    const loaded = loadGameFromSlot(1);
+    expect(loaded.ok).toBe(true);
   });
 });

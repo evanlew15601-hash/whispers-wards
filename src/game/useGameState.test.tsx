@@ -1,7 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { STORAGE_KEY_V1 } from './storage';
 import { dialogueTree, initialEvents, initialFactions } from './data';
 
 vi.mock('./engine/uqmWasmRuntime', () => ({
@@ -53,6 +52,7 @@ describe('useGameState', () => {
       },
     };
 
+    const { STORAGE_KEY_V1 } = await import('./storage');
     localStorage.setItem(STORAGE_KEY_V1, JSON.stringify(store));
 
     const { useGameState } = await import('./useGameState');
@@ -88,7 +88,7 @@ describe('useGameState', () => {
     expect(result.current.state.currentScene).toBe('title');
   });
 
-  it('enterPendingEncounter swaps dialogue to a generated encounter node when pendingEncounter exists', async () => {
+  it('enterPendingEncounter swaps dialogue to a generated encounter node when a legacy pendingEncounter exists', async () => {
     const partialState = {
       currentScene: 'game',
       factions: initialFactions.map(f => ({ ...f })),
@@ -119,6 +119,7 @@ describe('useGameState', () => {
       })),
     };
 
+    const { STORAGE_KEY_V1 } = await import('./storage');
     localStorage.setItem(
       STORAGE_KEY_V1,
       JSON.stringify({
@@ -136,15 +137,56 @@ describe('useGameState', () => {
       result.current.loadFromSlot(1);
     });
 
-    expect(result.current.state.pendingEncounter?.id).toBe('enc-test');
+    expect(result.current.state.pendingEncounters[0]?.id).toBe('enc-test');
     expect(result.current.state.currentDialogue?.id).toBe('concord-hub');
 
     await act(async () => {
-      result.current.enterPendingEncounter();
+      result.current.enterPendingEncounter('enc-test');
     });
 
     expect(result.current.state.currentDialogue?.id).toBe('encounter:enc-test');
     expect(result.current.state.currentDialogue?.choices.length).toBeGreaterThan(0);
+  });
+
+  it('loadFromSlot reports corrupt save data', async () => {
+    const { toast } = await import('sonner');
+    const { STORAGE_KEY_V2 } = await import('./storage');
+
+    localStorage.setItem(STORAGE_KEY_V2, '{not json');
+
+    const { useGameState } = await import('./useGameState');
+    const { result } = renderHook(() => useGameState());
+
+    await act(async () => {
+      result.current.loadFromSlot(1);
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('Save data for Slot 1 is corrupted.');
+  });
+
+  it('loadFromSlot reports unavailable storage', async () => {
+    const { toast } = await import('sonner');
+
+    vi.doMock('./storage', async () => {
+      const actual = await vi.importActual<typeof import('./storage')>('./storage');
+      return {
+        ...actual,
+        loadGameFromSlot: () => ({ ok: false, reason: 'unavailable' as const }),
+      };
+    });
+
+    const { useGameState } = await import('./useGameState');
+    const { result } = renderHook(() => useGameState());
+
+    await act(async () => {
+      result.current.loadFromSlot(1);
+    });
+
+    expect(toast.error).toHaveBeenCalledWith(
+      'Browser storage is unavailable. Check privacy settings or use a different browser.',
+    );
+
+    vi.unmock('./storage');
   });
 
   it('saveToSlot reports failure when persistence fails', async () => {

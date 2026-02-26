@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Faction, WorldState, SecondaryEncounter } from '@/game/types';
+import { isChoiceUsedSecret } from '@/game/engine/dialogueChoiceLocks';
 import WorldMap from '@/components/WorldMap';
 
 interface InfoPanelProps {
@@ -10,15 +11,19 @@ interface InfoPanelProps {
   log: string[];
   world: WorldState;
   factions: Faction[];
-  pendingEncounter: SecondaryEncounter | null;
+  pendingEncounters: SecondaryEncounter[];
   canAddressEncounter?: boolean;
-  onAddressEncounter?: () => void;
+  onAddressEncounter?: (encounterId: string) => void;
 }
 
 const InfoPanel = (
-  { knownSecrets, turnNumber, log, world, factions, pendingEncounter, canAddressEncounter = false, onAddressEncounter }: InfoPanelProps,
+  { knownSecrets, turnNumber, log, world, factions, pendingEncounters, canAddressEncounter = false, onAddressEncounter }: InfoPanelProps,
 ) => {
-  const encounterTurnsLeft = pendingEncounter ? pendingEncounter.expiresOnTurn - turnNumber : null;
+  const sortedPendingEncounters = pendingEncounters
+    .slice()
+    .sort((a, b) => (a.expiresOnTurn - b.expiresOnTurn) || a.id.localeCompare(b.id));
+
+  const highlightEncounter = sortedPendingEncounters[0] ?? null;
 
   return (
     <Tabs defaultValue="chronicle" className="flex flex-col gap-4">
@@ -43,60 +48,69 @@ const InfoPanel = (
 
       <TabsContent value="chronicle" className="mt-0 flex flex-col gap-6">
         {/* Secrets */}
-        {knownSecrets.length > 0 && (
+        {knownSecrets.filter(s => !isChoiceUsedSecret(s) && s !== 'override').length > 0 && (
           <div className="parchment-border rounded-sm bg-card p-4">
             <h3 className="mb-3 font-display text-xs tracking-[0.2em] text-accent uppercase">
-              <span aria-hidden="true">🔍</span> Intelligence ({knownSecrets.length})
+              <span aria-hidden="true">🔍</span> Intelligence ({knownSecrets.filter(s => !isChoiceUsedSecret(s) && s !== 'override').length})
             </h3>
             <div className="flex flex-col gap-2">
-              {knownSecrets.map((secret, i) => (
-                <motion.p
-                  key={i}
-                  className="font-body text-xs italic text-card-foreground/80"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  • {secret}
-                </motion.p>
-              ))}
+              {knownSecrets
+                .filter(s => !isChoiceUsedSecret(s) && s !== 'override')
+                .map((secret, i) => (
+                  <motion.p
+                    key={i}
+                    className="font-body text-xs italic text-card-foreground/80"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    • {secret}
+                  </motion.p>
+                ))}
             </div>
           </div>
         )}
 
-        {/* Pending encounter */}
-        {pendingEncounter && (
+        {/* Pending encounters */}
+        {sortedPendingEncounters.length > 0 && (
           <div className="parchment-border rounded-sm bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="mb-2 font-display text-xs tracking-[0.2em] text-primary uppercase">
-                  <span aria-hidden="true">⚔</span> Pending Encounter
-                </h3>
-                <div className="text-sm text-card-foreground">{pendingEncounter.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{pendingEncounter.description}</div>
+            <h3 className="mb-3 font-display text-xs tracking-[0.2em] text-primary uppercase">
+              <span aria-hidden="true">⚔</span> Pending Encounters ({sortedPendingEncounters.length})
+            </h3>
 
-                <div
-                  className={`mt-2 text-[11px] ${
-                    encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'text-destructive' : 'text-muted-foreground'
-                  }`}
-                >
-                  {encounterTurnsLeft !== null && encounterTurnsLeft >= 0
-                    ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${pendingEncounter.expiresOnTurn})`
-                    : `Expires on turn ${pendingEncounter.expiresOnTurn}`}
-                </div>
-              </div>
+            <div className="flex flex-col gap-3">
+              {sortedPendingEncounters.map(encounter => {
+                const turnsLeft = encounter.expiresOnTurn - turnNumber;
 
-              {onAddressEncounter && (
-                <Button
-                  size="sm"
-                  variant={canAddressEncounter ? 'default' : 'secondary'}
-                  disabled={!canAddressEncounter}
-                  onClick={onAddressEncounter}
-                  title={canAddressEncounter ? 'Address this encounter' : 'Return to the Concord Hall hub to address this encounter'}
-                >
-                  Address
-                </Button>
-              )}
+                return (
+                  <div key={encounter.id} className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm text-card-foreground truncate">{encounter.title}</div>
+                      <div
+                        className={`mt-1 text-[11px] ${
+                          turnsLeft <= 1 ? 'text-destructive' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {turnsLeft >= 0
+                          ? `Expires in ${turnsLeft} turn${turnsLeft === 1 ? '' : 's'} (turn ${encounter.expiresOnTurn})`
+                          : `Expired on turn ${encounter.expiresOnTurn}`}
+                      </div>
+                    </div>
+
+                    {onAddressEncounter && (
+                      <Button
+                        size="sm"
+                        variant={canAddressEncounter ? 'default' : 'secondary'}
+                        disabled={!canAddressEncounter}
+                        onClick={() => onAddressEncounter(encounter.id)}
+                        title={canAddressEncounter ? 'Address this encounter' : 'Return to the Concord Hall hub to address this encounter'}
+                      >
+                        Address
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -128,7 +142,7 @@ const InfoPanel = (
       </TabsContent>
 
       <TabsContent value="world" className="mt-0">
-        <WorldMap world={world} factions={factions} highlightEncounter={pendingEncounter ?? null} />
+        <WorldMap world={world} factions={factions} highlightEncounter={highlightEncounter} />
       </TabsContent>
     </Tabs>
   );

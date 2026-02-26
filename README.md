@@ -10,11 +10,18 @@ A small, dialogue-driven browser game about high-fantasy diplomacy, built with V
 
 ## Development
 
+See `CROWN_CONCORD_ROADMAP_EXECUTION_PLAN.md` for the current execution plan and QA workflow.
+
+This project does not require any environment variables by default. If you add local secrets, copy `.env.example` to `.env` (the `.env` file is gitignored).
+
 ```sh
 npm install
 npm run dev
 npm run test
 npm run build
+
+# Full local CI-style check (lint + typecheck + test + build)
+npm run qa
 ```
 
 ### UQM WASM demo
@@ -23,4 +30,20 @@ This repo includes a tiny **UQM-derived** WebAssembly module (derived from `thir
 
 - The `.wasm` file is generated into `public/wasm/uqm_minimal.wasm`.
 - It is built automatically on `npm run dev` / `npm run build` via `scripts/build-uqm-minimal-wasm.mjs`.
-- No system C toolchain is required: if `clang`/`emcc` aren’t available, the build falls back to compiling `third_party/uqm/minimal_wasm/uqm_min.wat` using the `wabt` npm package.
+
+#### WASM toolchain strategy (Option 1)
+
+- Prefer a **system toolchain** when available (`zig`/`clang`/`emcc`).
+- Always provide a **zero-native-deps fallback** by compiling `third_party/uqm/minimal_wasm/uqm_min.wat` via the `wabt` npm package.
+
+#### UQM-style response pool semantics (Option B)
+
+The minimal conversation core exposes a small "UQM-style" response list API: it computes the *available* (unlocked) response options and caps the list at **8**, matching UQM’s `MAX_RESPONSES` behavior. For alpha, the game presents choices using these response-pool semantics in both engines (TS and WASM) to keep behavior consistent.
+
+For more reproducible builds on developer machines, install Zig and run:
+
+```sh
+UQM_WASM_TOOLCHAIN=zig npm run build:uqm-wasm
+```
+
+(If you don’t set `UQM_WASM_TOOLCHAIN`, the build runs in auto mode and will fall back to `wabt` if needed.)

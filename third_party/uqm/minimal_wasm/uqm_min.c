@@ -41,6 +41,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#if defined(__wasm__) || defined(__wasm32__) || defined(__wasm64__) || defined(__EMSCRIPTEN__)
+#define UQM_WASM_EXPORT(name) __attribute__((export_name(name))) __attribute__((used))
+#else
+#define UQM_WASM_EXPORT(name)
+#endif
+
 typedef uint32_t COUNT;
 typedef int32_t SIZE;
 typedef int BOOLEAN;
@@ -180,18 +186,50 @@ uqm_version_len (void)
 
 extern uint8_t __heap_base;
 static uint32_t heap_ptr;
+static uint32_t heap_base_ptr;
+
+static void
+ensure_heap_initialized (void)
+{
+	if (heap_ptr == 0)
+	{
+		heap_base_ptr = (uint32_t) (uintptr_t) &__heap_base;
+		heap_ptr = heap_base_ptr;
+	}
+}
 
 uint32_t
 uqm_alloc (uint32_t size)
 {
 	uint32_t p;
 
-	if (heap_ptr == 0)
-		heap_ptr = (uint32_t) (uintptr_t) &__heap_base;
+	ensure_heap_initialized ();
 
 	p = heap_ptr;
 	heap_ptr = (p + size + 7u) & ~7u;
 	return p;
+}
+
+/*
+ * Allocator helpers for temporary scratch allocations.
+ *
+ * These are used by JS/TS bindings to prevent unbounded linear-memory growth
+ * when repeatedly calling small helper functions (e.g. line fitting).
+ */
+uint32_t
+uqm_alloc_mark (void)
+{
+	ensure_heap_initialized ();
+	return heap_ptr;
+}
+
+void
+uqm_alloc_reset (uint32_t mark)
+{
+	ensure_heap_initialized ();
+	if (mark < heap_base_ptr)
+		mark = heap_base_ptr;
+	heap_ptr = (mark + 7u) & ~7u;
 }
 
 uint32_t
@@ -204,6 +242,55 @@ uqm_line_fit_chars (const char *str, uint32_t maxWidth)
 	t.CharCount = 0;
 	getLineWithinWidth (&t, &next, (SIZE) maxWidth, (COUNT) ~0u);
 	return t.CharCount;
+}
+
+/*
+ * uqm_construct_response
+ *
+ * Derived/adapted from The Ur-Quan Masters (UQM) `construct_response()` in:
+ *   third_party/uqm/sc2/src/uqm/commglue.c
+ *
+ * Upstream uses varargs and UQM string tables to splice together phrases.
+ * This minimal wasm variant instead concatenates a NULL-terminated array of
+ * pointers to 0-terminated UTF-8/ASCII strings.
+ */
+UQM_WASM_EXPORT("uqm_construct_response")
+uint32_t
+uqm_construct_response (char *outBuf, uint32_t outCap, const uint32_t *parts)
+{
+	uint32_t written;
+	uint32_t maxBytes;
+
+	written = 0;
+	if (outCap == 0)
+		return 0;
+
+	maxBytes = outCap - 1u;
+
+	if (parts)
+	{
+		for (;;)
+		{
+			uint32_t p;
+			const uint8_t *s;
+
+			p = *parts++;
+			if (p == 0)
+				break;
+
+			s = (const uint8_t *) (uintptr_t) p;
+			while (*s)
+			{
+				if (written >= maxBytes)
+					goto done;
+				((uint8_t *) outBuf)[written++] = *s++;
+			}
+		}
+	}
+
+done:
+	((uint8_t *) outBuf)[written] = 0;
+	return written;
 }
 
 /*
@@ -227,16 +314,18 @@ uqm_line_fit_chars (const char *str, uint32_t maxWidth)
  *     i16 reqFaction;
  *     i16 reqMin;
  *     u32 revealSecretMask;
+ *
+ *     // UQM-style response pool semantics (subset):
+ *     // - requiresMask: choice is locked unless all bits are set in secrets
+ *     // - forbidsMask: choice is locked if any bit is set in secrets
+ *     // - usedMask: choice is locked if any bit is set in secrets; on choose, bits are added
+ *     u32 requiresMask;
+ *     u32 forbidsMask;
+ *     u32 usedMask;
  *   }
  *
- * ChoiceMeta is treated as packed (18 bytes).
+ * ChoiceMeta is treated as packed (30 bytes).
  */
-
-#if defined(__wasm__) || defined(__wasm32__) || defined(__wasm64__) || defined(__EMSCRIPTEN__)
-#define UQM_WASM_EXPORT(name) __attribute__((export_name(name))) __attribute__((used))
-#else
-#define UQM_WASM_EXPORT(name)
-#endif
 
 static int32_t conv_currentNode;
 static int32_t conv_rep[3];
@@ -299,7 +388,7 @@ conv_graph_node_meta_ptr (uint32_t nodeIdx)
 static uint32_t
 conv_graph_choice_ptr (uint32_t choiceIdx)
 {
-	return conv_choicesPtr + choiceIdx * 18u;
+	return conv_choicesPtr + choiceIdx * 30u;
 }
 
 static uint32_t
@@ -333,6 +422,9 @@ conv_choice_is_locked_internal (int32_t localIdx)
 	uint32_t choiceCount;
 	uint32_t absChoice;
 	uint32_t choicePtr;
+	uint32_t requiresMask;
+	uint32_t forbidsMask;
+	uint32_t usedMask;
 	int32_t reqFaction;
 	int32_t reqMin;
 	int32_t rep;
@@ -353,6 +445,19 @@ conv_choice_is_locked_internal (int32_t localIdx)
 	if (absChoice >= conv_graph_total_choices ())
 		return 1;
 	choicePtr = conv_graph_choice_ptr (absChoice);
+
+	requiresMask = load_u32_le (choicePtr + 18u);
+	forbidsMask = load_u32_le (choicePtr + 22u);
+	usedMask = load_u32_le (choicePtr + 26u);
+
+	if ((usedMask & conv_secretsMask) != 0u)
+		return 1;
+
+	if ((requiresMask & conv_secretsMask) != requiresMask)
+		return 1;
+
+	if ((forbidsMask & conv_secretsMask) != 0u)
+		return 1;
 
 	reqFaction = load_i16_le (choicePtr + 10u);
 	reqMin = load_i16_le (choicePtr + 12u);
@@ -430,6 +535,8 @@ uqm_conv_choice_is_locked (int32_t localIdx)
 	return (int32_t) conv_choice_is_locked_internal (localIdx);
 }
 
+#define MAX_RESPONSES 8
+
 UQM_WASM_EXPORT("uqm_conv_choose")
 int32_t
 uqm_conv_choose (int32_t localIdx)
@@ -470,7 +577,76 @@ uqm_conv_choose (int32_t localIdx)
 	conv_rep[1] += d1;
 	conv_rep[2] += d2;
 	conv_secretsMask |= reveal;
+	conv_secretsMask |= load_u32_le (choicePtr + 26u);
 	conv_currentNode = nextNode;
 
 	return nextNode;
+}
+
+UQM_WASM_EXPORT("uqm_conv_get_available_choice_count")
+uint32_t
+uqm_conv_get_available_choice_count (void)
+{
+	uint32_t choiceCount;
+	uint32_t i;
+	uint32_t found;
+
+	choiceCount = conv_current_node_choice_count ();
+	found = 0;
+
+	for (i = 0; i < choiceCount; i++)
+	{
+		if (!conv_choice_is_locked_internal ((int32_t) i))
+		{
+			found++;
+			if (found >= MAX_RESPONSES)
+				break;
+		}
+	}
+
+	return found;
+}
+
+UQM_WASM_EXPORT("uqm_conv_get_available_choice_local_index")
+int32_t
+uqm_conv_get_available_choice_local_index (int32_t visibleIdx)
+{
+	uint32_t choiceCount;
+	uint32_t i;
+	uint32_t found;
+
+	if (visibleIdx < 0)
+		return -1;
+	if ((uint32_t) visibleIdx >= MAX_RESPONSES)
+		return -1;
+
+	choiceCount = conv_current_node_choice_count ();
+	found = 0;
+
+	for (i = 0; i < choiceCount; i++)
+	{
+		if (!conv_choice_is_locked_internal ((int32_t) i))
+		{
+			if ((int32_t) found == visibleIdx)
+				return (int32_t) i;
+			found++;
+			if (found >= MAX_RESPONSES)
+				break;
+		}
+	}
+
+	return -1;
+}
+
+UQM_WASM_EXPORT("uqm_conv_choose_available")
+int32_t
+uqm_conv_choose_available (int32_t visibleIdx)
+{
+	int32_t localIdx;
+
+	localIdx = uqm_conv_get_available_choice_local_index (visibleIdx);
+	if (localIdx < 0)
+		return -1;
+
+	return uqm_conv_choose (localIdx);
 }
