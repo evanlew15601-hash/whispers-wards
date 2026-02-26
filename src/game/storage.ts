@@ -414,20 +414,116 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
   return writeStoreV2(store);
 };
 
-export const loadGameFromSlot = (slotId: number): LoadableGameState | null => {
+export type LoadGameFailureReason = 'empty' | 'unavailable' | 'corrupt';
+
+export type LoadGameResult =
+  | { ok: true; state: LoadableGameState }
+  | { ok: false; reason: LoadGameFailureReason };
+
+export const loadGameFromSlot = (slotId: number): LoadGameResult => {
   const id = normalizeSlotId(slotId);
-  if (!id) return null;
+  if (!id) return { ok: false, reason: 'empty' };
 
-  const store = readStoreV2();
-  const slot = store.slots[String(id)];
-  if (!slot) return null;
+  if (!getLocalStorage()) return { ok: false, reason: 'unavailable' };
 
-  const { currentDialogueId, ...state } = slot.state;
+  const key = String(id);
 
-  return {
-    ...state,
-    currentDialogue: currentDialogueId ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue']) : null,
-  };
+  let v2Corrupt = false;
+
+  const rawV2 = safeGetItem(STORAGE_KEY_V2);
+  if (rawV2) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawV2);
+    } catch {
+      v2Corrupt = true;
+      parsed = null;
+    }
+
+    if (parsed !== null) {
+      const storeParsed = persistedStoreV2Schema.safeParse(parsed);
+      if (!storeParsed.success) {
+        v2Corrupt = true;
+      } else {
+        const rawSlot = (storeParsed.data.slots as Record<string, unknown>)[key];
+        if (!rawSlot) return { ok: false, reason: 'empty' };
+
+        const slotParsed = persistedSlotV2Schema.safeParse(rawSlot);
+        if (!slotParsed.success) {
+          v2Corrupt = true;
+        } else {
+          const { currentDialogueId, ...state } = slotParsed.data.state;
+
+          return {
+            ok: true,
+            state: {
+              ...state,
+              currentDialogue: currentDialogueId
+                ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue'])
+                : null,
+            },
+          };
+        }
+      }
+    }
+  }
+
+  const rawV1 = safeGetItem(STORAGE_KEY_V1);
+  if (rawV1) {
+    const storeV1 = parseStoreV1(rawV1);
+    if (!storeV1) return { ok: false, reason: 'corrupt' };
+
+    const slot = storeV1.slots[key];
+    if (!slot) return { ok: false, reason: v2Corrupt ? 'corrupt' : 'empty' };
+
+    const migratedSlot = migrateSlotV1ToV2(slot);
+    if (!migratedSlot) return { ok: false, reason: 'corrupt' };
+
+    // Best-effort migration to v2 once we have valid data.
+    const migratedStore = migrateStoreV1ToV2(storeV1);
+    writeStoreV2(migratedStore);
+
+    const { currentDialogueId, ...state } = migratedSlot.state;
+
+    return {
+      ok: true,
+      state: {
+        ...state,
+        currentDialogue: currentDialogueId
+          ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue'])
+          : null,
+      },
+    };
+  }
+
+  const rawLegacy = safeGetItem(STORAGE_KEY_PREFIX);
+  if (rawLegacy) {
+    const storeV1 = parseStoreV1(rawLegacy);
+    if (!storeV1) return { ok: false, reason: 'corrupt' };
+
+    const slot = storeV1.slots[key];
+    if (!slot) return { ok: false, reason: v2Corrupt ? 'corrupt' : 'empty' };
+
+    const migratedSlot = migrateSlotV1ToV2(slot);
+    if (!migratedSlot) return { ok: false, reason: 'corrupt' };
+
+    const migratedStore = migrateStoreV1ToV2(storeV1);
+    writeStoreV2(migratedStore);
+
+    const { currentDialogueId, ...state } = migratedSlot.state;
+
+    return {
+      ok: true,
+      state: {
+        ...state,
+        currentDialogue: currentDialogueId
+          ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue'])
+          : null,
+      },
+    };
+  }
+
+  return { ok: false, reason: v2Corrupt ? 'corrupt' : 'empty' };
 };
 
 export const deleteSaveSlot = (slotId: number): boolean => {

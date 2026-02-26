@@ -43,12 +43,15 @@ describe('game storage', () => {
     expect(slots[0].meta?.turnNumber).toBe(state.turnNumber);
 
     const loaded = loadGameFromSlot(1);
-    expect(loaded?.currentScene).toBe('game');
-    expect(loaded?.turnNumber).toBe(state.turnNumber);
-    expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) {
+      expect(loaded.state.currentScene).toBe('game');
+      expect(loaded.state.turnNumber).toBe(state.turnNumber);
+      expect(loaded.state.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    }
 
     expect(deleteSaveSlot(1)).toBe(true);
-    expect(loadGameFromSlot(1)).toBeNull();
+    expect(loadGameFromSlot(1)).toEqual({ ok: false, reason: 'empty' });
     expect(listSaveSlots()[0].meta).toBeNull();
   });
 
@@ -63,9 +66,9 @@ describe('game storage', () => {
 
     expect(listSaveSlots().every(s => s.meta === null)).toBe(true);
 
-    expect(loadGameFromSlot(0)).toBeNull();
-    expect(loadGameFromSlot(-1)).toBeNull();
-    expect(loadGameFromSlot(999)).toBeNull();
+    expect(loadGameFromSlot(0)).toEqual({ ok: false, reason: 'empty' });
+    expect(loadGameFromSlot(-1)).toEqual({ ok: false, reason: 'empty' });
+    expect(loadGameFromSlot(999)).toEqual({ ok: false, reason: 'empty' });
 
     expect(deleteSaveSlot(0)).toBe(false);
     expect(deleteSaveSlot(-1)).toBe(false);
@@ -82,6 +85,33 @@ describe('game storage', () => {
     const slots = listSaveSlots();
     expect(slots).toHaveLength(SAVE_SLOT_COUNT);
     expect(slots.every(s => s.meta === null)).toBe(true);
+  });
+
+  it('returns corrupt when STORAGE_KEY_V2 contains invalid JSON', async () => {
+    const { STORAGE_KEY_V2, loadGameFromSlot } = await importStorage();
+
+    localStorage.setItem(STORAGE_KEY_V2, '{not json');
+
+    expect(loadGameFromSlot(1)).toEqual({ ok: false, reason: 'corrupt' });
+  });
+
+  it('returns corrupt when slot exists but fails schema validation (v2)', async () => {
+    const { STORAGE_KEY_V2, loadGameFromSlot } = await importStorage();
+
+    localStorage.setItem(
+      STORAGE_KEY_V2,
+      JSON.stringify({
+        version: 2,
+        slots: {
+          '1': {
+            meta: 'not meta',
+            state: { currentDialogueId: null },
+          },
+        },
+      }),
+    );
+
+    expect(loadGameFromSlot(1)).toEqual({ ok: false, reason: 'corrupt' });
   });
 
   it('treats a schema-invalid slot as empty (v2)', async () => {
@@ -165,7 +195,10 @@ describe('game storage', () => {
     expect(localStorage.getItem(STORAGE_KEY_V2)).toBeNull();
 
     const loaded = loadGameFromSlot(1);
-    expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) {
+      expect(loaded.state.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    }
 
     const migrated = localStorage.getItem(STORAGE_KEY_V2);
     expect(migrated).toBeTruthy();
@@ -191,7 +224,7 @@ describe('game storage', () => {
     });
 
     expect(saveGameToSlot(1, state)).toBe(false);
-    expect(loadGameFromSlot(1)).toBeNull();
+    expect(loadGameFromSlot(1)).toEqual({ ok: false, reason: 'empty' });
   });
 
   it('returns false when localStorage.setItem throws during delete', async () => {
@@ -209,6 +242,8 @@ describe('game storage', () => {
     });
 
     expect(deleteSaveSlot(1)).toBe(false);
-    expect(loadGameFromSlot(1)).not.toBeNull();
+
+    const loaded = loadGameFromSlot(1);
+    expect(loaded.ok).toBe(true);
   });
 });

@@ -76,11 +76,19 @@ export function useGameState() {
   }, [state, refreshSlots]);
 
   const loadFromSlot = useCallback((slotId: number) => {
-    const loaded = loadGameFromSlot(slotId);
-    if (!loaded) {
-      toast.error(`Slot ${slotId} is empty.`);
+    const loadedResult = loadGameFromSlot(slotId);
+    if (!loadedResult.ok) {
+      if (loadedResult.reason === 'unavailable') {
+        toast.error('Browser storage is unavailable. Check privacy settings or use a different browser.');
+      } else if (loadedResult.reason === 'corrupt') {
+        toast.error(`Save data for Slot ${slotId} is corrupted.`);
+      } else {
+        toast.error(`Slot ${slotId} is empty.`);
+      }
       return;
     }
+
+    const loaded = loadedResult.state;
 
     // Back/forward compatibility: hydrate missing fields and refresh dialogue from the current tree when possible.
     const base = engineRef.current.createInitialState();
