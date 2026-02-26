@@ -35,6 +35,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      UQM_WASM_TOOLCHAIN: wabt
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,6 +48,8 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      UQM_WASM_TOOLCHAIN: wabt
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

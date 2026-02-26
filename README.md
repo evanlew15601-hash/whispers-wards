@@ -10,6 +10,8 @@ A small, dialogue-driven browser game about high-fantasy diplomacy, built with V
 
 ## Development
 
+This project does not require any environment variables by default. If you add local secrets, copy `.env.example` to `.env` (the `.env` file is gitignored).
+
 ```sh
 npm install
 npm run dev
