@@ -38,7 +38,7 @@ This repo includes a tiny **UQM-derived** WebAssembly module (derived from `thir
 
 #### UQM-style response pool semantics (Option B)
 
-The minimal conversation core exposes a small "UQM-style" response list API: it computes the *available* (unlocked) response options and caps the list at **8**, matching UQM’s `MAX_RESPONSES` behavior. The React UI uses this to hide locked options when running on the WASM engine.
+The minimal conversation core exposes a small "UQM-style" response list API: it computes the *available* (unlocked) response options and caps the list at **8**, matching UQM’s `MAX_RESPONSES` behavior. For alpha, the game presents choices using these response-pool semantics in both engines (TS and WASM) to keep behavior consistent.
 
 For more reproducible builds on developer machines, install Zig and run:
 

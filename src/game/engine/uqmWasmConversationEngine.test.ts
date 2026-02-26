@@ -176,8 +176,13 @@ describe('uqmWasmConversationEngine', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime, testTree as any);
 
     const start = tsEngine.startNewGame();
-    const gatedChoice = start.currentDialogue!.choices.find(c => c.id === 'one-time-ask')!;
-    const learnChoice = start.currentDialogue!.choices.find(c => c.id === 'learn-intel')!;
+
+    const learnChoice = testTree.opening.choices.find(c => c.id === 'learn-intel')!;
+    const gatedChoice = testTree.opening.choices.find(c => c.id === 'one-time-ask')!;
+    const forbidsChoice = testTree.opening.choices.find(c => c.id === 'forbidden-if-token')!;
+
+    // UQM-style response pool presentation hides unavailable choices.
+    expect(start.currentDialogue!.choices.some(c => c.id === 'one-time-ask')).toBe(false);
 
     // Both reject gated choice without intel.
     expect(tsEngine.applyChoice(start, gatedChoice)).toBe(start);
@@ -186,11 +191,11 @@ describe('uqmWasmConversationEngine', () => {
     const withTokenTs = tsEngine.applyChoice(start, learnChoice);
     const withTokenWasm = wasmEngine.applyChoice(start, learnChoice);
 
-    // WASM engine presents UQM-style response pool semantics: locked choices are hidden.
+    // Locked choices are hidden (TS and WASM parity).
+    expect(withTokenTs.currentDialogue!.choices.some(c => c.id === 'forbidden-if-token')).toBe(false);
     expect(withTokenWasm.currentDialogue!.choices.some(c => c.id === 'forbidden-if-token')).toBe(false);
 
-    // Both reject forbids choice after token.
-    const forbidsChoice = withTokenTs.currentDialogue!.choices.find(c => c.id === 'forbidden-if-token')!;
+    // Both reject forbids choice after token (even if forced).
     expect(tsEngine.applyChoice(withTokenTs, forbidsChoice)).toBe(withTokenTs);
     expect(wasmEngine.applyChoice(withTokenWasm, forbidsChoice)).toBe(withTokenWasm);
 
@@ -272,9 +277,9 @@ describe('uqmWasmConversationEngine', () => {
     const startBase = tsEngine.startNewGame();
     const start = { ...startBase, knownSecrets: ['override'] };
 
-    const gatedChoice = start.currentDialogue!.choices.find(c => c.id === 'one-time-ask')!;
-    const forbidsChoice = start.currentDialogue!.choices.find(c => c.id === 'forbidden-if-token')!;
-    const learnChoice = start.currentDialogue!.choices.find(c => c.id === 'learn-intel')!;
+    const gatedChoice = testTree.opening.choices.find(c => c.id === 'one-time-ask')!;
+    const forbidsChoice = testTree.opening.choices.find(c => c.id === 'forbidden-if-token')!;
+    const learnChoice = testTree.opening.choices.find(c => c.id === 'learn-intel')!;
 
     // With override, both engines allow the requiresInfo-gated choice even without intel.
     const askedTs = tsEngine.applyChoice(start, gatedChoice);

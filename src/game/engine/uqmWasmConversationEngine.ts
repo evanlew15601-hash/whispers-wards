@@ -165,11 +165,17 @@ function presentDialogueNodeForWasmResponsePool(
 ): GameState {
   if (!state.currentDialogue) return state;
 
-  // Preserve TS-style behavior when override is enabled.
-  if (state.knownSecrets.includes('override')) return state;
-
   const baseNode = tree[state.currentDialogue.id];
   if (!baseNode) return state;
+
+  // Escape hatch used by tests/dev tooling: show the canonical node (including locked choices).
+  if (state.knownSecrets.includes('override')) {
+    if (state.currentDialogue === baseNode) return state;
+    return {
+      ...state,
+      currentDialogue: baseNode,
+    };
+  }
 
   const nodeIdx = graph.nodeIdToIndex.get(baseNode.id);
   if (nodeIdx === undefined) return state;
@@ -196,6 +202,14 @@ function presentDialogueNodeForWasmResponsePool(
   if (visibleLocalIndices.length <= 0) return state;
 
   const visibleChoices = visibleLocalIndices.map(i => baseNode.choices[i]).filter(Boolean);
+
+  const currentChoices = state.currentDialogue.choices;
+  if (
+    currentChoices.length === visibleChoices.length &&
+    currentChoices.every((c, i) => c.id === visibleChoices[i]!.id)
+  ) {
+    return state;
+  }
 
   // Return a shallow copy so we don't mutate the dialogueTree.
   return {
@@ -390,7 +404,7 @@ export function createUqmWasmConversationEngine(
         ? tsEngineForTree.applyChoice(prev, choice)
         : applyChoiceUsingWasm(prev, choice, uqm, graph, tree) ?? tsEngineForTree.applyChoice(prev, choice);
 
-      return present(next);
+      return next === prev ? prev : present(next);
     },
     presentState(state) {
       return present(state);

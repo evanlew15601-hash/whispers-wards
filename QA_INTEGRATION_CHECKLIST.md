@@ -84,8 +84,8 @@ This checklist is scoped to the two roadmap steps currently in flight:
   - [x] If a choice is gated and requirements aren’t met, `applyChoice` returns `prev`.
   - [x] If a choice is “once” and already used, `applyChoice` returns `prev`.
 - [x] Choice availability affects UI rendering consistently:
-  - [x] gated/locked choices are disabled (not hidden).
-  - [x] once choices become disabled after selection.
+  - [x] Response pool presentation hides gated/locked choices and caps visible choices at 8.
+  - [x] once choices disappear after selection.
 
 ### WASM engine parity
 - [x] `src/game/engine/uqmWasmConversationEngine.ts` graph compilation encodes the same availability rules.

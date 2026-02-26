@@ -124,19 +124,27 @@ describe('tsConversationEngine', () => {
     const engine = createTsConversationEngine(testTree as any);
     const start = engine.startNewGame();
 
+    const gatedChoice = testTree.opening.choices.find(c => c.id === 'one-time-ask')!;
+    const forbidsChoice = testTree.opening.choices.find(c => c.id === 'forbidden-if-token')!;
+    const learnChoice = testTree.opening.choices.find(c => c.id === 'learn-intel')!;
+
+    // UQM-style response pool presentation hides unavailable choices.
+    expect(start.currentDialogue!.choices.some(c => c.id === 'one-time-ask')).toBe(false);
+
     // Trying to pick the gated one-time choice without intel should be rejected.
-    const gatedChoice = start.currentDialogue!.choices.find(c => c.id === 'one-time-ask')!;
     expect(engine.applyChoice(start, gatedChoice)).toBe(start);
 
     // Learn the token.
-    const learnChoice = start.currentDialogue!.choices.find(c => c.id === 'learn-intel')!;
     const withToken = engine.applyChoice(start, learnChoice);
     expect(withToken).not.toBe(start);
     expect(withToken.knownSecrets).toContain('intel-token');
 
-    // Now the forbids choice should be locked.
-    const forbidsChoice = withToken.currentDialogue!.choices.find(c => c.id === 'forbidden-if-token')!;
+    // Now the forbids choice should be hidden (and still rejected if forced).
+    expect(withToken.currentDialogue!.choices.some(c => c.id === 'forbidden-if-token')).toBe(false);
     expect(engine.applyChoice(withToken, forbidsChoice)).toBe(withToken);
+
+    // The gated choice should now be visible.
+    expect(withToken.currentDialogue!.choices.some(c => c.id === 'one-time-ask')).toBe(true);
 
     // Take the one-time choice; it should add a usage marker.
     const asked = engine.applyChoice(withToken, gatedChoice);
@@ -144,11 +152,12 @@ describe('tsConversationEngine', () => {
     expect(asked.knownSecrets).toContain('learned-answer');
     expect(asked.knownSecrets.some(s => s.startsWith('choice-used:one-time-ask'))).toBe(true);
 
-    // Return to opening and verify the one-time choice is now locked.
+    // Return to opening and verify the one-time choice is now hidden/locked.
     const back = asked.currentDialogue!.choices[0];
     const backToOpening = engine.applyChoice(asked, back);
     expect(backToOpening.currentDialogue?.id).toBe('opening');
 
+    expect(backToOpening.currentDialogue!.choices.some(c => c.id === 'one-time-ask')).toBe(false);
     expect(engine.applyChoice(backToOpening, gatedChoice)).toBe(backToOpening);
   });
 });

@@ -5,7 +5,7 @@ import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { getDialogueChoiceLock, getDialogueChoiceSecretsToAdd } from './dialogueChoiceLocks';
+import { getDialogueChoiceLock, getDialogueChoiceLockFromStateParts, getDialogueChoiceSecretsToAdd } from './dialogueChoiceLocks';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
 
@@ -34,6 +34,54 @@ function startNewGameWithTree(tree: typeof dialogueTree): GameState {
     currentScene: 'game',
     currentDialogue: tree['opening'],
     log: [OPENING_LOG_LINE],
+  };
+}
+
+function presentDialogueNodeForResponsePool(state: GameState, tree: typeof dialogueTree): GameState {
+  if (!state.currentDialogue) return state;
+
+  const baseNode = tree[state.currentDialogue.id];
+  if (!baseNode) return state;
+
+  // Escape hatch used by tests/dev tooling: show the canonical node (including locked choices).
+  if (state.knownSecrets.includes('override')) {
+    if (state.currentDialogue === baseNode) return state;
+    return {
+      ...state,
+      currentDialogue: baseNode,
+    };
+  }
+
+  const availableChoices = baseNode.choices
+    .filter(choice => {
+      const lock = getDialogueChoiceLockFromStateParts({
+        knownSecrets: state.knownSecrets,
+        factions: state.factions,
+        choice,
+      });
+
+      return !lock.locked;
+    })
+    .slice(0, 8);
+
+  // If no choices are available, keep the base node as-is so the player can see
+  // what they are missing (reputation, intel, etc.).
+  if (availableChoices.length === 0) return state;
+
+  const currentChoices = state.currentDialogue.choices;
+  if (
+    currentChoices.length === availableChoices.length &&
+    currentChoices.every((c, i) => c.id === availableChoices[i]!.id)
+  ) {
+    return state;
+  }
+
+  return {
+    ...state,
+    currentDialogue: {
+      ...baseNode,
+      choices: availableChoices,
+    },
   };
 }
 
@@ -228,10 +276,16 @@ function applyChoiceWithTree(prev: GameState, choice: DialogueChoice, tree: type
 }
 
 export function createTsConversationEngine(tree: typeof dialogueTree = dialogueTree): ConversationEngine {
+  const present = (state: GameState) => presentDialogueNodeForResponsePool(state, tree);
+
   return {
-    createInitialState,
-    startNewGame: () => startNewGameWithTree(tree),
-    applyChoice: (prev, choice) => applyChoiceWithTree(prev, choice, tree),
+    createInitialState: () => present(createInitialState()),
+    startNewGame: () => present(startNewGameWithTree(tree)),
+    applyChoice(prev, choice) {
+      const next = applyChoiceWithTree(prev, choice, tree);
+      return next === prev ? prev : present(next);
+    },
+    presentState: present,
   };
 }
 
