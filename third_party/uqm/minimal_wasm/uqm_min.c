@@ -41,6 +41,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#if defined(__wasm__) || defined(__wasm32__) || defined(__wasm64__) || defined(__EMSCRIPTEN__)
+#define UQM_WASM_EXPORT(name) __attribute__((export_name(name))) __attribute__((used))
+#else
+#define UQM_WASM_EXPORT(name)
+#endif
+
 typedef uint32_t COUNT;
 typedef int32_t SIZE;
 typedef int BOOLEAN;
@@ -180,18 +186,50 @@ uqm_version_len (void)
 
 extern uint8_t __heap_base;
 static uint32_t heap_ptr;
+static uint32_t heap_base_ptr;
+
+static void
+ensure_heap_initialized (void)
+{
+	if (heap_ptr == 0)
+	{
+		heap_base_ptr = (uint32_t) (uintptr_t) &__heap_base;
+		heap_ptr = heap_base_ptr;
+	}
+}
 
 uint32_t
 uqm_alloc (uint32_t size)
 {
 	uint32_t p;
 
-	if (heap_ptr == 0)
-		heap_ptr = (uint32_t) (uintptr_t) &__heap_base;
+	ensure_heap_initialized ();
 
 	p = heap_ptr;
 	heap_ptr = (p + size + 7u) & ~7u;
 	return p;
+}
+
+/*
+ * Allocator helpers for temporary scratch allocations.
+ *
+ * These are used by JS/TS bindings to prevent unbounded linear-memory growth
+ * when repeatedly calling small helper functions (e.g. line fitting).
+ */
+uint32_t
+uqm_alloc_mark (void)
+{
+	ensure_heap_initialized ();
+	return heap_ptr;
+}
+
+void
+uqm_alloc_reset (uint32_t mark)
+{
+	ensure_heap_initialized ();
+	if (mark < heap_base_ptr)
+		mark = heap_base_ptr;
+	heap_ptr = (mark + 7u) & ~7u;
 }
 
 uint32_t
@@ -204,6 +242,55 @@ uqm_line_fit_chars (const char *str, uint32_t maxWidth)
 	t.CharCount = 0;
 	getLineWithinWidth (&t, &next, (SIZE) maxWidth, (COUNT) ~0u);
 	return t.CharCount;
+}
+
+/*
+ * uqm_construct_response
+ *
+ * Derived/adapted from The Ur-Quan Masters (UQM) `construct_response()` in:
+ *   third_party/uqm/sc2/src/uqm/commglue.c
+ *
+ * Upstream uses varargs and UQM string tables to splice together phrases.
+ * This minimal wasm variant instead concatenates a NULL-terminated array of
+ * pointers to 0-terminated UTF-8/ASCII strings.
+ */
+UQM_WASM_EXPORT("uqm_construct_response")
+uint32_t
+uqm_construct_response (char *outBuf, uint32_t outCap, const uint32_t *parts)
+{
+	uint32_t written;
+	uint32_t maxBytes;
+
+	written = 0;
+	if (outCap == 0)
+		return 0;
+
+	maxBytes = outCap - 1u;
+
+	if (parts)
+	{
+		for (;;)
+		{
+			uint32_t p;
+			const uint8_t *s;
+
+			p = *parts++;
+			if (p == 0)
+				break;
+
+			s = (const uint8_t *) (uintptr_t) p;
+			while (*s)
+			{
+				if (written >= maxBytes)
+					goto done;
+				((uint8_t *) outBuf)[written++] = *s++;
+			}
+		}
+	}
+
+done:
+	((uint8_t *) outBuf)[written] = 0;
+	return written;
 }
 
 /*
@@ -231,12 +318,6 @@ uqm_line_fit_chars (const char *str, uint32_t maxWidth)
  *
  * ChoiceMeta is treated as packed (18 bytes).
  */
-
-#if defined(__wasm__) || defined(__wasm32__) || defined(__wasm64__) || defined(__EMSCRIPTEN__)
-#define UQM_WASM_EXPORT(name) __attribute__((export_name(name))) __attribute__((used))
-#else
-#define UQM_WASM_EXPORT(name)
-#endif
 
 static int32_t conv_currentNode;
 static int32_t conv_rep[3];

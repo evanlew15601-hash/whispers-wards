@@ -31,9 +31,12 @@
   Exports:
     - memory
     - uqm_alloc (bump allocator)
+    - uqm_alloc_mark / uqm_alloc_reset (scratch allocator helpers)
     - uqm_version_ptr / uqm_version_len
     - uqm_line_fit_chars(ptr, maxWidth) -> number of characters that fit
       in maxWidth columns without breaking a word.
+    - uqm_construct_response(outPtr, outCap, partsPtr) -> bytesWritten
+      (concatenate a NULL-terminated u32 pointer array of C-strings)
     - uqm_conv_* conversation API (see uqm_min.c for layout details)
 ;)
 
@@ -82,6 +85,22 @@
     )
 
     (local.get $p)
+  )
+
+  ;; uint32_t uqm_alloc_mark(void)
+  (func (export "uqm_alloc_mark") (result i32)
+    (global.get $heap_ptr)
+  )
+
+  ;; void uqm_alloc_reset(uint32_t mark)
+  (func (export "uqm_alloc_reset") (param $mark i32)
+    ;; heap_ptr = align8(mark)
+    (global.set $heap_ptr
+      (i32.and
+        (i32.add (local.get $mark) (i32.const 7))
+        (i32.const -8)
+      )
+    )
   )
 
   ;; Helper: load byte at ptr
@@ -178,6 +197,77 @@
     )
 
     (local.get $count)
+  )
+
+  ;; uint32_t uqm_construct_response(uint8_t* outBuf, uint32_t outCap, const uint32_t* parts)
+  ;; ABI: (outPtr: i32, outCap: i32, partsPtr: i32) -> i32
+  (func (export "uqm_construct_response") (param $outPtr i32) (param $outCap i32) (param $partsPtr i32) (result i32)
+    (local $written i32)
+    (local $maxBytes i32)
+    (local $arr i32)
+    (local $p i32)
+    (local $s i32)
+    (local $b i32)
+
+    (local.set $written (i32.const 0))
+
+    (if (i32.eqz (local.get $outCap))
+      (then (return (i32.const 0)))
+    )
+
+    (local.set $maxBytes (i32.sub (local.get $outCap) (i32.const 1)))
+
+    (block $done
+      (if (i32.eqz (local.get $partsPtr))
+        (then (br $done))
+      )
+
+      (local.set $arr (local.get $partsPtr))
+
+      (block $partsDone
+        (loop $partsLoop
+          (local.set $p (i32.load (local.get $arr)))
+          (if (i32.eqz (local.get $p))
+            (then (br $partsDone))
+          )
+
+          (local.set $arr (i32.add (local.get $arr) (i32.const 4)))
+          (local.set $s (local.get $p))
+
+          (block $stringDone
+            (loop $stringLoop
+              (local.set $b (call $load8 (local.get $s)))
+              (if (i32.eqz (local.get $b))
+                (then (br $stringDone))
+              )
+
+              (if (i32.ge_u (local.get $written) (local.get $maxBytes))
+                (then (br $done))
+              )
+
+              (i32.store8
+                (i32.add (local.get $outPtr) (local.get $written))
+                (local.get $b)
+              )
+
+              (local.set $written (i32.add (local.get $written) (i32.const 1)))
+              (local.set $s (i32.add (local.get $s) (i32.const 1)))
+              (br $stringLoop)
+            )
+          )
+
+          (br $partsLoop)
+        )
+      )
+    )
+
+    ;; Always NUL-terminate when outCap > 0.
+    (i32.store8
+      (i32.add (local.get $outPtr) (local.get $written))
+      (i32.const 0)
+    )
+
+    (local.get $written)
   )
 
   (func $conv_node_meta_ptr (result i32)

@@ -140,10 +140,21 @@ export function buildEncounterDialogueNode(encounter: SecondaryEncounter): Dialo
   const kind: SecondaryEncounterKind = encounter.kind ?? 'summit';
   const vignette = pickEncounterVignette(encounter);
 
+  const textParts = [
+    vignette.preface,
+    '\n\n',
+    encounter.title,
+    '\n\n',
+    encounter.description,
+    '\n\n',
+    vignette.prompt,
+  ];
+
   return {
     id: `encounter:${encounter.id}`,
     speaker: vignette.speaker,
-    text: `${vignette.preface}\n\n${encounter.title}\n\n${encounter.description}\n\n${vignette.prompt}`,
+    text: textParts.join(''),
+    textParts,
     choices: resolutionChoicesFor(kind, encounter.id, vignette.choiceTexts),
   };
 }

@@ -1,9 +1,21 @@
 export type UqmWasmExports = {
   memory: WebAssembly.Memory;
   uqm_alloc: (size: number) => number;
+  uqm_alloc_mark: () => number;
+  uqm_alloc_reset: (mark: number) => void;
   uqm_version_ptr: () => number;
   uqm_version_len: () => number;
   uqm_line_fit_chars: (strPtr: number, maxWidth: number) => number;
+
+  /**
+   * Derived/adapted from UQM's `construct_response` (commglue.c).
+   *
+   * ABI: (outPtr, outCap, partsPtr) -> bytesWritten
+   * - `outPtr`: pointer to output buffer
+   * - `outCap`: output buffer capacity in bytes
+   * - `partsPtr`: pointer to a NULL-terminated u32 array of string pointers
+   */
+  uqm_construct_response: (outPtr: number, outCap: number, partsPtr: number) => number;
 
   uqm_conv_reset: (startNode: number, rep0: number, rep1: number, rep2: number, secrets: number) => void;
   uqm_conv_set_graph: (nodesPtr: number, choicesPtr: number) => void;
@@ -32,6 +44,12 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
   const uqm_alloc = (raw.uqm_alloc ?? raw._uqm_alloc) as
     | ((size: number) => number)
     | undefined;
+  const uqm_alloc_mark = (raw.uqm_alloc_mark ?? raw._uqm_alloc_mark) as
+    | (() => number)
+    | undefined;
+  const uqm_alloc_reset = (raw.uqm_alloc_reset ?? raw._uqm_alloc_reset) as
+    | ((mark: number) => void)
+    | undefined;
   const uqm_version_ptr = (raw.uqm_version_ptr ?? raw.uqm_version ?? raw._uqm_version_ptr ?? raw._uqm_version) as
     | (() => number)
     | undefined;
@@ -40,6 +58,10 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
     | undefined;
   const uqm_line_fit_chars = (raw.uqm_line_fit_chars ?? raw._uqm_line_fit_chars) as
     | ((strPtr: number, maxWidth: number) => number)
+    | undefined;
+
+  const uqm_construct_response = (raw.uqm_construct_response ?? raw._uqm_construct_response) as
+    | ((outPtr: number, outCap: number, partsPtr: number) => number)
     | undefined;
 
   const uqm_conv_reset = (raw.uqm_conv_reset ?? raw._uqm_conv_reset) as
@@ -70,9 +92,12 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
   if (
     !memory ||
     !uqm_alloc ||
+    !uqm_alloc_mark ||
+    !uqm_alloc_reset ||
     !uqm_version_ptr ||
     !uqm_version_len ||
     !uqm_line_fit_chars ||
+    !uqm_construct_response ||
     !uqm_conv_reset ||
     !uqm_conv_set_graph ||
     !uqm_conv_get_current_node ||
@@ -88,9 +113,12 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
   return {
     memory,
     uqm_alloc,
+    uqm_alloc_mark,
+    uqm_alloc_reset,
     uqm_version_ptr,
     uqm_version_len,
     uqm_line_fit_chars,
+    uqm_construct_response,
 
     uqm_conv_reset,
     uqm_conv_set_graph,
@@ -139,17 +167,28 @@ async function instantiateUqmWasm(): Promise<UqmWasmRuntime> {
       return decoder.decode(new Uint8Array(exports.memory.buffer, ptr, len));
     },
     lineFitChars(text, maxWidth) {
-      const bytes = encoder.encode(text);
-      const ptr = exports.uqm_alloc(bytes.length + 1);
-      const mem = new Uint8Array(exports.memory.buffer, ptr, bytes.length + 1);
-      mem.set(bytes);
-      mem[bytes.length] = 0;
-      return exports.uqm_line_fit_chars(ptr, maxWidth);
+      const mark = exports.uqm_alloc_mark();
+      try {
+        const bytes = encoder.encode(text);
+        const ptr = exports.uqm_alloc(bytes.length + 1);
+        const mem = new Uint8Array(exports.memory.buffer, ptr, bytes.length + 1);
+        mem.set(bytes);
+        mem[bytes.length] = 0;
+        return exports.uqm_line_fit_chars(ptr, maxWidth);
+      } finally {
+        exports.uqm_alloc_reset(mark);
+      }
     },
   };
 }
 
 export function loadUqmWasmRuntime(): Promise<UqmWasmRuntime> {
-  if (!cached) cached = instantiateUqmWasm();
+  if (!cached) {
+    cached = instantiateUqmWasm().catch(err => {
+      // Avoid caching transient failures forever.
+      cached = null;
+      throw err;
+    });
+  }
   return cached;
 }

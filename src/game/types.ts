@@ -25,6 +25,8 @@ export interface DialogueNode {
   speaker: string;
   speakerFaction?: string;
   text: string;
+  /** Optional multi-part source used for UQM wasm response construction in the UI layer. */
+  textParts?: string[];
   choices: DialogueChoice[];
 }
 

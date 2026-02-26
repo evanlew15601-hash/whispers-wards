@@ -1,6 +1,7 @@
 import { DialogueNode, DialogueChoice, Faction } from '@/game/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Fragment, useEffect, useState } from 'react';
+import { constructResponseUqm } from '@/game/engine/uqmConstructResponse';
 import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } from '@/game/engine/uqmTextWrap';
 
 interface DialoguePanelProps {
@@ -33,7 +34,8 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
     setDialogueLines(wrapTextLinesJs(node.text, DIALOGUE_MAX_COLUMNS));
 
     void (async () => {
-      const lines = await wrapTextLinesUqm(node.text, DIALOGUE_MAX_COLUMNS);
+      const text = node.textParts ? await constructResponseUqm(node.textParts) : node.text;
+      const lines = await wrapTextLinesUqm(text, DIALOGUE_MAX_COLUMNS);
       if (!cancelled) setDialogueLines(lines);
     })();
 

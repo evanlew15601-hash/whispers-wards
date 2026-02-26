@@ -10,9 +10,12 @@ describe('UQM minimal wasm build artifact', () => {
 
       expect(exp.memory).toBeInstanceOf(WebAssembly.Memory);
       expect(typeof exp.uqm_alloc).toBe('function');
+      expect(typeof exp.uqm_alloc_mark).toBe('function');
+      expect(typeof exp.uqm_alloc_reset).toBe('function');
       expect(typeof exp.uqm_version_ptr).toBe('function');
       expect(typeof exp.uqm_version_len).toBe('function');
       expect(typeof exp.uqm_line_fit_chars).toBe('function');
+      expect(typeof exp.uqm_construct_response).toBe('function');
 
       expect(typeof exp.uqm_conv_reset).toBe('function');
       expect(typeof exp.uqm_conv_set_graph).toBe('function');
@@ -44,6 +47,49 @@ describe('UQM minimal wasm build artifact', () => {
 
       // With maxWidth=6, should fit "Hello" (5 chars).
       expect(exp.uqm_line_fit_chars(ptr, 6)).toBe(5);
+    },
+    60_000,
+  );
+
+  it(
+    'construct-response concatenates a NULL-terminated pointer list into an output buffer',
+    async () => {
+      const exp = await loadUqmMinimalWasmExports();
+
+      const enc = new TextEncoder();
+      const dec = new TextDecoder();
+
+      function writeCString(s: string): number {
+        const bytes = enc.encode(s);
+        const ptr = exp.uqm_alloc(bytes.length + 1);
+        const mem = new Uint8Array(exp.memory.buffer, ptr, bytes.length + 1);
+        mem.set(bytes);
+        mem[bytes.length] = 0;
+        return ptr;
+      }
+
+      const helloPtr = writeCString('Hello');
+      const spacePtr = writeCString(' ');
+      const worldPtr = writeCString('world');
+
+      const partsPtr = exp.uqm_alloc(4 * 4);
+      const parts = new Uint32Array(exp.memory.buffer, partsPtr, 4);
+      parts[0] = helloPtr;
+      parts[1] = spacePtr;
+      parts[2] = worldPtr;
+      parts[3] = 0;
+
+      const outCap = 64;
+      const outPtr = exp.uqm_alloc(outCap);
+
+      const written = exp.uqm_construct_response(outPtr, outCap, partsPtr);
+      expect(written).toBe(11);
+
+      const out = new Uint8Array(exp.memory.buffer, outPtr, outCap);
+      expect(out[written]).toBe(0);
+
+      const s = dec.decode(out.subarray(0, written));
+      expect(s).toBe('Hello world');
     },
     60_000,
   );

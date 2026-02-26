@@ -58,9 +58,12 @@ function validateWasm(bytes) {
     const ok = (names) => names.some((n) => n in exp && typeof exp[n] === 'function');
 
     if (!ok(['uqm_alloc', '_uqm_alloc'])) return false;
+    if (!ok(['uqm_alloc_mark', '_uqm_alloc_mark'])) return false;
+    if (!ok(['uqm_alloc_reset', '_uqm_alloc_reset'])) return false;
     if (!ok(['uqm_version_ptr', 'uqm_version', '_uqm_version_ptr', '_uqm_version'])) return false;
     if (!ok(['uqm_version_len', '_uqm_version_len'])) return false;
     if (!ok(['uqm_line_fit_chars', '_uqm_line_fit_chars'])) return false;
+    if (!ok(['uqm_construct_response', '_uqm_construct_response'])) return false;
 
     if (!ok(['uqm_conv_reset', '_uqm_conv_reset'])) return false;
     if (!ok(['uqm_conv_set_graph', '_uqm_conv_set_graph'])) return false;
@@ -125,9 +128,12 @@ if (!built && shouldTry('zig') && commandExists('zig')) {
     '-nostdlib',
     '-Wl,--no-entry',
     '-Wl,--export=uqm_alloc',
+    '-Wl,--export=uqm_alloc_mark',
+    '-Wl,--export=uqm_alloc_reset',
     '-Wl,--export=uqm_version_ptr',
     '-Wl,--export=uqm_version_len',
     '-Wl,--export=uqm_line_fit_chars',
+    '-Wl,--export=uqm_construct_response',
     '-Wl,--export=uqm_conv_reset',
     '-Wl,--export=uqm_conv_set_graph',
     '-Wl,--export=uqm_conv_get_current_node',
@@ -159,9 +165,12 @@ if (!built && shouldTry('clang')) {
       '-nostdlib',
       '-Wl,--no-entry',
       '-Wl,--export=uqm_alloc',
+      '-Wl,--export=uqm_alloc_mark',
+      '-Wl,--export=uqm_alloc_reset',
       '-Wl,--export=uqm_version_ptr',
       '-Wl,--export=uqm_version_len',
       '-Wl,--export=uqm_line_fit_chars',
+      '-Wl,--export=uqm_construct_response',
       '-Wl,--export=uqm_conv_reset',
       '-Wl,--export=uqm_conv_set_graph',
       '-Wl,--export=uqm_conv_get_current_node',
@@ -194,7 +203,7 @@ if (!built && shouldTry('emcc') && commandExists('emcc')) {
     '-s',
     'ERROR_ON_UNDEFINED_SYMBOLS=1',
     '-s',
-    'EXPORTED_FUNCTIONS=["_uqm_alloc","_uqm_version_ptr","_uqm_version_len","_uqm_line_fit_chars","_uqm_conv_reset","_uqm_conv_set_graph","_uqm_conv_get_current_node","_uqm_conv_get_rep","_uqm_conv_get_secrets","_uqm_conv_get_choice_count","_uqm_conv_choice_is_locked","_uqm_conv_choose"]',
+    'EXPORTED_FUNCTIONS=["_uqm_alloc","_uqm_alloc_mark","_uqm_alloc_reset","_uqm_version_ptr","_uqm_version_len","_uqm_line_fit_chars","_uqm_construct_response","_uqm_conv_reset","_uqm_conv_set_graph","_uqm_conv_get_current_node","_uqm_conv_get_rep","_uqm_conv_get_secrets","_uqm_conv_get_choice_count","_uqm_conv_choice_is_locked","_uqm_conv_choose"]',
     '-Wl,--export-memory',
     '-o',
     outWasm,
