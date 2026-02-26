@@ -29,8 +29,8 @@ This checklist is scoped to the two roadmap steps currently in flight:
   - [x] Have consequences applied exactly once.
   - [x] Are removed from inbox after expiry processing.
   - [x] If multiple expire on the same turn, consequences apply in deterministic order.
-- [ ] Verify interactions between expiry and “selected encounter in dialogue”:
-  - [ ] If an encounter expires while the player is in its dialogue, define behavior (auto-resolve? eject back to hub? allow completion?).
+- [x] Verify interactions between expiry and “selected encounter in dialogue”:
+  - [x] Encounter dialogues currently only contain non-turn-advancing actions (resolve or **Defer**). Expiry is evaluated only on turn advance, so an encounter cannot expire mid-dialogue.
 
 ### Save/load + migration
 - [x] Persist inbox state in `src/game/storage.ts` schema.

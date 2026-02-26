@@ -58,6 +58,9 @@ describe('encounter resolution (engine integration)', () => {
     const node = buildEncounterDialogueNode(encounter);
 
     for (const choice of node.choices) {
+      const parsed = parseEncounterResolutionChoiceId(choice.id);
+      if (!parsed) continue;
+
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
       const next = tsConversationEngine.applyChoice(start, choice);
 
@@ -66,7 +69,7 @@ describe('encounter resolution (engine integration)', () => {
       expect(next.currentDialogue?.id).toBe('concord-hub');
       expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
 
-      const resolution = parseEncounterResolutionChoiceId(choice.id)!.resolution;
+      const resolution = parsed.resolution;
       const tension = next.world.tensions[a][b];
       const route = next.world.tradeRoutes[routeId];
 
@@ -118,6 +121,9 @@ describe('encounter resolution (engine integration)', () => {
     const node = buildEncounterDialogueNode(encounter);
 
     for (const choice of node.choices) {
+      const parsed = parseEncounterResolutionChoiceId(choice.id);
+      if (!parsed) continue;
+
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
       const next = tsConversationEngine.applyChoice(start, choice);
 
@@ -126,7 +132,7 @@ describe('encounter resolution (engine integration)', () => {
       expect(next.currentDialogue?.id).toBe('concord-hub');
       expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
 
-      const resolution = parseEncounterResolutionChoiceId(choice.id)!.resolution;
+      const resolution = parsed.resolution;
       const tension = next.world.tensions[a][b];
       const route = next.world.tradeRoutes[routeId];
 
@@ -174,6 +180,9 @@ describe('encounter resolution (engine integration)', () => {
     const node = buildEncounterDialogueNode(encounter);
 
     for (const choice of node.choices) {
+      const parsed = parseEncounterResolutionChoiceId(choice.id);
+      if (!parsed) continue;
+
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
       const next = tsConversationEngine.applyChoice(start, choice);
 
@@ -182,7 +191,7 @@ describe('encounter resolution (engine integration)', () => {
       expect(next.currentDialogue?.id).toBe('concord-hub');
       expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
 
-      const resolution = parseEncounterResolutionChoiceId(choice.id)!.resolution;
+      const resolution = parsed.resolution;
       const tension = next.world.tensions[a][b];
       const region = next.world.regions[regionId];
 
@@ -223,6 +232,9 @@ describe('encounter resolution (engine integration)', () => {
     const node = buildEncounterDialogueNode(encounter);
 
     for (const choice of node.choices) {
+      const parsed = parseEncounterResolutionChoiceId(choice.id);
+      if (!parsed) continue;
+
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
       const next = tsConversationEngine.applyChoice(start, choice);
 
@@ -231,7 +243,7 @@ describe('encounter resolution (engine integration)', () => {
       expect(next.currentDialogue?.id).toBe('concord-hub');
       expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
 
-      const resolution = parseEncounterResolutionChoiceId(choice.id)!.resolution;
+      const resolution = parsed.resolution;
       const tension = next.world.tensions[a][b];
 
       if (resolution === 'summit-accord') {
@@ -259,7 +271,7 @@ describe('encounter resolution (engine integration)', () => {
     };
 
     const encounterNode = buildEncounterDialogueNode(enc1);
-    const resolutionChoice = encounterNode.choices[0];
+    const resolutionChoice = encounterNode.choices.find(c => parseEncounterResolutionChoiceId(c.id) != null)!;
 
     const base = tsConversationEngine.createInitialState();
 
@@ -317,7 +329,7 @@ describe('encounter resolution (engine integration)', () => {
       currentDialogue: buildEncounterDialogueNode(enc1),
     };
 
-    const choice1 = state.currentDialogue!.choices[0];
+    const choice1 = state.currentDialogue!.choices.find(c => parseEncounterResolutionChoiceId(c.id) != null)!;
     const after1 = tsConversationEngine.applyChoice(state, choice1);
 
     expect(after1.pendingEncounters.map(e => e.id)).toEqual(['enc-b']);
@@ -329,10 +341,48 @@ describe('encounter resolution (engine integration)', () => {
       currentDialogue: buildEncounterDialogueNode(enc2),
     };
 
-    const choice2 = inSecondEncounter.currentDialogue!.choices[0];
+    const choice2 = inSecondEncounter.currentDialogue!.choices.find(c => parseEncounterResolutionChoiceId(c.id) != null)!;
     const after2 = tsConversationEngine.applyChoice(inSecondEncounter, choice2);
 
     expect(after2).toBe(inSecondEncounter);
     expect(after2.pendingEncounters.map(e => e.id)).toEqual(['enc-b']);
+  });
+
+  it('allows deferring an encounter without resolving it', () => {
+    const baseWorld = createInitialWorldState(initialFactions);
+
+    const enc1: SecondaryEncounter = {
+      id: 'enc-defer',
+      kind: 'summit',
+      title: 'Summit',
+      description: 'Test summit encounter.',
+      relatedFactions: ['iron-pact', 'verdant-court'],
+      expiresOnTurn: 12,
+    };
+
+    const node = buildEncounterDialogueNode(enc1);
+    const deferChoice = node.choices.find(c => c.id === `encounter-defer:${enc1.id}`)!;
+
+    const base = tsConversationEngine.createInitialState();
+    const state: GameState = {
+      ...base,
+      currentScene: 'game',
+      factions: initialFactions.map(f => ({ ...f })),
+      log: [],
+      turnNumber: 10,
+      rngSeed: 1,
+      world: baseWorld,
+      pendingEncounters: [enc1],
+      encounterResolvedOnTurn: null,
+      currentDialogue: node,
+    };
+
+    const next = tsConversationEngine.applyChoice(state, deferChoice);
+
+    expect(next.turnNumber).toBe(10);
+    expect(next.pendingEncounters.map(e => e.id)).toEqual(['enc-defer']);
+    expect(next.encounterResolvedOnTurn).toBeNull();
+    expect(next.currentDialogue?.id).toBe('concord-hub');
+    expect(next.log.at(-1)).toBe(`> ${deferChoice.text}`);
   });
 });

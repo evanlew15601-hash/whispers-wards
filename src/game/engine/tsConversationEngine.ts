@@ -41,6 +41,19 @@ function applyChoiceWithTree(prev: GameState, choice: DialogueChoice, tree: type
   const lock = getDialogueChoiceLock(prev, choice);
   if (lock.locked) return prev;
 
+  const encounterDeferPrefix = 'encounter-defer:';
+  if (choice.id.startsWith(encounterDeferPrefix)) {
+    const encounterId = choice.id.slice(encounterDeferPrefix.length);
+
+    if (prev.currentDialogue?.id !== `encounter:${encounterId}`) return prev;
+
+    return {
+      ...prev,
+      currentDialogue: tree['concord-hub'] ?? prev.currentDialogue,
+      log: [...prev.log, `> ${choice.text}`],
+    };
+  }
+
   const encounterPick = parseEncounterResolutionChoiceId(choice.id);
   const encounterInInbox = encounterPick
     ? prev.pendingEncounters.find(e => e.id === encounterPick.encounterId) ?? null

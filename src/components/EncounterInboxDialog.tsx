@@ -21,7 +21,7 @@ const EncounterInboxDialog = ({ open, onOpenChange, encounters, turnNumber, onSe
         <DialogHeader>
           <DialogTitle className="font-display tracking-[0.2em] uppercase">Pending Encounters</DialogTitle>
           <DialogDescription>
-            Choose one encounter to address. You can resolve at most one encounter per turn.
+            Choose one encounter to review. You can resolve at most one encounter per turn.
           </DialogDescription>
         </DialogHeader>
 

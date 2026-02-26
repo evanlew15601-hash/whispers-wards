@@ -10,6 +10,8 @@ A small, dialogue-driven browser game about high-fantasy diplomacy, built with V
 
 ## Development
 
+See `CROWN_CONCORD_ROADMAP_EXECUTION_PLAN.md` for the current execution plan and QA workflow.
+
 This project does not require any environment variables by default. If you add local secrets, copy `.env.example` to `.env` (the `.env` file is gitignored).
 
 ```sh
@@ -17,6 +19,9 @@ npm install
 npm run dev
 npm run test
 npm run build
+
+# Full local CI-style check (lint + typecheck + test + build)
+npm run qa
 ```
 
 ### UQM WASM demo
