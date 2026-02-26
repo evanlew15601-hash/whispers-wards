@@ -382,7 +382,7 @@ export const listSaveSlots = (): SaveSlotInfo[] => {
 
     return {
       id,
-      meta: slot?.meta ?? null,
+      meta: slot?.meta ? (slot.meta as SaveSlotMeta) : null,
     };
   });
 };
@@ -398,14 +398,14 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
   store.slots[String(id)] = {
     meta: createMeta(state),
     state: {
-      factions: state.factions,
-      events: state.events,
+      factions: state.factions as any,
+      events: state.events as any,
       knownSecrets: state.knownSecrets,
       turnNumber: state.turnNumber,
       log: state.log,
       rngSeed: state.rngSeed,
-      world: state.world,
-      pendingEncounter: state.pendingEncounter,
+      world: state.world as any,
+      pendingEncounter: state.pendingEncounter as any,
       currentScene: state.currentScene,
       currentDialogueId: state.currentDialogue?.id ?? null,
     },
@@ -425,9 +425,9 @@ export const loadGameFromSlot = (slotId: number): LoadableGameState | null => {
   const { currentDialogueId, ...state } = slot.state;
 
   return {
-    ...state,
+    ...(state as any),
     currentDialogue: currentDialogueId ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue']) : null,
-  };
+  } as LoadableGameState;
 };
 
 export const deleteSaveSlot = (slotId: number): boolean => {
