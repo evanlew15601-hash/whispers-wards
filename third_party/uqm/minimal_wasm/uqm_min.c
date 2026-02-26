@@ -314,9 +314,17 @@ done:
  *     i16 reqFaction;
  *     i16 reqMin;
  *     u32 revealSecretMask;
+ *
+ *     // UQM-style response pool semantics (subset):
+ *     // - requiresMask: choice is locked unless all bits are set in secrets
+ *     // - forbidsMask: choice is locked if any bit is set in secrets
+ *     // - usedMask: choice is locked if any bit is set in secrets; on choose, bits are added
+ *     u32 requiresMask;
+ *     u32 forbidsMask;
+ *     u32 usedMask;
  *   }
  *
- * ChoiceMeta is treated as packed (18 bytes).
+ * ChoiceMeta is treated as packed (30 bytes).
  */
 
 static int32_t conv_currentNode;
@@ -380,7 +388,7 @@ conv_graph_node_meta_ptr (uint32_t nodeIdx)
 static uint32_t
 conv_graph_choice_ptr (uint32_t choiceIdx)
 {
-	return conv_choicesPtr + choiceIdx * 18u;
+	return conv_choicesPtr + choiceIdx * 30u;
 }
 
 static uint32_t
@@ -414,6 +422,9 @@ conv_choice_is_locked_internal (int32_t localIdx)
 	uint32_t choiceCount;
 	uint32_t absChoice;
 	uint32_t choicePtr;
+	uint32_t requiresMask;
+	uint32_t forbidsMask;
+	uint32_t usedMask;
 	int32_t reqFaction;
 	int32_t reqMin;
 	int32_t rep;
@@ -434,6 +445,19 @@ conv_choice_is_locked_internal (int32_t localIdx)
 	if (absChoice >= conv_graph_total_choices ())
 		return 1;
 	choicePtr = conv_graph_choice_ptr (absChoice);
+
+	requiresMask = load_u32_le (choicePtr + 18u);
+	forbidsMask = load_u32_le (choicePtr + 22u);
+	usedMask = load_u32_le (choicePtr + 26u);
+
+	if ((usedMask & conv_secretsMask) != 0u)
+		return 1;
+
+	if ((requiresMask & conv_secretsMask) != requiresMask)
+		return 1;
+
+	if ((forbidsMask & conv_secretsMask) != 0u)
+		return 1;
 
 	reqFaction = load_i16_le (choicePtr + 10u);
 	reqMin = load_i16_le (choicePtr + 12u);
@@ -551,6 +575,7 @@ uqm_conv_choose (int32_t localIdx)
 	conv_rep[1] += d1;
 	conv_rep[2] += d2;
 	conv_secretsMask |= reveal;
+	conv_secretsMask |= load_u32_le (choicePtr + 26u);
 	conv_currentNode = nextNode;
 
 	return nextNode;

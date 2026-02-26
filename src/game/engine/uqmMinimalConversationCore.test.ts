@@ -8,7 +8,7 @@ function writeGraph(exports: UqmMinimalNormalizedExports) {
   const totalChoices = 2;
 
   const nodesSize = 8 + nodeCount * 8;
-  const choicesSize = totalChoices * 18;
+  const choicesSize = totalChoices * 30;
 
   const nodesPtr = exports.uqm_alloc(nodesSize);
   const choicesPtr = exports.uqm_alloc(choicesSize);
@@ -28,13 +28,16 @@ function writeGraph(exports: UqmMinimalNormalizedExports) {
   mem.setUint32(nodesPtr + 8 + 8 + 4, 1, true);
 
   // choice 0 (node 0 -> node 1)
-  // Layout (packed 18 bytes):
+  // Layout (packed 30 bytes):
   // i32 nextNode @0
   // i16 d0,d1,d2 @4,@6,@8
   // i16 reqFaction @10
   // i16 reqMin @12
   // u32 revealMask @14
-  let base = choicesPtr + 0 * 18;
+  // u32 requiresMask @18
+  // u32 forbidsMask @22
+  // u32 usedMask @26
+  let base = choicesPtr + 0 * 30;
   mem.setInt32(base + 0, 1, true);
   mem.setInt16(base + 4, 5, true);
   mem.setInt16(base + 6, -3, true);
@@ -42,9 +45,12 @@ function writeGraph(exports: UqmMinimalNormalizedExports) {
   mem.setInt16(base + 10, -1, true);
   mem.setInt16(base + 12, 0, true);
   mem.setUint32(base + 14, 0x1, true);
+  mem.setUint32(base + 18, 0x0, true);
+  mem.setUint32(base + 22, 0x0, true);
+  mem.setUint32(base + 26, 0x4, true);
 
-  // choice 1 (node 1 -> end), gated on rep0 >= 10
-  base = choicesPtr + 1 * 18;
+  // choice 1 (node 1 -> end), gated on rep0 >= 10, and requires secret bit 0x1
+  base = choicesPtr + 1 * 30;
   mem.setInt32(base + 0, -1, true);
   mem.setInt16(base + 4, 0, true);
   mem.setInt16(base + 6, 0, true);
@@ -52,6 +58,9 @@ function writeGraph(exports: UqmMinimalNormalizedExports) {
   mem.setInt16(base + 10, 0, true);
   mem.setInt16(base + 12, 10, true);
   mem.setUint32(base + 14, 0x2, true);
+  mem.setUint32(base + 18, 0x1, true);
+  mem.setUint32(base + 22, 0x2, true);
+  mem.setUint32(base + 26, 0x0, true);
 
   exports.uqm_conv_set_graph(nodesPtr, choicesPtr);
 }
@@ -63,7 +72,7 @@ describe('uqm minimal wasm conversation core', () => {
     exp = await loadUqmMinimalWasmExports();
   }, 60_000);
 
-  it('uses the expected packed ChoiceMeta (18 bytes) with little-endian loads', () => {
+  it('uses the expected packed ChoiceMeta (30 bytes) with little-endian loads', () => {
     writeGraph(exp);
 
     exp.uqm_conv_reset(0, 0, 0, 0, 0);
@@ -78,17 +87,30 @@ describe('uqm minimal wasm conversation core', () => {
     expect(exp.uqm_conv_get_rep(0)).toBe(5);
     expect(exp.uqm_conv_get_rep(1)).toBe(-3);
     expect(exp.uqm_conv_get_rep(2)).toBe(0);
-    expect(exp.uqm_conv_get_secrets()).toBe(0x1);
+
+    // choice0 adds reveal=0x1 and usedMask=0x4
+    expect(exp.uqm_conv_get_secrets()).toBe(0x5);
     expect(exp.uqm_conv_get_current_node()).toBe(1);
 
     // The second node should exist (would not if nextNode were read with wrong endianness).
     expect(exp.uqm_conv_get_choice_count()).toBe(1);
   });
 
-  it('enforces reputation-gated locks and does not advance on locked choices', () => {
+  it('locks once choices via usedMask', () => {
     writeGraph(exp);
 
-    exp.uqm_conv_reset(1, 5, 0, 0, 0x1);
+    exp.uqm_conv_reset(0, 0, 0, 0, 0x4);
+    expect(exp.uqm_conv_get_choice_count()).toBe(1);
+    expect(exp.uqm_conv_choice_is_locked(0)).toBe(1);
+    expect(exp.uqm_conv_choose(0)).toBe(-1);
+    expect(exp.uqm_conv_get_current_node()).toBe(0);
+  });
+
+  it('enforces reputation + requiresMask locks and does not advance on locked choices', () => {
+    writeGraph(exp);
+
+    // Missing required secret (0x1) => locked even though rep would otherwise qualify.
+    exp.uqm_conv_reset(1, 10, 0, 0, 0x0);
 
     expect(exp.uqm_conv_get_choice_count()).toBe(1);
     expect(exp.uqm_conv_choice_is_locked(0)).toBe(1);
@@ -103,7 +125,11 @@ describe('uqm minimal wasm conversation core', () => {
     expect(exp.uqm_conv_get_secrets()).toBe(prevSecrets);
     expect(exp.uqm_conv_get_rep(0)).toBe(prevRep0);
 
-    // Now unlock and choose.
+    // Still locked if a forbidden secret is present.
+    exp.uqm_conv_reset(1, 10, 0, 0, 0x3);
+    expect(exp.uqm_conv_choice_is_locked(0)).toBe(1);
+
+    // Now unlock by providing required secret, meeting rep requirement, and not having forbidden bits.
     exp.uqm_conv_reset(1, 10, 0, 0, 0x1);
     expect(exp.uqm_conv_choice_is_locked(0)).toBe(0);
 

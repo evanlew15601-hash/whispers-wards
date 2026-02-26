@@ -351,6 +351,9 @@
     (local $reqFaction i32)
     (local $reqMin i32)
     (local $rep i32)
+    (local $requiresMask i32)
+    (local $forbidsMask i32)
+    (local $usedMask i32)
 
     (local.set $nodePtr (call $conv_node_meta_ptr))
     (if (i32.eqz (local.get $nodePtr))
@@ -376,7 +379,27 @@
       (then (return (i32.const 1)))
     )
 
-    (local.set $choicePtr (i32.add (local.get $choicesBase) (i32.mul (local.get $absChoice) (i32.const 18))))
+    ;; ChoiceMeta is packed (30 bytes).
+    (local.set $choicePtr (i32.add (local.get $choicesBase) (i32.mul (local.get $absChoice) (i32.const 30))))
+
+    (local.set $requiresMask (i32.load offset=18 (local.get $choicePtr)))
+    (local.set $forbidsMask (i32.load offset=22 (local.get $choicePtr)))
+    (local.set $usedMask (i32.load offset=26 (local.get $choicePtr)))
+
+    ;; once: locked if any usedMask bit is already present
+    (if (i32.ne (i32.and (local.get $usedMask) (global.get $conv_secrets)) (i32.const 0))
+      (then (return (i32.const 1)))
+    )
+
+    ;; requiresInfo: locked unless all required bits are present
+    (if (i32.ne (i32.and (local.get $requiresMask) (global.get $conv_secrets)) (local.get $requiresMask))
+      (then (return (i32.const 1)))
+    )
+
+    ;; forbidsInfo: locked if any forbidden bit is present
+    (if (i32.ne (i32.and (local.get $forbidsMask) (global.get $conv_secrets)) (i32.const 0))
+      (then (return (i32.const 1)))
+    )
 
     (local.set $reqFaction (i32.load16_s offset=10 (local.get $choicePtr)))
     (local.set $reqMin (i32.load16_s offset=12 (local.get $choicePtr)))
@@ -420,6 +443,7 @@
     (local $d1 i32)
     (local $d2 i32)
     (local $reveal i32)
+    (local $usedMask i32)
 
     (if (call $uqm_conv_choice_is_locked (local.get $localIdx))
       (then (return (i32.const -1)))
@@ -436,18 +460,26 @@
       (then (return (i32.const -1)))
     )
 
-    (local.set $choicePtr (i32.add (local.get $choicesBase) (i32.mul (local.get $absChoice) (i32.const 18))))
+    ;; ChoiceMeta is packed (30 bytes).
+    (local.set $choicePtr (i32.add (local.get $choicesBase) (i32.mul (local.get $absChoice) (i32.const 30))))
 
     (local.set $nextNode (i32.load (local.get $choicePtr)))
     (local.set $d0 (i32.load16_s offset=4 (local.get $choicePtr)))
     (local.set $d1 (i32.load16_s offset=6 (local.get $choicePtr)))
     (local.set $d2 (i32.load16_s offset=8 (local.get $choicePtr)))
     (local.set $reveal (i32.load offset=14 (local.get $choicePtr)))
+    (local.set $usedMask (i32.load offset=26 (local.get $choicePtr)))
 
     (global.set $conv_rep0 (i32.add (global.get $conv_rep0) (local.get $d0)))
     (global.set $conv_rep1 (i32.add (global.get $conv_rep1) (local.get $d1)))
     (global.set $conv_rep2 (i32.add (global.get $conv_rep2) (local.get $d2)))
-    (global.set $conv_secrets (i32.or (global.get $conv_secrets) (local.get $reveal)))
+
+    (global.set $conv_secrets
+      (i32.or
+        (global.get $conv_secrets)
+        (i32.or (local.get $reveal) (local.get $usedMask))
+      )
+    )
 
     (global.set $conv_currentNode (local.get $nextNode))
     (local.get $nextNode)

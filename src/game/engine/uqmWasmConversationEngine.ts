@@ -6,7 +6,7 @@ import { applyExpiredEncounterConsequence } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
 import { createTsConversationEngine, MAX_PENDING_ENCOUNTERS, tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
-import { getDialogueChoiceLock, getDialogueChoiceSecretsToAdd } from './dialogueChoiceLocks';
+import { choiceUsedSecret, getDialogueChoiceLock, getDialogueChoiceSecretsToAdd } from './dialogueChoiceLocks';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -23,23 +23,32 @@ type CompiledGraph = {
   secretToBit: Map<string, number>;
 };
 
-const CHOICE_META_SIZE = 18;
+const CHOICE_META_SIZE = 30;
 
 function compileGraph(tree: typeof dialogueTree): CompiledGraph {
   const nodeIds = Object.keys(tree).sort();
   const nodeIdToIndex = new Map<string, number>(nodeIds.map((id, idx) => [id, idx]));
 
-  const secrets = new Set<string>();
+  // The wasm conversation core uses a 32-bit secrets mask. We prioritize secrets
+  // that affect locking semantics (requires/forbids/once) so they are less likely
+  // to be dropped if the narrative contains many secrets.
+  const lockRelevantSecrets = new Set<string>();
+  const revealSecrets = new Set<string>();
+
   for (const nodeId of nodeIds) {
     for (const c of tree[nodeId].choices) {
-      if (c.revealsInfo) secrets.add(c.revealsInfo);
+      if (c.requiresInfo) lockRelevantSecrets.add(c.requiresInfo);
+      if (c.forbidsInfo) lockRelevantSecrets.add(c.forbidsInfo);
+      if (c.once) lockRelevantSecrets.add(choiceUsedSecret(c.id));
+      if (c.revealsInfo) revealSecrets.add(c.revealsInfo);
     }
   }
-  const secretsSorted = [...secrets].sort();
 
-  // The minimal wasm core has a 32-bit secrets mask. If the narrative contains
-  // more than 32 unique secrets, we deterministically map the first 32 and
-  // ignore the rest for wasm purposes (the TS state still preserves all secrets).
+  const secretsSorted = [...lockRelevantSecrets].sort();
+  for (const s of [...revealSecrets].sort()) {
+    if (!lockRelevantSecrets.has(s)) secretsSorted.push(s);
+  }
+
   const secretsForWasm = secretsSorted.slice(0, 32);
   const secretToBit = new Map<string, number>(secretsForWasm.map((s, i) => [s, i]));
 
@@ -111,6 +120,27 @@ function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph, tree: typeo
       }
       mem.setUint32(base + 14, revealMask >>> 0, true);
 
+      let requiresMask = 0;
+      if (choice.requiresInfo) {
+        const bit = graph.secretToBit.get(choice.requiresInfo);
+        if (bit !== undefined) requiresMask = 1 << bit;
+      }
+      mem.setUint32(base + 18, requiresMask >>> 0, true);
+
+      let forbidsMask = 0;
+      if (choice.forbidsInfo) {
+        const bit = graph.secretToBit.get(choice.forbidsInfo);
+        if (bit !== undefined) forbidsMask = 1 << bit;
+      }
+      mem.setUint32(base + 22, forbidsMask >>> 0, true);
+
+      let usedMask = 0;
+      if (choice.once) {
+        const bit = graph.secretToBit.get(choiceUsedSecret(choice.id));
+        if (bit !== undefined) usedMask = 1 << bit;
+      }
+      mem.setUint32(base + 26, usedMask >>> 0, true);
+
       choiceCursor++;
     }
   }
@@ -147,8 +177,6 @@ function applyChoiceUsingWasm(
     return prev;
   }
 
-  const overrideLocked = prev.knownSecrets.includes('override');
-
   const rep0 = prev.factions.find(f => f.id === 'iron-pact')?.reputation ?? 0;
   const rep1 = prev.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0;
   const rep2 = prev.factions.find(f => f.id === 'ember-throne')?.reputation ?? 0;
@@ -158,8 +186,7 @@ function applyChoiceUsingWasm(
   const exp = uqm.exports;
   exp.uqm_conv_reset(nodeIdx, rep0, rep1, rep2, secrets);
 
-  if (exp.uqm_conv_choice_is_locked(localIdx) && !overrideLocked) {
-    // Enforce locks at the engine level too.
+  if (exp.uqm_conv_choice_is_locked(localIdx)) {
     return prev;
   }
 
@@ -295,6 +322,10 @@ export function createUqmWasmConversationEngine(
     createInitialState: tsEngineForTree.createInitialState,
     startNewGame: tsEngineForTree.startNewGame,
     applyChoice(prev, choice) {
+      if (prev.knownSecrets.includes('override')) {
+        return tsEngineForTree.applyChoice(prev, choice);
+      }
+
       const next = applyChoiceUsingWasm(prev, choice, uqm, graph, tree);
       if (next) return next;
       // Safe fallback (should be rare)
