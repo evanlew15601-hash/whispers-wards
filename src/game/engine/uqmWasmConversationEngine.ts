@@ -376,28 +376,28 @@ export function createUqmWasmConversationEngine(
   // and startNewGame are consistent with that tree.
   const tsEngineForTree = tree === dialogueTree ? tsConversationEngine : createTsConversationEngine(tree);
 
-  const engine: ConversationEngine & { presentState?: (state: GameState) => GameState } = {
-    createInitialState: tsEngineForTree.createInitialState,
-    startNewGame: () => {
-      const state = tsEngineForTree.startNewGame();
-      return presentDialogueNodeForWasmResponsePool(state, uqm, graph, tree);
+  const present = (state: GameState) => presentDialogueNodeForWasmResponsePool(state, uqm, graph, tree);
+
+  const engine: ConversationEngine = {
+    createInitialState() {
+      return present(tsEngineForTree.createInitialState());
+    },
+    startNewGame() {
+      return present(tsEngineForTree.startNewGame());
     },
     applyChoice(prev, choice) {
-      if (prev.knownSecrets.includes('override')) {
-        return tsEngineForTree.applyChoice(prev, choice);
-      }
+      const next = prev.knownSecrets.includes('override')
+        ? tsEngineForTree.applyChoice(prev, choice)
+        : applyChoiceUsingWasm(prev, choice, uqm, graph, tree) ?? tsEngineForTree.applyChoice(prev, choice);
 
-      const next = applyChoiceUsingWasm(prev, choice, uqm, graph, tree);
-      if (next) return presentDialogueNodeForWasmResponsePool(next, uqm, graph, tree);
-
-      // Safe fallback (should be rare). We still present through the WASM response-pool
-      // rules so the UI matches what the WASM core would show.
-      const fallback = tsEngineForTree.applyChoice(prev, choice);
-      return presentDialogueNodeForWasmResponsePool(fallback, uqm, graph, tree);
+      return present(next);
+    },
+    presentState(state) {
+      return present(state);
     },
   };
 
-  engine.presentState = (state: GameState) => presentDialogueNodeForWasmResponsePool(state, uqm, graph, tree);
-
   return engine;
 }
+
+      

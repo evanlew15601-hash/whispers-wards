@@ -9,13 +9,14 @@ import {
   loadGameFromSlot,
   deleteSaveSlot,
 } from './storage';
+import type { ConversationEngine } from './engine/conversationEngine';
 import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 import { buildEncounterDialogueNode } from './encounters';
 
 export function useGameState() {
-  const engineRef = useRef(tsConversationEngine);
+  const engineRef = useRef<ConversationEngine>(tsConversationEngine);
 
   const [engineLabel, setEngineLabel] = useState<'TS' | 'UQM WASM'>('TS');
 
@@ -31,10 +32,7 @@ export function useGameState() {
         engineRef.current = createUqmWasmConversationEngine(uqm);
         setEngineLabel('UQM WASM');
 
-        setState(prev => {
-          const engine = engineRef.current as typeof engineRef.current & { presentState?: (s: GameState) => GameState };
-          return engine.presentState ? engine.presentState(prev) : prev;
-        });
+        setState(prev => (engineRef.current.presentState ? engineRef.current.presentState(prev) : prev));
       })
       .catch(() => {
         // Ignore; we simply stay on the TS engine.
@@ -50,7 +48,8 @@ export function useGameState() {
   }, []);
 
   const startGame = useCallback(() => {
-    setState(engineRef.current.startNewGame());
+    const started = engineRef.current.startNewGame();
+    setState(engineRef.current.presentState ? engineRef.current.presentState(started) : started);
   }, []);
 
   const openLoadScreen = useCallback(() => {
@@ -145,8 +144,7 @@ export function useGameState() {
       currentScene: 'game',
     };
 
-    const engine = engineRef.current as typeof engineRef.current & { presentState?: (s: GameState) => GameState };
-    setState(engine.presentState ? engine.presentState(hydrated) : hydrated);
+    setState(engineRef.current.presentState ? engineRef.current.presentState(hydrated) : hydrated);
     refreshSlots();
     toast.success(`Loaded Slot ${slotId}`);
   }, [refreshSlots]);
@@ -165,11 +163,15 @@ export function useGameState() {
   const listSlots = useCallback(() => saveSlots, [saveSlots]);
 
   const makeChoice = useCallback((choice: DialogueChoice) => {
-    setState(prev => engineRef.current.applyChoice(prev, choice));
+    setState(prev => {
+      const next = engineRef.current.applyChoice(prev, choice);
+      return engineRef.current.presentState ? engineRef.current.presentState(next) : next;
+    });
   }, []);
 
   const resetGame = useCallback(() => {
-    setState(engineRef.current.createInitialState());
+    const reset = engineRef.current.createInitialState();
+    setState(engineRef.current.presentState ? engineRef.current.presentState(reset) : reset);
   }, []);
 
   const enterPendingEncounter = useCallback((encounterId: string) => {

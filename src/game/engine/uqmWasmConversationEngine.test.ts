@@ -304,4 +304,35 @@ describe('uqmWasmConversationEngine', () => {
     expect(forbidsWasm.currentDialogue?.id).toBe(forbidsTs.currentDialogue?.id);
     expect(forbidsWasm.knownSecrets).toEqual(forbidsTs.knownSecrets);
   });
+
+  it('caps visible choices at 8 (UQM MAX_RESPONSES)', () => {
+    const testTree = {
+      opening: {
+        id: 'opening',
+        speaker: 'Test',
+        speakerFaction: 'iron-pact',
+        text: 'Test opening',
+        choices: Array.from({ length: 10 }, (_, i) => ({
+          id: `c${i + 1}`,
+          text: `Choice ${i + 1}`,
+          effects: [],
+          nextNodeId: null,
+        })),
+      },
+      'concord-hub': {
+        id: 'concord-hub',
+        speaker: 'Hub',
+        speakerFaction: 'iron-pact',
+        text: 'Hub',
+        choices: [],
+      },
+    } as const;
+
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime, testTree as any);
+    const start = wasmEngine.startNewGame();
+
+    expect(start.currentDialogue?.id).toBe('opening');
+    expect(start.currentDialogue?.choices.length).toBe(8);
+    expect(start.currentDialogue?.choices.map(c => c.id)).toEqual(['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8']);
+  });
 });

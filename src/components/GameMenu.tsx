@@ -359,6 +359,21 @@ const GameMenu = ({
                   </li>
                 </ul>
               </div>
+
+              <div className="parchment-border rounded-sm bg-card p-4">
+                <div className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">Alpha</div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  This is an alpha build. Expect balance changes and occasional save incompatibilities.
+                </div>
+              </div>
+
+              <div className="parchment-border rounded-sm bg-card p-4">
+                <div className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">Licensing</div>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  Crown & Concord is licensed GPL-2.0-or-later. This build includes a small UQM-derived WASM module
+                  under the same license.
+                </div>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
