@@ -19,6 +19,9 @@ export type UqmMinimalNormalizedExports = {
   uqm_conv_get_secrets: () => number;
   uqm_conv_get_choice_count: () => number;
   uqm_conv_choice_is_locked: (localIdx: number) => number;
+  uqm_conv_get_available_choice_count: () => number;
+  uqm_conv_get_available_choice_local_index: (visibleIdx: number) => number;
+  uqm_conv_choose_available: (visibleIdx: number) => number;
   uqm_conv_choose: (localIdx: number) => number;
 };
 
@@ -149,6 +152,9 @@ export async function loadUqmMinimalWasmExports(): Promise<UqmMinimalNormalizedE
     uqm_conv_get_secrets: getFunction(raw, ['uqm_conv_get_secrets', '_uqm_conv_get_secrets']),
     uqm_conv_get_choice_count: getFunction(raw, ['uqm_conv_get_choice_count', '_uqm_conv_get_choice_count']),
     uqm_conv_choice_is_locked: getFunction(raw, ['uqm_conv_choice_is_locked', '_uqm_conv_choice_is_locked']),
+    uqm_conv_get_available_choice_count: getFunction(raw, ['uqm_conv_get_available_choice_count', '_uqm_conv_get_available_choice_count']),
+    uqm_conv_get_available_choice_local_index: getFunction(raw, ['uqm_conv_get_available_choice_local_index', '_uqm_conv_get_available_choice_local_index']),
+    uqm_conv_choose_available: getFunction(raw, ['uqm_conv_choose_available', '_uqm_conv_choose_available']),
     uqm_conv_choose: getFunction(raw, ['uqm_conv_choose', '_uqm_conv_choose']),
   };
 }

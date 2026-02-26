@@ -30,6 +30,11 @@ export function useGameState() {
         if (cancelled) return;
         engineRef.current = createUqmWasmConversationEngine(uqm);
         setEngineLabel('UQM WASM');
+
+        setState(prev => {
+          const engine = engineRef.current as typeof engineRef.current & { presentState?: (s: GameState) => GameState };
+          return engine.presentState ? engine.presentState(prev) : prev;
+        });
       })
       .catch(() => {
         // Ignore; we simply stay on the TS engine.
@@ -140,7 +145,8 @@ export function useGameState() {
       currentScene: 'game',
     };
 
-    setState(hydrated);
+    const engine = engineRef.current as typeof engineRef.current & { presentState?: (s: GameState) => GameState };
+    setState(engine.presentState ? engine.presentState(hydrated) : hydrated);
     refreshSlots();
     toast.success(`Loaded Slot ${slotId}`);
   }, [refreshSlots]);

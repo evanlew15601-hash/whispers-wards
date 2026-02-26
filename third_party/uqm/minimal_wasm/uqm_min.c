@@ -535,6 +535,8 @@ uqm_conv_choice_is_locked (int32_t localIdx)
 	return (int32_t) conv_choice_is_locked_internal (localIdx);
 }
 
+#define MAX_RESPONSES 8
+
 UQM_WASM_EXPORT("uqm_conv_choose")
 int32_t
 uqm_conv_choose (int32_t localIdx)
@@ -579,4 +581,72 @@ uqm_conv_choose (int32_t localIdx)
 	conv_currentNode = nextNode;
 
 	return nextNode;
+}
+
+UQM_WASM_EXPORT("uqm_conv_get_available_choice_count")
+uint32_t
+uqm_conv_get_available_choice_count (void)
+{
+	uint32_t choiceCount;
+	uint32_t i;
+	uint32_t found;
+
+	choiceCount = conv_current_node_choice_count ();
+	found = 0;
+
+	for (i = 0; i < choiceCount; i++)
+	{
+		if (!conv_choice_is_locked_internal ((int32_t) i))
+		{
+			found++;
+			if (found >= MAX_RESPONSES)
+				break;
+		}
+	}
+
+	return found;
+}
+
+UQM_WASM_EXPORT("uqm_conv_get_available_choice_local_index")
+int32_t
+uqm_conv_get_available_choice_local_index (int32_t visibleIdx)
+{
+	uint32_t choiceCount;
+	uint32_t i;
+	uint32_t found;
+
+	if (visibleIdx < 0)
+		return -1;
+	if ((uint32_t) visibleIdx >= MAX_RESPONSES)
+		return -1;
+
+	choiceCount = conv_current_node_choice_count ();
+	found = 0;
+
+	for (i = 0; i < choiceCount; i++)
+	{
+		if (!conv_choice_is_locked_internal ((int32_t) i))
+		{
+			if ((int32_t) found == visibleIdx)
+				return (int32_t) i;
+			found++;
+			if (found >= MAX_RESPONSES)
+				break;
+		}
+	}
+
+	return -1;
+}
+
+UQM_WASM_EXPORT("uqm_conv_choose_available")
+int32_t
+uqm_conv_choose_available (int32_t visibleIdx)
+{
+	int32_t localIdx;
+
+	localIdx = uqm_conv_get_available_choice_local_index (visibleIdx);
+	if (localIdx < 0)
+		return -1;
+
+	return uqm_conv_choose (localIdx);
 }

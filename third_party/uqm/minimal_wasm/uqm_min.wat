@@ -431,7 +431,7 @@
     (i32.const 0)
   )
 
-  (func (export "uqm_conv_choose") (param $localIdx i32) (result i32)
+  (func $uqm_conv_choose (export "uqm_conv_choose") (param $localIdx i32) (result i32)
     (local $nodePtr i32)
     (local $choicesBase i32)
     (local $firstChoice i32)
@@ -483,5 +483,86 @@
 
     (global.set $conv_currentNode (local.get $nextNode))
     (local.get $nextNode)
+  )
+
+  ;; UQM-style response list helpers.
+  ;; In Star Control II / UQM, the player response list is capped at MAX_RESPONSES (8).
+  (func $uqm_conv_get_available_choice_count (export "uqm_conv_get_available_choice_count") (result i32)
+    (local $choiceCount i32)
+    (local $i i32)
+    (local $found i32)
+
+    (local.set $choiceCount (call $uqm_conv_get_choice_count))
+    (local.set $i (i32.const 0))
+    (local.set $found (i32.const 0))
+
+    (block $done
+      (loop $loop
+        (br_if $done (i32.ge_u (local.get $i) (local.get $choiceCount)))
+
+        (if (i32.eqz (call $uqm_conv_choice_is_locked (local.get $i)))
+          (then
+            (local.set $found (i32.add (local.get $found) (i32.const 1)))
+            (br_if $done (i32.ge_u (local.get $found) (i32.const 8)))
+          )
+        )
+
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (local.get $found)
+  )
+
+  ;; i32 uqm_conv_get_available_choice_local_index(i32 visibleIdx)
+  ;; Returns the local choice index (0..choiceCount-1) for the Nth available choice,
+  ;; where "available" means "not locked". Returns -1 if not found.
+  (func $uqm_conv_get_available_choice_local_index (export "uqm_conv_get_available_choice_local_index") (param $visibleIdx i32) (result i32)
+    (local $choiceCount i32)
+    (local $i i32)
+    (local $found i32)
+
+    (if (i32.lt_s (local.get $visibleIdx) (i32.const 0))
+      (then (return (i32.const -1)))
+    )
+
+    (local.set $choiceCount (call $uqm_conv_get_choice_count))
+    (local.set $i (i32.const 0))
+    (local.set $found (i32.const 0))
+
+    (block $done
+      (loop $loop
+        (br_if $done (i32.ge_u (local.get $i) (local.get $choiceCount)))
+
+        (if (i32.eqz (call $uqm_conv_choice_is_locked (local.get $i)))
+          (then
+            (if (i32.eq (local.get $found) (local.get $visibleIdx))
+              (then (return (local.get $i)))
+            )
+
+            (local.set $found (i32.add (local.get $found) (i32.const 1)))
+            (br_if $done (i32.ge_u (local.get $found) (i32.const 8)))
+          )
+        )
+
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $loop)
+      )
+    )
+
+    (i32.const -1)
+  )
+
+  ;; i32 uqm_conv_choose_available(i32 visibleIdx)
+  (func $uqm_conv_choose_available (export "uqm_conv_choose_available") (param $visibleIdx i32) (result i32)
+    (local $localIdx i32)
+
+    (local.set $localIdx (call $uqm_conv_get_available_choice_local_index (local.get $visibleIdx)))
+    (if (i32.lt_s (local.get $localIdx) (i32.const 0))
+      (then (return (i32.const -1)))
+    )
+
+    (call $uqm_conv_choose (local.get $localIdx))
   )
 )

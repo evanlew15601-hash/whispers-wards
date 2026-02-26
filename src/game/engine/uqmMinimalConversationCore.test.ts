@@ -150,4 +150,56 @@ describe('uqm minimal wasm conversation core', () => {
     expect(exp.uqm_conv_choice_is_locked(99)).toBe(1);
     expect(exp.uqm_conv_choose(99)).toBe(-1);
   });
+
+  it('exposes UQM-style available-choice helpers (max 8, skips locked)', () => {
+    const nodeCount = 1;
+    const totalChoices = 10;
+
+    const nodesSize = 8 + nodeCount * 8;
+    const choicesSize = totalChoices * 30;
+
+    const nodesPtr = exp.uqm_alloc(nodesSize);
+    const choicesPtr = exp.uqm_alloc(choicesSize);
+
+    const mem = new DataView(exp.memory.buffer);
+
+    mem.setUint32(nodesPtr + 0, nodeCount, true);
+    mem.setUint32(nodesPtr + 4, totalChoices, true);
+
+    // node 0 meta: { firstChoice=0, choiceCount=10 }
+    mem.setUint32(nodesPtr + 8 + 0, 0, true);
+    mem.setUint32(nodesPtr + 8 + 4, totalChoices, true);
+
+    for (let i = 0; i < totalChoices; i++) {
+      const base = choicesPtr + i * 30;
+      mem.setInt32(base + 0, -1, true);
+      mem.setInt16(base + 4, 0, true);
+      mem.setInt16(base + 6, 0, true);
+      mem.setInt16(base + 8, 0, true);
+      mem.setInt16(base + 10, -1, true);
+      mem.setInt16(base + 12, 0, true);
+      mem.setUint32(base + 14, 0, true);
+      mem.setUint32(base + 18, 0, true);
+      mem.setUint32(base + 22, 0, true);
+      mem.setUint32(base + 26, 0, true);
+    }
+
+    // Lock choice 0 by requiring secret bit 0x1 (which we won't set).
+    mem.setUint32(choicesPtr + 0 * 30 + 18, 0x1, true);
+
+    exp.uqm_conv_set_graph(nodesPtr, choicesPtr);
+    exp.uqm_conv_reset(0, 0, 0, 0, 0x0);
+
+    // 9 are available, but UQM-style response pool caps at 8.
+    expect(exp.uqm_conv_get_available_choice_count()).toBe(8);
+
+    // The first available should skip locked index 0 -> return 1.
+    expect(exp.uqm_conv_get_available_choice_local_index(0)).toBe(1);
+
+    // The last available returned should be localIdx 8 (since 0 is locked).
+    expect(exp.uqm_conv_get_available_choice_local_index(7)).toBe(8);
+
+    // Out of range (beyond max responses)
+    expect(exp.uqm_conv_get_available_choice_local_index(8)).toBe(-1);
+  });
 });

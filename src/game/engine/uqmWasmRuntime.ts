@@ -24,6 +24,9 @@ export type UqmWasmExports = {
   uqm_conv_get_secrets: () => number;
   uqm_conv_get_choice_count: () => number;
   uqm_conv_choice_is_locked: (localIdx: number) => number;
+  uqm_conv_get_available_choice_count: () => number;
+  uqm_conv_get_available_choice_local_index: (visibleIdx: number) => number;
+  uqm_conv_choose_available: (visibleIdx: number) => number;
   uqm_conv_choose: (localIdx: number) => number;
 };
 
@@ -85,6 +88,15 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
   const uqm_conv_choice_is_locked = (raw.uqm_conv_choice_is_locked ?? raw._uqm_conv_choice_is_locked) as
     | ((localIdx: number) => number)
     | undefined;
+  const uqm_conv_get_available_choice_count = (raw.uqm_conv_get_available_choice_count ?? raw._uqm_conv_get_available_choice_count) as
+    | (() => number)
+    | undefined;
+  const uqm_conv_get_available_choice_local_index = (raw.uqm_conv_get_available_choice_local_index ?? raw._uqm_conv_get_available_choice_local_index) as
+    | ((visibleIdx: number) => number)
+    | undefined;
+  const uqm_conv_choose_available = (raw.uqm_conv_choose_available ?? raw._uqm_conv_choose_available) as
+    | ((visibleIdx: number) => number)
+    | undefined;
   const uqm_conv_choose = (raw.uqm_conv_choose ?? raw._uqm_conv_choose) as
     | ((localIdx: number) => number)
     | undefined;
@@ -105,6 +117,9 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
     !uqm_conv_get_secrets ||
     !uqm_conv_get_choice_count ||
     !uqm_conv_choice_is_locked ||
+    !uqm_conv_get_available_choice_count ||
+    !uqm_conv_get_available_choice_local_index ||
+    !uqm_conv_choose_available ||
     !uqm_conv_choose
   ) {
     throw new Error('UQM wasm module exports missing expected symbols');
@@ -127,6 +142,9 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
     uqm_conv_get_secrets,
     uqm_conv_get_choice_count,
     uqm_conv_choice_is_locked,
+    uqm_conv_get_available_choice_count,
+    uqm_conv_get_available_choice_local_index,
+    uqm_conv_choose_available,
     uqm_conv_choose,
   };
 }

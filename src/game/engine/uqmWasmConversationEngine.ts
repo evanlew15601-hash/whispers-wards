@@ -157,6 +157,56 @@ function secretsMaskFromKnown(knownSecrets: string[], secretToBit: Map<string, n
   return mask >>> 0;
 }
 
+function presentDialogueNodeForWasmResponsePool(
+  state: GameState,
+  uqm: UqmWasmRuntime,
+  graph: CompiledGraph,
+  tree: typeof dialogueTree,
+): GameState {
+  if (!state.currentDialogue) return state;
+
+  // Preserve TS-style behavior when override is enabled.
+  if (state.knownSecrets.includes('override')) return state;
+
+  const baseNode = tree[state.currentDialogue.id];
+  if (!baseNode) return state;
+
+  const nodeIdx = graph.nodeIdToIndex.get(baseNode.id);
+  if (nodeIdx === undefined) return state;
+
+  const rep0 = state.factions.find(f => f.id === 'iron-pact')?.reputation ?? 0;
+  const rep1 = state.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0;
+  const rep2 = state.factions.find(f => f.id === 'ember-throne')?.reputation ?? 0;
+
+  const secrets = secretsMaskFromKnown(state.knownSecrets, graph.secretToBit);
+
+  const exp = uqm.exports;
+  exp.uqm_conv_reset(nodeIdx, rep0, rep1, rep2, secrets);
+
+  const visibleCount = exp.uqm_conv_get_available_choice_count();
+  if (visibleCount <= 0) return state;
+
+  const visibleLocalIndices: number[] = [];
+  for (let i = 0; i < visibleCount; i++) {
+    const localIdx = exp.uqm_conv_get_available_choice_local_index(i);
+    if (localIdx < 0 || localIdx >= baseNode.choices.length) continue;
+    visibleLocalIndices.push(localIdx);
+  }
+
+  if (visibleLocalIndices.length <= 0) return state;
+
+  const visibleChoices = visibleLocalIndices.map(i => baseNode.choices[i]).filter(Boolean);
+
+  // Return a shallow copy so we don't mutate the dialogueTree.
+  return {
+    ...state,
+    currentDialogue: {
+      ...baseNode,
+      choices: visibleChoices,
+    },
+  };
+}
+
 function applyChoiceUsingWasm(
   prev: GameState,
   choice: DialogueChoice,
@@ -166,10 +216,16 @@ function applyChoiceUsingWasm(
 ): GameState | null {
   if (!prev.currentDialogue) return null;
 
-  const nodeIdx = graph.nodeIdToIndex.get(prev.currentDialogue.id);
+  const baseNode = tree[prev.currentDialogue.id];
+  if (!baseNode) return null;
+
+  const nodeIdx = graph.nodeIdToIndex.get(baseNode.id);
   if (nodeIdx === undefined) return null;
 
-  const localIdx = prev.currentDialogue.choices.findIndex(c => c.id === choice.id);
+  // Important: `prev.currentDialogue.choices` may be a *filtered presentation* for
+  // UQM-style response pool semantics, so we must map choice->localIdx using the
+  // canonical tree node.
+  const localIdx = baseNode.choices.findIndex(c => c.id === choice.id);
   if (localIdx < 0) return null;
 
   const lock = getDialogueChoiceLock(prev, choice);
@@ -320,18 +376,28 @@ export function createUqmWasmConversationEngine(
   // and startNewGame are consistent with that tree.
   const tsEngineForTree = tree === dialogueTree ? tsConversationEngine : createTsConversationEngine(tree);
 
-  return {
+  const engine: ConversationEngine & { presentState?: (state: GameState) => GameState } = {
     createInitialState: tsEngineForTree.createInitialState,
-    startNewGame: tsEngineForTree.startNewGame,
+    startNewGame: () => {
+      const state = tsEngineForTree.startNewGame();
+      return presentDialogueNodeForWasmResponsePool(state, uqm, graph, tree);
+    },
     applyChoice(prev, choice) {
       if (prev.knownSecrets.includes('override')) {
         return tsEngineForTree.applyChoice(prev, choice);
       }
 
       const next = applyChoiceUsingWasm(prev, choice, uqm, graph, tree);
-      if (next) return next;
-      // Safe fallback (should be rare)
-      return tsEngineForTree.applyChoice(prev, choice);
+      if (next) return presentDialogueNodeForWasmResponsePool(next, uqm, graph, tree);
+
+      // Safe fallback (should be rare). We still present through the WASM response-pool
+      // rules so the UI matches what the WASM core would show.
+      const fallback = tsEngineForTree.applyChoice(prev, choice);
+      return presentDialogueNodeForWasmResponsePool(fallback, uqm, graph, tree);
     },
   };
+
+  engine.presentState = (state: GameState) => presentDialogueNodeForWasmResponsePool(state, uqm, graph, tree);
+
+  return engine;
 }

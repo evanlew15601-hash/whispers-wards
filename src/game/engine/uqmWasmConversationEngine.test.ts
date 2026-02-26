@@ -186,6 +186,9 @@ describe('uqmWasmConversationEngine', () => {
     const withTokenTs = tsEngine.applyChoice(start, learnChoice);
     const withTokenWasm = wasmEngine.applyChoice(start, learnChoice);
 
+    // WASM engine presents UQM-style response pool semantics: locked choices are hidden.
+    expect(withTokenWasm.currentDialogue!.choices.some(c => c.id === 'forbidden-if-token')).toBe(false);
+
     // Both reject forbids choice after token.
     const forbidsChoice = withTokenTs.currentDialogue!.choices.find(c => c.id === 'forbidden-if-token')!;
     expect(tsEngine.applyChoice(withTokenTs, forbidsChoice)).toBe(withTokenTs);

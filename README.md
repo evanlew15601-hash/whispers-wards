@@ -36,6 +36,10 @@ This repo includes a tiny **UQM-derived** WebAssembly module (derived from `thir
 - Prefer a **system toolchain** when available (`zig`/`clang`/`emcc`).
 - Always provide a **zero-native-deps fallback** by compiling `third_party/uqm/minimal_wasm/uqm_min.wat` via the `wabt` npm package.
 
+#### UQM-style response pool semantics (Option B)
+
+The minimal conversation core exposes a small "UQM-style" response list API: it computes the *available* (unlocked) response options and caps the list at **8**, matching UQM’s `MAX_RESPONSES` behavior. The React UI uses this to hide locked options when running on the WASM engine.
+
 For more reproducible builds on developer machines, install Zig and run:
 
 ```sh
