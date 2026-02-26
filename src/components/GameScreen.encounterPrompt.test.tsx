@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { GameState, DialogueNode, SecondaryEncounter } from '@/game/types';
 import type { SaveSlotInfo } from '@/game/storage';
 
@@ -67,7 +67,8 @@ const baseState: GameState = {
     tensions: {},
     aiMemory: { lastOfferTurn: {}, lastEmbargoTurn: {} },
   },
-  pendingEncounter: null,
+  pendingEncounters: [],
+  encounterResolvedOnTurn: null,
 };
 
 const saveSlots: SaveSlotInfo[] = [{ id: 1, meta: null }];
@@ -89,47 +90,52 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
   );
 
 describe('GameScreen encounter prompt', () => {
-  it('renders an Address encounter button in the hub when a pending encounter exists, and calls handler', () => {
+  it('renders a Review button in the hub when pending encounters exist, and selecting an encounter calls handler', async () => {
     const enterPendingEncounter = vi.fn();
 
     renderScreen(
       {
         ...baseState,
         currentDialogue: hubDialogue,
-        pendingEncounter,
+        pendingEncounters: [pendingEncounter],
       },
       enterPendingEncounter,
     );
 
-    const button = screen.getByRole('button', { name: /address encounter/i });
+    const button = screen.getByRole('button', { name: /review/i });
     fireEvent.click(button);
 
+    const dialog = await screen.findByRole('dialog');
+    const address = within(dialog).getByRole('button', { name: /^address$/i });
+    fireEvent.click(address);
+
     expect(enterPendingEncounter).toHaveBeenCalledTimes(1);
+    expect(enterPendingEncounter).toHaveBeenCalledWith('enc-1');
   });
 
-  it('does not render the Address encounter button outside hub+pendingEncounter', () => {
+  it('does not render the Review button outside hub+pendingEncounters', () => {
     const cases: GameState[] = [
       {
         ...baseState,
         currentDialogue: hubDialogue,
-        pendingEncounter: null,
+        pendingEncounters: [],
       },
       {
         ...baseState,
         currentDialogue: otherDialogue,
-        pendingEncounter,
+        pendingEncounters: [pendingEncounter],
       },
       {
         ...baseState,
         currentDialogue: encounterDialogue,
-        pendingEncounter,
+        pendingEncounters: [pendingEncounter],
       },
     ];
 
     for (const testState of cases) {
       const { unmount } = renderScreen(testState);
 
-      expect(screen.queryByRole('button', { name: /address encounter/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /review/i })).not.toBeInTheDocument();
 
       unmount();
     }

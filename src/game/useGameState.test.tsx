@@ -88,7 +88,7 @@ describe('useGameState', () => {
     expect(result.current.state.currentScene).toBe('title');
   });
 
-  it('enterPendingEncounter swaps dialogue to a generated encounter node when pendingEncounter exists', async () => {
+  it('enterPendingEncounter swaps dialogue to a generated encounter node when a legacy pendingEncounter exists', async () => {
     const partialState = {
       currentScene: 'game',
       factions: initialFactions.map(f => ({ ...f })),
@@ -137,11 +137,11 @@ describe('useGameState', () => {
       result.current.loadFromSlot(1);
     });
 
-    expect(result.current.state.pendingEncounter?.id).toBe('enc-test');
+    expect(result.current.state.pendingEncounters[0]?.id).toBe('enc-test');
     expect(result.current.state.currentDialogue?.id).toBe('concord-hub');
 
     await act(async () => {
-      result.current.enterPendingEncounter();
+      result.current.enterPendingEncounter('enc-test');
     });
 
     expect(result.current.state.currentDialogue?.id).toBe('encounter:enc-test');

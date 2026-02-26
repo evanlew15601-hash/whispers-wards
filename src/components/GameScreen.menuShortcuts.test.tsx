@@ -39,7 +39,8 @@ const state: GameState = {
     tensions: {},
     aiMemory: { lastOfferTurn: {}, lastEmbargoTurn: {} },
   },
-  pendingEncounter: null,
+  pendingEncounters: [],
+  encounterResolvedOnTurn: null,
 };
 
 const saveSlots: SaveSlotInfo[] = [

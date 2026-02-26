@@ -25,18 +25,24 @@ const createBaseState = (world: WorldState, encounter: SecondaryEncounter): Game
     rngSeed: 1,
     world,
     currentDialogue: encounterNode,
-    pendingEncounter: encounter,
+    pendingEncounters: [encounter],
+    encounterResolvedOnTurn: null,
   };
 };
 
 describe('encounter resolution (engine integration)', () => {
-  it('resolves embargo encounters and clears pendingEncounter', () => {
+  it('resolves embargo encounters and removes them from pendingEncounters', () => {
     const a = 'ember-throne';
     const b = 'iron-pact';
     const routeId = 'ashroad';
 
     const baseWorld = createInitialWorldState(initialFactions);
-    baseWorld.tradeRoutes[routeId] = { ...baseWorld.tradeRoutes[routeId], status: 'embargoed', embargoedBy: a, untilTurn: 15 };
+    baseWorld.tradeRoutes[routeId] = {
+      ...baseWorld.tradeRoutes[routeId],
+      status: 'embargoed',
+      embargoedBy: a,
+      untilTurn: 15,
+    };
     setTensionPair(baseWorld, a, b, 50);
 
     const encounter: SecondaryEncounter = {
@@ -55,7 +61,8 @@ describe('encounter resolution (engine integration)', () => {
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
       const next = tsConversationEngine.applyChoice(start, choice);
 
-      expect(next.pendingEncounter).toBeNull();
+      expect(next.pendingEncounters).toHaveLength(0);
+      expect(next.encounterResolvedOnTurn).toBe(start.turnNumber);
       expect(next.currentDialogue?.id).toBe('concord-hub');
       expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
 
@@ -84,13 +91,18 @@ describe('encounter resolution (engine integration)', () => {
     }
   });
 
-  it('resolves raid encounters and clears pendingEncounter', () => {
+  it('resolves raid encounters and removes them from pendingEncounters', () => {
     const a = 'iron-pact';
     const b = 'ember-throne';
     const routeId = 'ashroad';
 
     const baseWorld = createInitialWorldState(initialFactions);
-    baseWorld.tradeRoutes[routeId] = { ...baseWorld.tradeRoutes[routeId], status: 'raided', untilTurn: 11, embargoedBy: undefined };
+    baseWorld.tradeRoutes[routeId] = {
+      ...baseWorld.tradeRoutes[routeId],
+      status: 'raided',
+      untilTurn: 11,
+      embargoedBy: undefined,
+    };
     setTensionPair(baseWorld, a, b, 50);
 
     const encounter: SecondaryEncounter = {
@@ -109,7 +121,8 @@ describe('encounter resolution (engine integration)', () => {
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
       const next = tsConversationEngine.applyChoice(start, choice);
 
-      expect(next.pendingEncounter).toBeNull();
+      expect(next.pendingEncounters).toHaveLength(0);
+      expect(next.encounterResolvedOnTurn).toBe(start.turnNumber);
       expect(next.currentDialogue?.id).toBe('concord-hub');
       expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
 
@@ -135,13 +148,17 @@ describe('encounter resolution (engine integration)', () => {
     }
   });
 
-  it('resolves skirmish encounters and clears pendingEncounter', () => {
+  it('resolves skirmish encounters and removes them from pendingEncounters', () => {
     const a = 'iron-pact';
     const b = 'verdant-court';
     const regionId = 'crownlands';
 
     const baseWorld = createInitialWorldState(initialFactions);
-    baseWorld.regions[regionId] = { ...baseWorld.regions[regionId], contested: true, control: 'neutral' };
+    baseWorld.regions[regionId] = {
+      ...baseWorld.regions[regionId],
+      contested: true,
+      control: 'neutral',
+    };
     setTensionPair(baseWorld, a, b, 50);
 
     const encounter: SecondaryEncounter = {
@@ -160,7 +177,8 @@ describe('encounter resolution (engine integration)', () => {
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
       const next = tsConversationEngine.applyChoice(start, choice);
 
-      expect(next.pendingEncounter).toBeNull();
+      expect(next.pendingEncounters).toHaveLength(0);
+      expect(next.encounterResolvedOnTurn).toBe(start.turnNumber);
       expect(next.currentDialogue?.id).toBe('concord-hub');
       expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
 
@@ -186,7 +204,7 @@ describe('encounter resolution (engine integration)', () => {
     }
   });
 
-  it('resolves summit encounters and clears pendingEncounter', () => {
+  it('resolves summit encounters and removes them from pendingEncounters', () => {
     const a = 'verdant-court';
     const b = 'ember-throne';
 
@@ -208,7 +226,8 @@ describe('encounter resolution (engine integration)', () => {
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
       const next = tsConversationEngine.applyChoice(start, choice);
 
-      expect(next.pendingEncounter).toBeNull();
+      expect(next.pendingEncounters).toHaveLength(0);
+      expect(next.encounterResolvedOnTurn).toBe(start.turnNumber);
       expect(next.currentDialogue?.id).toBe('concord-hub');
       expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
 
@@ -225,5 +244,61 @@ describe('encounter resolution (engine integration)', () => {
         throw new Error(`unexpected resolution: ${resolution}`);
       }
     }
+  });
+
+  it('enforces max 1 encounter resolution per turn (attention budget)', () => {
+    const baseWorld = createInitialWorldState(initialFactions);
+
+    const enc1: SecondaryEncounter = {
+      id: 'enc-a',
+      kind: 'summit',
+      title: 'Summit',
+      description: 'Test summit encounter.',
+      relatedFactions: ['iron-pact', 'verdant-court'],
+      expiresOnTurn: 12,
+    };
+
+    const enc2: SecondaryEncounter = {
+      id: 'enc-b',
+      kind: 'raid',
+      routeId: 'ashroad',
+      title: 'Raid report',
+      description: 'Test raid encounter.',
+      relatedFactions: ['iron-pact', 'ember-throne'],
+      expiresOnTurn: 12,
+    };
+
+    const base = tsConversationEngine.createInitialState();
+
+    const state: GameState = {
+      ...base,
+      currentScene: 'game',
+      factions: initialFactions.map(f => ({ ...f })),
+      log: [],
+      turnNumber: 10,
+      rngSeed: 1,
+      world: baseWorld,
+      pendingEncounters: [enc1, enc2],
+      encounterResolvedOnTurn: null,
+      currentDialogue: buildEncounterDialogueNode(enc1),
+    };
+
+    const choice1 = state.currentDialogue!.choices[0];
+    const after1 = tsConversationEngine.applyChoice(state, choice1);
+
+    expect(after1.pendingEncounters.map(e => e.id)).toEqual(['enc-b']);
+    expect(after1.encounterResolvedOnTurn).toBe(10);
+
+    // Attempt to resolve another encounter in the same turn should be ignored.
+    const inSecondEncounter: GameState = {
+      ...after1,
+      currentDialogue: buildEncounterDialogueNode(enc2),
+    };
+
+    const choice2 = inSecondEncounter.currentDialogue!.choices[0];
+    const after2 = tsConversationEngine.applyChoice(inSecondEncounter, choice2);
+
+    expect(after2).toBe(inSecondEncounter);
+    expect(after2.pendingEncounters.map(e => e.id)).toEqual(['enc-b']);
   });
 });

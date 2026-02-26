@@ -4,8 +4,9 @@ import type { DialogueChoice, GameState } from '../types';
 import { dialogueTree } from '../data';
 import { applyExpiredEncounterConsequence } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { tsConversationEngine } from './tsConversationEngine';
+import { createTsConversationEngine, tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
+import { getDialogueChoiceLock, getDialogueChoiceSecretsToAdd } from './dialogueChoiceLocks';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -22,17 +23,20 @@ type CompiledGraph = {
   secretToBit: Map<string, number>;
 };
 
-function compileGraph(): CompiledGraph {
-  const nodeIds = Object.keys(dialogueTree).sort();
+const CHOICE_META_SIZE = 18;
+
+function compileGraph(tree: typeof dialogueTree): CompiledGraph {
+  const nodeIds = Object.keys(tree).sort();
   const nodeIdToIndex = new Map<string, number>(nodeIds.map((id, idx) => [id, idx]));
 
   const secrets = new Set<string>();
   for (const nodeId of nodeIds) {
-    for (const c of dialogueTree[nodeId].choices) {
+    for (const c of tree[nodeId].choices) {
       if (c.revealsInfo) secrets.add(c.revealsInfo);
     }
   }
   const secretsSorted = [...secrets].sort();
+
   // The minimal wasm core has a 32-bit secrets mask. If the narrative contains
   // more than 32 unique secrets, we deterministically map the first 32 and
   // ignore the rest for wasm purposes (the TS state still preserves all secrets).
@@ -42,15 +46,15 @@ function compileGraph(): CompiledGraph {
   return { nodeIds, nodeIdToIndex, secretToBit };
 }
 
-function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph) {
+function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph, tree: typeof dialogueTree) {
   const { exports } = uqm;
 
   const nodeCount = graph.nodeIds.length;
   const nodesSize = 8 + nodeCount * 8;
 
   let totalChoices = 0;
-  for (const id of graph.nodeIds) totalChoices += dialogueTree[id].choices.length;
-  const choicesSize = totalChoices * 18;
+  for (const id of graph.nodeIds) totalChoices += tree[id].choices.length;
+  const choicesSize = totalChoices * CHOICE_META_SIZE;
 
   const nodesPtr = exports.uqm_alloc(nodesSize);
   const choicesPtr = exports.uqm_alloc(choicesSize);
@@ -63,14 +67,14 @@ function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph) {
   let choiceCursor = 0;
 
   for (let nodeIdx = 0; nodeIdx < graph.nodeIds.length; nodeIdx++) {
-    const node = dialogueTree[graph.nodeIds[nodeIdx]];
+    const node = tree[graph.nodeIds[nodeIdx]];
 
     // NodeMeta { u32 firstChoice; u32 choiceCount }
     mem.setUint32(nodesPtr + 8 + nodeIdx * 8 + 0, choiceCursor, true);
     mem.setUint32(nodesPtr + 8 + nodeIdx * 8 + 4, node.choices.length, true);
 
     for (const choice of node.choices) {
-      const base = choicesPtr + choiceCursor * 18;
+      const base = choicesPtr + choiceCursor * CHOICE_META_SIZE;
 
       const nextIdx = choice.nextNodeId ? (graph.nodeIdToIndex.get(choice.nextNodeId) ?? -1) : -1;
       mem.setInt32(base + 0, nextIdx, true);
@@ -128,6 +132,7 @@ function applyChoiceUsingWasm(
   choice: DialogueChoice,
   uqm: UqmWasmRuntime,
   graph: CompiledGraph,
+  tree: typeof dialogueTree,
 ): GameState | null {
   if (!prev.currentDialogue) return null;
 
@@ -136,6 +141,11 @@ function applyChoiceUsingWasm(
 
   const localIdx = prev.currentDialogue.choices.findIndex(c => c.id === choice.id);
   if (localIdx < 0) return null;
+
+  const lock = getDialogueChoiceLock(prev, choice);
+  if (lock.locked) {
+    return prev;
+  }
 
   const overrideLocked = prev.knownSecrets.includes('override');
 
@@ -169,7 +179,7 @@ function applyChoiceUsingWasm(
   const newRep1 = clamp(exp.uqm_conv_get_rep(1), -100, 100);
   const newRep2 = clamp(exp.uqm_conv_get_rep(2), -100, 100);
 
-  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : null;
+  const nextDialogue = nextDialogueId ? tree[nextDialogueId] ?? null : null;
 
   const newFactions = prev.factions.map(f => {
     if (f.id === 'iron-pact') return { ...f, reputation: newRep0 };
@@ -178,7 +188,8 @@ function applyChoiceUsingWasm(
     return f;
   });
 
-  const newSecrets = choice.revealsInfo ? [...prev.knownSecrets, choice.revealsInfo] : prev.knownSecrets;
+  const addedSecrets = getDialogueChoiceSecretsToAdd(choice);
+  const newSecrets = addedSecrets.length > 0 ? [...prev.knownSecrets, ...addedSecrets] : prev.knownSecrets;
 
   // Check events (same logic as TS engine)
   const newEvents = prev.events.map(event => {
@@ -206,26 +217,27 @@ function applyChoiceUsingWasm(
 
   const nextTurnNumber = prev.turnNumber + 1;
 
-  // `expiresOnTurn` is inclusive: the encounter expires only after turn N resolves
+  // `expiresOnTurn` is inclusive: an encounter expires only after turn N resolves
   // (i.e. it is still retained when `expiresOnTurn === nextTurnNumber`).
-  const existingEncounter =
-    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn >= nextTurnNumber ? prev.pendingEncounter : null;
+  const retainedEncounters = prev.pendingEncounters.filter(e => e.expiresOnTurn >= nextTurnNumber);
 
-  const expiredEncounter =
-    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn < nextTurnNumber ? prev.pendingEncounter : null;
+  const expiredEncounters = prev.pendingEncounters
+    .filter(e => e.expiresOnTurn < nextTurnNumber)
+    .slice()
+    .sort((a, b) => (a.expiresOnTurn - b.expiresOnTurn) || a.id.localeCompare(b.id));
 
-  // If an encounter just expired this turn, apply a deterministic consequence *before*
-  // running the world's simulation so that the consequence can influence the sim.
+  // If encounters expired this turn, apply deterministic consequences *before*
+  // running the world's simulation so that the consequences can influence the sim.
   let worldBeforeSim = prev.world;
-  let expiryLog: string[] = [];
-  if (expiredEncounter) {
+  const expiryLog: string[] = [];
+  for (const encounter of expiredEncounters) {
     const expired = applyExpiredEncounterConsequence({
       world: worldBeforeSim,
-      encounter: expiredEncounter,
+      encounter,
       turnNumber: nextTurnNumber,
     });
     worldBeforeSim = expired.world;
-    expiryLog = expired.logEntries;
+    expiryLog.push(...expired.logEntries);
   }
 
   // Turn-based world simulation runs after each player choice.
@@ -237,7 +249,11 @@ function applyChoiceUsingWasm(
   });
 
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
-  const nextEncounter = existingEncounter ?? sim.pendingEncounter;
+
+  const nextPendingEncounters = retainedEncounters.slice();
+  if (sim.pendingEncounter && !nextPendingEncounters.some(e => e.id === sim.pendingEncounter!.id)) {
+    nextPendingEncounters.push(sim.pendingEncounter);
+  }
 
   return {
     ...prev,
@@ -249,7 +265,7 @@ function applyChoiceUsingWasm(
     log: [...newLog, ...worldLog, ...expiryLog],
     world: sim.world,
     rngSeed: sim.rngSeed,
-    pendingEncounter: nextEncounter,
+    pendingEncounters: nextPendingEncounters,
   };
 }
 
@@ -260,18 +276,25 @@ function applyChoiceUsingWasm(
  * (events, logging, world simulation), but delegates *conversation graph transitions*
  * (next node, reputation deltas, choice locks) to WASM.
  */
-export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): ConversationEngine {
-  const graph = compileGraph();
-  writeGraphToWasm(uqm, graph);
+export function createUqmWasmConversationEngine(
+  uqm: UqmWasmRuntime,
+  tree: typeof dialogueTree = dialogueTree,
+): ConversationEngine {
+  const graph = compileGraph(tree);
+  writeGraphToWasm(uqm, graph, tree);
+
+  // When a caller passes a custom dialogue tree (tests), ensure the TS fallback
+  // and startNewGame are consistent with that tree.
+  const tsEngineForTree = tree === dialogueTree ? tsConversationEngine : createTsConversationEngine(tree);
 
   return {
-    createInitialState: tsConversationEngine.createInitialState,
-    startNewGame: tsConversationEngine.startNewGame,
+    createInitialState: tsEngineForTree.createInitialState,
+    startNewGame: tsEngineForTree.startNewGame,
     applyChoice(prev, choice) {
-      const next = applyChoiceUsingWasm(prev, choice, uqm, graph);
+      const next = applyChoiceUsingWasm(prev, choice, uqm, graph, tree);
       if (next) return next;
       // Safe fallback (should be rare)
-      return tsConversationEngine.applyChoice(prev, choice);
+      return tsEngineForTree.applyChoice(prev, choice);
     },
   };
 }

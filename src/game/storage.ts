@@ -132,7 +132,15 @@ export const persistedStateV2Schema = z
     log: z.array(z.string()).optional(),
     rngSeed: z.number().optional(),
     world: worldStateSchema.optional(),
+
+    // v2+ inbox format
+    pendingEncounters: z.array(secondaryEncounterSchema).optional(),
+
+    // Legacy saves stored a single pending encounter.
     pendingEncounter: secondaryEncounterSchema.nullable().optional(),
+
+    encounterResolvedOnTurn: z.number().nullable().optional(),
+
     currentScene: z.enum(['title', 'load', 'game']).optional(),
     currentDialogueId: z.string().nullable(),
   })
@@ -289,6 +297,9 @@ const migrateSlotV1ToV2 = (slot: PersistedSlotV1 | undefined): PersistedSlotV2 |
   if (!metaParsed.success) return null;
 
   const s = (slot as PersistedSlotV1).state as Record<string, unknown> | null;
+
+  const legacyPendingEncounter = (s?.pendingEncounter as unknown) ?? null;
+
   const stateCandidate = {
     factions: s?.factions,
     events: s?.events,
@@ -297,7 +308,12 @@ const migrateSlotV1ToV2 = (slot: PersistedSlotV1 | undefined): PersistedSlotV2 |
     log: s?.log,
     rngSeed: s?.rngSeed,
     world: s?.world,
-    pendingEncounter: (s?.pendingEncounter as unknown) ?? null,
+
+    pendingEncounters:
+      (s?.pendingEncounters as unknown) ?? (legacyPendingEncounter ? [legacyPendingEncounter] : []),
+
+    encounterResolvedOnTurn: (s?.encounterResolvedOnTurn as unknown) ?? null,
+
     currentScene: s?.currentScene,
     currentDialogueId:
       s && typeof s.currentDialogue === 'object' && s.currentDialogue && 'id' in s.currentDialogue
@@ -405,7 +421,8 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
       log: state.log,
       rngSeed: state.rngSeed,
       world: state.world,
-      pendingEncounter: state.pendingEncounter,
+      pendingEncounters: state.pendingEncounters,
+      encounterResolvedOnTurn: state.encounterResolvedOnTurn,
       currentScene: state.currentScene,
       currentDialogueId: state.currentDialogue?.id ?? null,
     },
@@ -452,12 +469,29 @@ export const loadGameFromSlot = (slotId: number): LoadGameResult => {
         if (!slotParsed.success) {
           v2Corrupt = true;
         } else {
-          const { currentDialogueId, ...state } = slotParsed.data.state;
+          const {
+            currentDialogueId,
+            pendingEncounter,
+            pendingEncounters,
+            ...state
+          } = slotParsed.data.state as unknown as {
+            currentDialogueId: string | null;
+            pendingEncounter?: unknown;
+            pendingEncounters?: unknown;
+          } & Record<string, unknown>;
+
+          const normalizedPendingEncounters =
+            Array.isArray(pendingEncounters)
+              ? pendingEncounters
+              : pendingEncounter
+                ? [pendingEncounter]
+                : [];
 
           return {
             ok: true,
             state: {
               ...state,
+              pendingEncounters: normalizedPendingEncounters,
               currentDialogue: currentDialogueId
                 ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue'])
                 : null,

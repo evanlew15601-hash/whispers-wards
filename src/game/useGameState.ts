@@ -97,7 +97,14 @@ export function useGameState() {
       currentDialogueId?: string | null;
     };
 
-    const pendingEncounter = loadedAny.pendingEncounter ?? null;
+    const pendingEncounters = Array.isArray(loadedAny.pendingEncounters)
+      ? loadedAny.pendingEncounters
+      : loadedAny.pendingEncounter
+        ? [loadedAny.pendingEncounter]
+        : [];
+
+    const encounterResolvedOnTurn =
+      typeof loadedAny.encounterResolvedOnTurn === 'number' ? loadedAny.encounterResolvedOnTurn : null;
 
     const loadedDialogueId =
       typeof loadedAny.currentDialogueId === 'string'
@@ -116,10 +123,17 @@ export function useGameState() {
       turnNumber: typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber,
       rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
       world: loadedAny.world ?? base.world,
-      pendingEncounter,
+      pendingEncounters,
+      encounterResolvedOnTurn,
       currentDialogue: loadedDialogueId
-        ? loadedDialogueId.startsWith('encounter:') && pendingEncounter
-          ? buildEncounterDialogueNode(pendingEncounter)
+        ? loadedDialogueId.startsWith('encounter:')
+          ? (() => {
+              const encounterId = loadedDialogueId.slice('encounter:'.length);
+              const encounter = pendingEncounters.find(e => e.id === encounterId) ?? null;
+              return encounter
+                ? buildEncounterDialogueNode(encounter)
+                : dialogueTree[loadedDialogueId] ?? (loadedAny.currentDialogue as GameState['currentDialogue']);
+            })()
           : dialogueTree[loadedDialogueId] ?? (loadedAny.currentDialogue as GameState['currentDialogue'])
         : (loadedAny.currentDialogue as GameState['currentDialogue']) ?? null,
       // Always resume gameplay after loading a save.
@@ -152,12 +166,13 @@ export function useGameState() {
     setState(engineRef.current.createInitialState());
   }, []);
 
-  const enterPendingEncounter = useCallback(() => {
+  const enterPendingEncounter = useCallback((encounterId: string) => {
     setState(prev => {
-      if (!prev.pendingEncounter) return prev;
+      const encounter = prev.pendingEncounters.find(e => e.id === encounterId) ?? null;
+      if (!encounter) return prev;
       return {
         ...prev,
-        currentDialogue: buildEncounterDialogueNode(prev.pendingEncounter),
+        currentDialogue: buildEncounterDialogueNode(encounter),
       };
     });
   }, []);
