@@ -246,6 +246,40 @@ describe('encounter resolution (engine integration)', () => {
     }
   });
 
+  it('ignores encounter resolution choice ids when not in the matching encounter dialogue', () => {
+    const baseWorld = createInitialWorldState(initialFactions);
+
+    const enc1: SecondaryEncounter = {
+      id: 'enc-stale',
+      kind: 'summit',
+      title: 'Summit',
+      description: 'Test summit encounter.',
+      relatedFactions: ['iron-pact', 'verdant-court'],
+      expiresOnTurn: 12,
+    };
+
+    const encounterNode = buildEncounterDialogueNode(enc1);
+    const resolutionChoice = encounterNode.choices[0];
+
+    const base = tsConversationEngine.createInitialState();
+
+    const state: GameState = {
+      ...base,
+      currentScene: 'game',
+      factions: initialFactions.map(f => ({ ...f })),
+      log: [],
+      turnNumber: 10,
+      rngSeed: 1,
+      world: baseWorld,
+      pendingEncounters: [enc1],
+      encounterResolvedOnTurn: null,
+      // Not in the encounter dialogue.
+      currentDialogue: { id: 'concord-hub', speaker: 'Hub', speakerFaction: 'iron-pact', text: 'Hub', choices: [] },
+    };
+
+    expect(tsConversationEngine.applyChoice(state, resolutionChoice)).toBe(state);
+  });
+
   it('enforces max 1 encounter resolution per turn (attention budget)', () => {
     const baseWorld = createInitialWorldState(initialFactions);
 

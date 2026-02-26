@@ -107,6 +107,45 @@ describe('game storage', () => {
     }
   });
 
+  it('round-trips multiple pendingEncounters in v2 saves', async () => {
+    const { loadGameFromSlot, saveGameToSlot } = await importStorage();
+
+    const base = tsConversationEngine.startNewGame();
+
+    const state = {
+      ...base,
+      pendingEncounters: [
+        {
+          id: 'enc-a',
+          kind: 'raid' as const,
+          routeId: 'ashroad',
+          title: 'A',
+          description: 'A',
+          relatedFactions: ['iron-pact', 'ember-throne'],
+          expiresOnTurn: base.turnNumber + 2,
+        },
+        {
+          id: 'enc-b',
+          kind: 'summit' as const,
+          regionId: 'greenmarch',
+          title: 'B',
+          description: 'B',
+          relatedFactions: ['verdant-court', 'ember-throne'],
+          expiresOnTurn: base.turnNumber + 3,
+        },
+      ],
+    };
+
+    expect(saveGameToSlot(1, state as any)).toBe(true);
+
+    const loaded = loadGameFromSlot(1);
+    expect(loaded.ok).toBe(true);
+
+    if (loaded.ok) {
+      expect(loaded.state.pendingEncounters?.map(e => e.id)).toEqual(['enc-a', 'enc-b']);
+    }
+  });
+
   it('ignores invalid slot ids', async () => {
     const { deleteSaveSlot, listSaveSlots, loadGameFromSlot, saveGameToSlot } = await importStorage();
 

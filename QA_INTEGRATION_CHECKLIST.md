@@ -8,103 +8,103 @@ This checklist is scoped to the two roadmap steps currently in flight:
 ## 1) Multi-encounter inbox
 
 ### Data model + invariants
-- [ ] Replace single `pendingEncounter: SecondaryEncounter | null` with an inbox representation (e.g. `encounterInbox: SecondaryEncounter[]`) or equivalent.
-- [ ] Define and enforce invariants:
-  - [ ] Stable `id` per encounter; no duplicates.
-  - [ ] Deterministic ordering (e.g. by `expiresOnTurn`, then `id`) so save/load and UI are stable.
-  - [ ] Clarify whether “addressing” an encounter removes it immediately or only after resolution.
-  - [ ] Clarify whether generating a new encounter when the inbox is “full” drops/merges/queues.
+- [x] Replace single `pendingEncounter: SecondaryEncounter | null` with an inbox representation (e.g. `encounterInbox: SecondaryEncounter[]`) or equivalent.
+- [x] Define and enforce invariants:
+  - [x] Stable `id` per encounter; no duplicates.
+  - [x] Deterministic ordering (sorted by `expiresOnTurn`, then `id`) so save/load and UI are stable.
+  - [x] Clarify whether “addressing” an encounter removes it immediately or only after resolution. (After resolution.)
+  - [x] Clarify whether generating a new encounter when the inbox is “full” drops/merges/queues. (Drops new encounters beyond `MAX_PENDING_ENCOUNTERS`.)
 
 ### State transitions (engine)
-- [ ] Encounter generation appends to inbox (or becomes “unread”) without overwriting existing encounters.
-- [ ] Address flow:
-  - [ ] From hub: selecting an encounter enters its dialogue node.
-  - [ ] From non-hub dialogues: inbox is visible but actions are disabled (or consistently allowed—pick one and enforce).
-  - [ ] After resolving an encounter, the resolved encounter is removed from inbox.
-- [ ] Ensure engine rejects/ignores resolution choices for encounters not currently selected (prevents stale UI selections).
+- [x] Encounter generation appends to inbox without overwriting existing encounters.
+- [x] Address flow:
+  - [x] From hub: selecting an encounter enters its dialogue node.
+  - [x] From non-hub dialogues: inbox is visible but actions are disabled.
+  - [x] After resolving an encounter, the resolved encounter is removed from inbox.
+- [x] Ensure engine rejects/ignores resolution choices for encounters not currently selected (prevents stale UI selections).
 
 ### Expiry semantics
-- [ ] Expiry is evaluated per-encounter each turn with clear semantics (existing code uses: `expiresOnTurn` inclusive).
-- [ ] Expired encounters:
-  - [ ] Have consequences applied exactly once.
-  - [ ] Are removed from inbox after expiry processing.
-  - [ ] If multiple expire on the same turn, consequences apply in deterministic order.
+- [x] Expiry is evaluated per-encounter each turn with clear semantics (`expiresOnTurn` inclusive).
+- [x] Expired encounters:
+  - [x] Have consequences applied exactly once.
+  - [x] Are removed from inbox after expiry processing.
+  - [x] If multiple expire on the same turn, consequences apply in deterministic order.
 - [ ] Verify interactions between expiry and “selected encounter in dialogue”:
   - [ ] If an encounter expires while the player is in its dialogue, define behavior (auto-resolve? eject back to hub? allow completion?).
 
 ### Save/load + migration
-- [ ] Persist inbox state in `src/game/storage.ts` schema.
-- [ ] Migrate older saves:
-  - [ ] v2 saves containing `pendingEncounter` should load into the new inbox representation with a single entry.
-  - [ ] Ensure load hydration for `currentDialogueId` continues to work when the dialogue id refers to an encounter.
-- [ ] Add/adjust storage tests to cover:
-  - [ ] round-trip save/load with multiple encounters.
-  - [ ] migration path from legacy `pendingEncounter`.
+- [x] Persist inbox state in `src/game/storage.ts` schema.
+- [x] Migrate older saves:
+  - [x] v2 saves containing `pendingEncounter` load into the new inbox representation with a single entry.
+  - [x] Load hydration for `currentDialogueId` continues to work when the dialogue id refers to an encounter.
+- [x] Add/adjust storage tests to cover:
+  - [x] round-trip save/load with multiple encounters.
+  - [x] migration path from legacy `pendingEncounter`.
 
 ### UI / UX
-- [ ] Replace single “Pending encounter” prompt with “Inbox” semantics:
-  - [ ] Hub prompt shows count (e.g. “2 encounters awaiting review”).
-  - [ ] Info panel shows a list (title, short description, expiry indicator).
-  - [ ] Selecting an encounter highlights it on the map (route/region highlight).
-- [ ] Ensure accessibility:
-  - [ ] list items are keyboard-focusable.
-  - [ ] buttons have meaningful labels/tooltips.
-- [ ] Ensure no UI runtime errors when inbox is empty, has one item, or many.
+- [x] Replace single “Pending encounter” prompt with “Inbox” semantics:
+  - [x] Hub prompt shows count (e.g. “2 encounters awaiting review”).
+  - [x] Info panel shows a list (title, short description, expiry indicator).
+  - [x] Selecting an encounter highlights it on the map (route/region highlight).
+- [x] Ensure accessibility:
+  - [x] list items are keyboard-focusable.
+  - [x] buttons have meaningful labels/tooltips.
+- [x] Ensure no UI runtime errors when inbox is empty, has one item, or many.
 
 ### Regression tests to update/add
-- [ ] Update existing encounter-related tests to the new model:
+- [x] Update existing encounter-related tests to the new model:
   - `src/game/engine/pendingEncounterExpiry.test.ts`
   - `src/game/engine/encounterResolution.test.ts`
   - `src/components/GameScreen.encounterPrompt.test.tsx`
   - `src/game/useGameState.test.tsx`
-- [ ] Add a new engine integration test:
-  - [ ] Multiple encounters generated across turns are retained.
-  - [ ] Resolving one doesn’t affect others.
-  - [ ] Expiry removes only the expired subset and logs consequences once.
+- [x] Add a new engine integration test:
+  - [x] Multiple encounters generated across turns are retained.
+  - [x] Resolving one doesn’t affect others.
+  - [x] Expiry removes only the expired subset and logs consequences once.
 
 ## 2) Response pool semantics (once + secret gating; TS/WASM parity)
 
 ### Semantics definition (must be explicit)
-- [ ] “Once” means:
-  - [ ] A choice can be selected at most once across the campaign OR once per node visit (pick one).
-  - [ ] Decide whether “once” is keyed by `choice.id` or by a separate stable key.
-- [ ] “Secret gating” means:
-  - [ ] A choice is visible/selectable only if the player knows a required secret (or set of secrets).
-  - [ ] Decide whether gating is AND/OR for multiple required secrets.
+- [x] “Once” means:
+  - [x] A choice can be selected at most once across the campaign.
+  - [x] “Once” is keyed by `choice.id` (tracked via hidden `choice-used:<choiceId>` secrets).
+- [x] “Secret gating” means:
+  - [x] A choice is selectable only if the player knows a required secret.
+  - [x] Gating supports a single required secret (AND semantics is implicit because it is one secret).
 
 ### Type-level changes
-- [ ] Extend `DialogueChoice` with fields required by these semantics (examples):
-  - [ ] `once?: boolean` and/or `onceKey?: string`
-  - [ ] `requiresSecret?: string` or `requiresSecrets?: string[]`
-- [ ] Extend `GameState` with whatever needs persisting to support “once” (examples):
-  - [ ] `usedChoiceIds: string[]` or `usedOnceKeys: string[]`.
+- [x] Extend `DialogueChoice` with fields required by these semantics:
+  - [x] `once?: boolean`
+  - [x] `requiresInfo?: string` / `forbidsInfo?: string`
+- [x] Extend `GameState` with whatever needs persisting to support “once”:
+  - [x] Implemented by persisting `knownSecrets` (includes hidden `choice-used:*` entries).
 
 ### TS engine behavior
-- [ ] TS engine must enforce semantics even if UI is buggy:
-  - [ ] If a choice is gated and requirements aren’t met, `applyChoice` returns `prev`.
-  - [ ] If a choice is “once” and already used, `applyChoice` returns `prev`.
-- [ ] Choice availability should affect UI rendering consistently:
-  - [ ] gated choices are hidden or disabled (decide one).
-  - [ ] once choices become hidden/disabled after selection.
+- [x] TS engine enforces semantics even if UI is buggy:
+  - [x] If a choice is gated and requirements aren’t met, `applyChoice` returns `prev`.
+  - [x] If a choice is “once” and already used, `applyChoice` returns `prev`.
+- [x] Choice availability affects UI rendering consistently:
+  - [x] gated/locked choices are disabled (not hidden).
+  - [x] once choices become disabled after selection.
 
 ### WASM engine parity
-- [ ] `src/game/engine/uqmWasmConversationEngine.ts` graph compilation must encode the same availability rules.
-- [ ] If the WASM core needs new fields in its graph/choice struct, update:
-  - [ ] JS-side packing (`writeGraphToWasm` layout)
-  - [ ] C/WAT side struct layout / accessors
-  - [ ] any tests that assert sizes/offsets
-- [ ] Add parity tests that cover:
-  - [ ] once choices: TS and WASM both prevent re-selecting.
-  - [ ] secret gating: TS and WASM both hide/lock until secret is learned.
-  - [ ] interaction of `override` (if still present) with gating/once.
+- [x] `src/game/engine/uqmWasmConversationEngine.ts` graph compilation encodes the same availability rules.
+- [x] WASM core fields/struct layout updated consistently across TS packing + C/WAT:
+  - [x] JS-side packing (`writeGraphToWasm` layout)
+  - [x] C/WAT side struct layout / accessors
+  - [x] tests updated for size/offsets (ChoiceMeta = 30 bytes)
+- [x] Parity tests cover:
+  - [x] once choices: TS and WASM both prevent re-selecting.
+  - [x] secret gating: TS and WASM both hide/lock until secret is learned.
+  - [x] interaction of `override` with gating/once.
 
 ### Save/load + migration
-- [ ] Persist the new “once” tracking state.
-- [ ] Migrate older saves that lack the new field (default empty).
+- [x] Persist the new “once” tracking state.
+- [x] Migrate older saves that lack the new field (default empty).
 
 ### Regression tests to update/add
-- [ ] Add engine tests around choice availability filtering.
-- [ ] Extend `src/game/engine/uqmWasmConversationEngine.test.ts` for new semantics.
+- [x] Add engine tests around choice availability filtering.
+- [x] Extend `src/game/engine/uqmWasmConversationEngine.test.ts` for new semantics.
 
 ## Post-merge integration steps (commands)
 

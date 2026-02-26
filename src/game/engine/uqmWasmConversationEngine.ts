@@ -286,6 +286,8 @@ function applyChoiceUsingWasm(
     }
   }
 
+  nextPendingEncounters.sort((a, b) => (a.expiresOnTurn - b.expiresOnTurn) || a.id.localeCompare(b.id));
+
   return {
     ...prev,
     factions: newFactions,

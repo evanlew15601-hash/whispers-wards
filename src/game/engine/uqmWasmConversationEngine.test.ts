@@ -207,4 +207,98 @@ describe('uqmWasmConversationEngine', () => {
     expect(tsEngine.applyChoice(backTs, gatedChoice)).toBe(backTs);
     expect(wasmEngine.applyChoice(backWasm, gatedChoice)).toBe(backWasm);
   });
+
+  it('override bypasses once + requiresInfo + forbidsInfo gating (parity)', () => {
+    const testTree = {
+      opening: {
+        id: 'opening',
+        speaker: 'Test',
+        speakerFaction: 'iron-pact',
+        text: 'Test opening',
+        choices: [
+          {
+            id: 'learn-intel',
+            text: 'Acquire the intel token.',
+            effects: [],
+            nextNodeId: 'opening',
+            revealsInfo: 'intel-token',
+          },
+          {
+            id: 'one-time-ask',
+            text: 'Ask the one-time question.',
+            effects: [],
+            nextNodeId: 'after',
+            once: true,
+            requiresInfo: 'intel-token',
+          },
+          {
+            id: 'forbidden-if-token',
+            text: 'This becomes blocked once you have the token.',
+            effects: [],
+            nextNodeId: 'after',
+            forbidsInfo: 'intel-token',
+          },
+        ],
+      },
+      after: {
+        id: 'after',
+        speaker: 'After',
+        speakerFaction: 'iron-pact',
+        text: 'After',
+        choices: [
+          {
+            id: 'back',
+            text: 'Back',
+            effects: [],
+            nextNodeId: 'opening',
+          },
+        ],
+      },
+      'concord-hub': {
+        id: 'concord-hub',
+        speaker: 'Hub',
+        speakerFaction: 'iron-pact',
+        text: 'Hub',
+        choices: [],
+      },
+    } as const;
+
+    const tsEngine = createTsConversationEngine(testTree as any);
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime, testTree as any);
+
+    const startBase = tsEngine.startNewGame();
+    const start = { ...startBase, knownSecrets: ['override'] };
+
+    const gatedChoice = start.currentDialogue!.choices.find(c => c.id === 'one-time-ask')!;
+    const forbidsChoice = start.currentDialogue!.choices.find(c => c.id === 'forbidden-if-token')!;
+    const learnChoice = start.currentDialogue!.choices.find(c => c.id === 'learn-intel')!;
+
+    // With override, both engines allow the requiresInfo-gated choice even without intel.
+    const askedTs = tsEngine.applyChoice(start, gatedChoice);
+    const askedWasm = wasmEngine.applyChoice(start, gatedChoice);
+
+    expect(askedWasm.currentDialogue?.id).toBe(askedTs.currentDialogue?.id);
+    expect(askedWasm.knownSecrets).toEqual(askedTs.knownSecrets);
+
+    // Go back and take the once choice again (override bypasses once).
+    const backChoice = askedTs.currentDialogue!.choices[0];
+    const backTs = tsEngine.applyChoice(askedTs, backChoice);
+    const backWasm = wasmEngine.applyChoice(askedWasm, backChoice);
+
+    const askedTs2 = tsEngine.applyChoice(backTs, gatedChoice);
+    const askedWasm2 = wasmEngine.applyChoice(backWasm, gatedChoice);
+
+    expect(askedWasm2.currentDialogue?.id).toBe(askedTs2.currentDialogue?.id);
+    expect(askedWasm2.knownSecrets).toEqual(askedTs2.knownSecrets);
+
+    // Acquire the intel-token and then take a forbidsInfo choice anyway.
+    const withTokenTs = tsEngine.applyChoice(backTs, learnChoice);
+    const withTokenWasm = wasmEngine.applyChoice(backWasm, learnChoice);
+
+    const forbidsTs = tsEngine.applyChoice(withTokenTs, forbidsChoice);
+    const forbidsWasm = wasmEngine.applyChoice(withTokenWasm, forbidsChoice);
+
+    expect(forbidsWasm.currentDialogue?.id).toBe(forbidsTs.currentDialogue?.id);
+    expect(forbidsWasm.knownSecrets).toEqual(forbidsTs.knownSecrets);
+  });
 });

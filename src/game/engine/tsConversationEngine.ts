@@ -50,7 +50,8 @@ function applyChoiceWithTree(prev: GameState, choice: DialogueChoice, tree: type
     ? prev.currentDialogue?.id === `encounter:${encounterPick.encounterId}`
     : false;
 
-  if (encounterPick && (isEncounterDialogueForPick || encounterInInbox)) {
+  if (encounterPick) {
+    if (!isEncounterDialogueForPick) return prev;
     if (prev.encounterResolvedOnTurn === prev.turnNumber) return prev;
 
     const encounter = encounterInInbox;
@@ -196,6 +197,8 @@ function applyChoiceWithTree(prev: GameState, choice: DialogueChoice, tree: type
       nextPendingEncounters.push(encounter);
     }
   }
+
+  nextPendingEncounters.sort((a, b) => (a.expiresOnTurn - b.expiresOnTurn) || a.id.localeCompare(b.id));
 
   return {
     ...prev,
