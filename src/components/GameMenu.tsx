@@ -414,7 +414,7 @@ const GameMenu = ({
                       disabled={!audioSettings.enabled}
                     />
                     <div className="text-[11px] text-muted-foreground">
-                      Ambience is currently procedural; we can swap in authored loops later.
+                      To use authored loops, add <span className="font-mono">public/audio/ambience/title_regal.(ogg|mp3)</span> and <span className="font-mono">public/audio/ambience/game_intrigue.(ogg|mp3)</span>.
                     </div>
                   </div>
                 </div>

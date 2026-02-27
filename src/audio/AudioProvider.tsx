@@ -4,6 +4,7 @@ import { playSfx as playZzfxSfx, type SfxId } from '@/audio/sfx';
 import { clamp01, DEFAULT_AUDIO_SETTINGS, loadAudioSettings, saveAudioSettings, type AudioSettings } from '@/audio/storage';
 import { getHowlerRuntime } from '@/audio/howlerRuntime';
 import { getProceduralAmbienceUrl, type AmbienceId } from '@/audio/proceduralAmbience';
+import { getAuthoredAmbienceSources } from '@/audio/ambienceSources';
 import { resumeZzfx } from '@/audio/zzfx';
 
 export interface AudioApi {
@@ -123,13 +124,56 @@ export const AudioProvider = ({ children }: PropsWithChildren) => {
       return;
     }
 
-    const url = getProceduralAmbienceUrl(ambienceId);
-    const next = new Howl({ src: [url], loop: true, volume: 0 });
-    next.play();
-    next.fade(0, target, 800);
+    const start = (howl: Howl) => {
+      if (ambienceRef.current !== howl) return;
+      howl.play();
+      howl.fade(0, target, 800);
+    };
 
-    ambienceRef.current = next;
+    // Always start with a procedural bed immediately (no network dependency).
+    const proceduralUrl = getProceduralAmbienceUrl(ambienceId);
+    const procedural = new Howl({ src: [proceduralUrl], loop: true, volume: 0 });
+
+    ambienceRef.current = procedural;
     ambienceKeyRef.current = ambienceId;
+    start(procedural);
+
+    // If authored audio exists locally, it will load quickly and replace the procedural bed.
+    const authored = getAuthoredAmbienceSources(ambienceId);
+    if (authored.length) {
+      let candidate: Howl | null = null;
+
+      candidate = new Howl({
+        src: authored,
+        loop: true,
+        volume: 0,
+        onload: () => {
+          if (!candidate) return;
+
+          // Only swap if this ambience is still current and still using the procedural bed.
+          if (ambienceRef.current !== procedural || ambienceKeyRef.current !== ambienceId) {
+            candidate.unload();
+            return;
+          }
+
+          candidate.play();
+          candidate.fade(0, target, 800);
+
+          const from = procedural.volume();
+          procedural.fade(from, 0, 800);
+          window.setTimeout(() => {
+            procedural.stop();
+            procedural.unload();
+          }, 820);
+
+          ambienceRef.current = candidate;
+          ambienceKeyRef.current = ambienceId;
+        },
+        onloaderror: () => {
+          candidate?.unload();
+        },
+      });
+    }
 
     if (current) {
       const from = current.volume();

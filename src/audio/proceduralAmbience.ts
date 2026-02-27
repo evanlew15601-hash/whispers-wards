@@ -21,27 +21,34 @@ const makeNoiseBed = (id: AmbienceId, sampleRate: number, seconds: number) => {
   const out = new Float32Array(total);
 
   let lp = 0;
-  const lpAmt = id === 'title' ? 0.06 : 0.045;
+  const lpAmt = id === 'title' ? 0.05 : 0.04;
 
-  // Subtle tonal drift.
-  const baseHz = id === 'title' ? 110 : 78;
+  // Title: regal (warm major-ish drones). Game: court intrigue (darker minor-ish bed).
+  const freqs =
+    id === 'title'
+      ? [98.0, 123.47, 146.83] // G2, B2, D3
+      : [73.42, 87.31, 110.0]; // D2, F2, A2
 
   for (let i = 0; i < total; i++) {
     const t = i / sampleRate;
 
     // Pink-ish noise via leaky integrator.
-    const white = (rand() * 2 - 1) * 0.22;
+    const white = (rand() * 2 - 1) * 0.18;
     lp += (white - lp) * lpAmt;
 
-    const tone =
-      Math.sin(2 * Math.PI * baseHz * t) * 0.05 +
-      Math.sin(2 * Math.PI * (baseHz * 1.5) * t) * 0.025;
+    const slow = 0.5 + 0.5 * Math.sin(2 * Math.PI * 0.03 * t);
 
-    out[i] = lp + tone;
+    let tone = 0;
+    for (let f = 0; f < freqs.length; f++) {
+      const hz = freqs[f] ?? 110;
+      tone += Math.sin(2 * Math.PI * hz * t) * (f === 0 ? 0.06 : 0.035);
+    }
+
+    out[i] = lp + tone * (0.8 + 0.2 * slow);
   }
 
   // Window for seamless looping.
-  const fade = Math.floor(sampleRate * 0.2);
+  const fade = Math.floor(sampleRate * 0.25);
   for (let i = 0; i < fade; i++) {
     const w = i / fade;
     out[i] *= w;

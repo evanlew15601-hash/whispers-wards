@@ -14,8 +14,8 @@ declare global {
     autoplay?: boolean;
     html5?: boolean;
     onload?: () => void;
-    onloaderror?: (id: number, err: unknown) => void;
-    onplayerror?: (id: number, err: unknown) => void;
+    onloaderror?: (id?: number, err?: unknown) => void;
+    onplayerror?: (id?: number, err?: unknown) => void;
   }
 
   interface Howl {
