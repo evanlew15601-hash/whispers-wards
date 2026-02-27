@@ -15,21 +15,18 @@ const assets = [
     id: 'title_regal',
     url: 'https://opengameart.org/sites/default/files/Of%20Far%20Different%20Nature%20-%20Throne%20Room%20%28CC-BY%29_0.mp3',
     outFile: 'title_regal.mp3',
-    license: 'CC-BY 4.0',
     credit: '"Throne Room" by Of Far Different Nature (CC-BY 4.0) https://opengameart.org/content/throne-room',
-  },
-  {
-    id: 'game_intrigue',
-    url: 'https://opengameart.org/sites/default/files/Harp.ogg',
-    outFile: 'game_intrigue.ogg',
-    license: 'CC-BY 3.0',
-    credit: '"Soft Mysterious Harp Loop" by VWolfdog / Jordy Hake (CC-BY 3.0) https://opengameart.org/content/soft-mysterious-harp-loop',
   },
   {
     id: 'game_intrigue',
     url: 'https://opengameart.org/sites/default/files/Harp_0.mp3',
     outFile: 'game_intrigue.mp3',
-    license: 'CC-BY 3.0',
+    credit: '"Soft Mysterious Harp Loop" by VWolfdog / Jordy Hake (CC-BY 3.0) https://opengameart.org/content/soft-mysterious-harp-loop',
+  },
+  {
+    id: 'game_intrigue',
+    url: 'https://opengameart.org/sites/default/files/Harp.ogg',
+    outFile: 'game_intrigue.ogg',
     credit: '"Soft Mysterious Harp Loop" by VWolfdog / Jordy Hake (CC-BY 3.0) https://opengameart.org/content/soft-mysterious-harp-loop',
   },
 ];

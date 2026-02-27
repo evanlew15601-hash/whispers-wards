@@ -47,11 +47,11 @@ You are the Envoy of Concord. Your leverage is:
 - The worst outcomes are “stable” in the short term but create long-term rot.
 
 ## The unique twist (genre-consistent)
-Not “the chosen one,” not “the secret dragon.” The twist is structural:
+The twist is structural: legitimacy itself is the power.
 
-> In this realm, the strongest magic is not fire or prophecy—it’s *consensus made enforceable*.
+In this realm, the strongest "magic" is consensus that can be enforced.
 
-The player’s final power is not to expose a single villain, but to set incentives so the next would-be villain can’t profit.
+The player’s final power is to set incentives so the next would-be villain can’t profit.
 
 ## Codex guidance (player-facing)
 Codex entries should:

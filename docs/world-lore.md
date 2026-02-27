@@ -3,7 +3,7 @@
 ## The realm at a glance
 The realm is held together less by bloodline than by *recognition*: promises witnessed, titles acknowledged, debts recorded, and insults remembered.
 
-It is not a world of constant war. It is a world where war is always one bad negotiation away.
+War isn’t constant here; it’s always one bad negotiation away.
 
 ## The Concord (legitimacy as a system)
 The Concord is the realm’s governing reality: a mesh of precedent, mutual oath, and public consensus that decides what power *counts*.
@@ -15,7 +15,7 @@ The Concord is the realm’s governing reality: a mesh of precedent, mutual oath
 For an envoy, the Concord is both shield and leash.
 
 ## Geography that creates politics
-**Greenmarch Pass** is not just a mountain corridor—it is a pressure valve:
+**Greenmarch Pass** is a mountain corridor and a pressure valve:
 
 - Close it, and towns starve.
 - Open it under one banner, and another faction feels strangled.

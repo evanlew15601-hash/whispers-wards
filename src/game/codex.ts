@@ -30,7 +30,7 @@ export const codexEntries: CodexEntry[] = [
     category: 'Realm',
     summary: 'A legitimacy system built from witnessed oaths, precedent, and public memory.',
     paragraphs: [
-      'The Concord is not a crown and not a scripture. It is a practiced agreement: what titles mean, what promises bind, and what acts forfeit trust.',
+      'The Concord is a practiced agreement: what titles mean, what promises bind, and what acts forfeit trust.',
       'In most realms, power comes from bloodlines. Here, power comes from recognition. If enough important people stop treating a title as real, it becomes a costume.',
       'Because of that, courts do not only fight over land—they fight over the right to define what “counts.”',
     ],
@@ -145,4 +145,6 @@ export const codexEntries: CodexEntry[] = [
       'In diplomacy, taboos matter because they let others predict what you will not do—until someone fakes your signature.',
     ],
   },
+];
+},
 ];
