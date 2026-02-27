@@ -139,40 +139,45 @@ export const AudioProvider = ({ children }: PropsWithChildren) => {
     start(procedural);
 
     // If authored audio exists locally, it will load quickly and replace the procedural bed.
+    // We load sources one-at-a-time to allow fallback when a preferred format is missing.
     const authored = getAuthoredAmbienceSources(ambienceId);
     if (authored.length) {
-      let candidate: Howl | null = null;
+      const tryLoadAuthored = (idx: number) => {
+        if (idx >= authored.length) return;
 
-      candidate = new Howl({
-        src: authored,
-        loop: true,
-        volume: 0,
-        onload: () => {
-          if (!candidate) return;
+        const src = authored[idx];
+        const candidate = new Howl({
+          src: [src],
+          loop: true,
+          volume: 0,
+          onload: () => {
+            // Only swap if this ambience is still current and still using the procedural bed.
+            if (ambienceRef.current !== procedural || ambienceKeyRef.current !== ambienceId) {
+              candidate.unload();
+              return;
+            }
 
-          // Only swap if this ambience is still current and still using the procedural bed.
-          if (ambienceRef.current !== procedural || ambienceKeyRef.current !== ambienceId) {
+            candidate.play();
+            candidate.fade(0, target, 800);
+
+            const from = procedural.volume();
+            procedural.fade(from, 0, 800);
+            window.setTimeout(() => {
+              procedural.stop();
+              procedural.unload();
+            }, 820);
+
+            ambienceRef.current = candidate;
+            ambienceKeyRef.current = ambienceId;
+          },
+          onloaderror: () => {
             candidate.unload();
-            return;
-          }
+            tryLoadAuthored(idx + 1);
+          },
+        });
+      };
 
-          candidate.play();
-          candidate.fade(0, target, 800);
-
-          const from = procedural.volume();
-          procedural.fade(from, 0, 800);
-          window.setTimeout(() => {
-            procedural.stop();
-            procedural.unload();
-          }, 820);
-
-          ambienceRef.current = candidate;
-          ambienceKeyRef.current = ambienceId;
-        },
-        onloaderror: () => {
-          candidate?.unload();
-        },
-      });
+      tryLoadAuthored(0);
     }
 
     if (current) {

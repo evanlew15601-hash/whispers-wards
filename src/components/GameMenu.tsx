@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import CodexPanel from '@/components/CodexPanel';
 
 type GameMenuTab = 'save' | 'load' | 'campaign' | 'about';
 
@@ -419,6 +420,8 @@ const GameMenu = ({
                   </div>
                 </div>
               </div>
+
+              <CodexPanel />
 
               <div className="parchment-border rounded-sm bg-card p-4">
                 <div className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">Controls</div>

@@ -8,6 +8,8 @@ const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..');
 const OUT_DIR = path.join(ROOT, 'public', 'audio', 'ambience');
 
+const force = process.argv.includes('--force');
+
 const assets = [
   {
     id: 'title_regal',
@@ -18,10 +20,17 @@ const assets = [
   },
   {
     id: 'game_intrigue',
-    url: 'https://opengameart.org/sites/default/files/Dark%20sneaky%20ambient_0.mp3',
+    url: 'https://opengameart.org/sites/default/files/Harp.ogg',
+    outFile: 'game_intrigue.ogg',
+    license: 'CC-BY 3.0',
+    credit: '"Soft Mysterious Harp Loop" by VWolfdog / Jordy Hake (CC-BY 3.0) https://opengameart.org/content/soft-mysterious-harp-loop',
+  },
+  {
+    id: 'game_intrigue',
+    url: 'https://opengameart.org/sites/default/files/Harp_0.mp3',
     outFile: 'game_intrigue.mp3',
-    license: 'CC-BY 4.0',
-    credit: '"Dark Sneaky Ambient" by MrAlex99 (CC-BY 4.0) https://opengameart.org/content/dark-sneaky-ambient',
+    license: 'CC-BY 3.0',
+    credit: '"Soft Mysterious Harp Loop" by VWolfdog / Jordy Hake (CC-BY 3.0) https://opengameart.org/content/soft-mysterious-harp-loop',
   },
 ];
 
@@ -37,13 +46,15 @@ await fs.mkdir(OUT_DIR, { recursive: true });
 for (const a of assets) {
   const outPath = path.join(OUT_DIR, a.outFile);
 
-  try {
-    await fs.access(outPath);
-    // eslint-disable-next-line no-console
-    console.log(`[skip] ${a.outFile} already exists`);
-    continue;
-  } catch {
-    // continue
+  if (!force) {
+    try {
+      await fs.access(outPath);
+      // eslint-disable-next-line no-console
+      console.log(`[skip] ${a.outFile} already exists (use --force to overwrite)`);
+      continue;
+    } catch {
+      // continue
+    }
   }
 
   // eslint-disable-next-line no-console
@@ -64,7 +75,7 @@ const ensureNoticeLines = async () => {
     return;
   }
 
-  const linesToAdd = assets.map(a => `- ${a.credit}`);
+  const linesToAdd = [...new Set(assets.map(a => `- ${a.credit}`))];
   const missing = linesToAdd.filter(l => !notice.includes(l));
   if (!missing.length) return;
 
