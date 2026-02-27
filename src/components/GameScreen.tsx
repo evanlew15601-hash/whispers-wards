@@ -52,6 +52,8 @@ const GameScreen = ({
   choiceLockedFlags,
   choiceUiHints,
 }: GameScreenProps) => {
+  useAmbience('game');
+
   const conversationEnded = !state.currentDialogue;
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
