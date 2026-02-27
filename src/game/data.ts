@@ -1234,7 +1234,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
     choices: [
       {
         id: 'summit-compact',
-        text: 'Invoke the old accord: declare the Pass neutral hinge-ground and propose a joint wardenship council.',
+        text: 'Propose joint stewardship of the Pass: a council with shared patrol rights, shared wards, and shared tolls.',
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'verdant-court', reputationChange: 10 },
@@ -1267,7 +1267,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'summit-ember',
-        text: 'Accept Ember arbitration and endorse Renzo\'s charter: tariffs, ledgers, and "neutral" accountants.',
+        text: 'Accept Ember arbitration: tariffs, ledgers, and "neutral" accountants to keep the Pass open.',
         effects: [
           { factionId: 'ember-throne', reputationChange: 25 },
           { factionId: 'iron-pact', reputationChange: -15 },
@@ -1278,7 +1278,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'summit-expose',
-        text: 'Expose Ember sabotage: the forged borders, the alchemical burns, the mercenary payments. Demand sanctions.',
+        text: 'Accuse the Ember Throne of fueling the conflict and demand sanctions.',
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'verdant-court', reputationChange: 10 },
