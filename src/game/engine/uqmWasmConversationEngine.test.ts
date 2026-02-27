@@ -115,4 +115,42 @@ describe('uqmWasmConversationEngine', () => {
 
     expect(nextWasmOverride.knownSecrets).toEqual(nextTsOverride.knownSecrets);
   });
+
+  it('matches tsConversationEngine transitions through new investigative nodes', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+    const seeded = {
+      ...start,
+      currentDialogue: dialogueTree['aldric-followup'],
+      rngSeed: 123456789,
+    };
+
+    const step1Choice = seeded.currentDialogue!.choices.find(c => c.id === 'aldric-dispatches');
+    if (!step1Choice) throw new Error('Expected aldric-dispatches choice');
+
+    const nextTs = tsConversationEngine.applyChoice(seeded, step1Choice);
+    const nextWasm = wasmEngine.applyChoice(seeded, step1Choice);
+
+    expect(nextWasm.currentDialogue?.id).toBe(nextTs.currentDialogue?.id);
+    expect(nextWasm.world).toEqual(nextTs.world);
+    expect(nextWasm.rngSeed).toBe(nextTs.rngSeed);
+
+    const step2Choice = nextTs.currentDialogue!.choices.find(c => c.id === 'dispatch-back');
+    if (!step2Choice) throw new Error('Expected dispatch-back choice');
+
+    const nextTs2 = tsConversationEngine.applyChoice(nextTs, step2Choice);
+    const nextWasm2 = wasmEngine.applyChoice(nextWasm, step2Choice);
+
+    expect(nextWasm2.currentDialogue?.id).toBe(nextTs2.currentDialogue?.id);
+    expect(nextWasm2.turnNumber).toBe(nextTs2.turnNumber);
+    expect(nextWasm2.world).toEqual(nextTs2.world);
+    expect(nextWasm2.rngSeed).toBe(nextTs2.rngSeed);
+
+    const repTs2 = Object.fromEntries(nextTs2.factions.map(f => [f.id, f.reputation] as const));
+    const repWasm2 = Object.fromEntries(nextWasm2.factions.map(f => [f.id, f.reputation] as const));
+    expect(repWasm2).toEqual(repTs2);
+
+    expect(nextWasm2.knownSecrets).toEqual(nextTs2.knownSecrets);
+  });
 });

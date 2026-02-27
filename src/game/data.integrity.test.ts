@@ -49,4 +49,36 @@ describe('dialogueTree integrity', () => {
     // The TS engine will still work beyond 32, but the WASM engine will ignore extras.
     expect(secrets.size).toBeLessThanOrEqual(32);
   });
+
+  it('keeps new investigative nodes reachable from the opening', () => {
+    const startId = 'opening';
+
+    const visited = new Set<string>();
+    const queue: string[] = [startId];
+
+    while (queue.length) {
+      const id = queue.shift()!;
+      if (visited.has(id)) continue;
+      visited.add(id);
+
+      const node = dialogueTree[id];
+      if (!node) continue;
+
+      for (const choice of node.choices) {
+        if (!choice.nextNodeId) continue;
+        queue.push(choice.nextNodeId);
+      }
+    }
+
+    const required = [
+      'iron-dispatch-audit',
+      'verdant-ward-inspection',
+      'aldric-ward-sample',
+      'ember-manifest-check',
+    ];
+
+    for (const id of required) {
+      expect(visited.has(id)).toBe(true);
+    }
+  });
 });
