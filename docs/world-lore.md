@@ -66,10 +66,10 @@ Magic here is mostly about controlling what can happen in a place.
 
 Magic is powerful, but it is not free. Strong wards need maintenance, knowledge, and consent from the people who live with them.
 
-## Culture: how people pressure you without saying “threat”
-- Compliments are often conditional (“You’re sensible enough to…”) so refusal sounds like stupidity.
-- Gifts are invoices with better manners.
-- Apologies are bargaining positions.
+## Culture: how people apply pressure without saying “threat”
+- **Conditional praise:** “You’re sensible enough to agree.” If you refuse, you’re cast as reckless.
+- **Gifts with strings:** a present creates an expectation of repayment, loyalty, or silence.
+- **Apologies as leverage:** an apology can be a way to set terms (“I regret the incident; therefore you will…”).
 
 Court skill is making a demand sound like the other person’s idea.
 
