@@ -24,7 +24,10 @@ describe('UQM minimal wasm build artifact', () => {
       expect(typeof exp.uqm_conv_get_secrets_hi).toBe('function');
       expect(typeof exp.uqm_conv_get_choice_count).toBe('function');
       expect(typeof exp.uqm_conv_choice_is_locked).toBe('function');
+      expect(typeof exp.uqm_conv_get_locked_choices_lo).toBe('function');
+      expect(typeof exp.uqm_conv_get_locked_choices_hi).toBe('function');
       expect(typeof exp.uqm_conv_choose).toBe('function');
+      expect(typeof exp.uqm_conv_choose_force).toBe('function');
     },
     60_000,
   );

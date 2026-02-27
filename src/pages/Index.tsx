@@ -7,6 +7,7 @@ const Index = () => {
   const {
     state,
     engineLabel,
+    choiceLockedFlags,
     startGame,
     openLoadScreen,
     backToTitle,

@@ -166,6 +166,8 @@ describe('uqmWasmConversationEngine', () => {
       factions: start.factions.map(f => ({ ...f, reputation: 0 })),
     };
 
+    expect(wasmEngine.getChoiceLockedFlags?.(base)).toEqual(tsConversationEngine.getChoiceLockedFlags?.(base));
+
     for (const choice of base.currentDialogue!.choices) {
       const helperLocked = isChoiceLocked(choice, base.factions, base.knownSecrets);
       const nextTs = tsConversationEngine.applyChoice(base, choice);
@@ -185,6 +187,7 @@ describe('uqmWasmConversationEngine', () => {
     if (!lockedChoice) throw new Error('Expected a reputation-locked choice');
 
     expect(isChoiceLocked(lockedChoice, withOverride.factions, withOverride.knownSecrets)).toBe(false);
+    expect(wasmEngine.getChoiceLockedFlags?.(withOverride)).toEqual(withOverride.currentDialogue!.choices.map(() => false));
 
     const nextTs = tsConversationEngine.applyChoice(withOverride, lockedChoice);
     const nextWasm = wasmEngine.applyChoice(withOverride, lockedChoice);

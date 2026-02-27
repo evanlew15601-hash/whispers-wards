@@ -12,6 +12,7 @@ interface DialoguePanelProps {
   onChoice: (choice: DialogueChoice) => void;
   knownSecrets: string[];
   factions: Faction[];
+  lockedChoices?: boolean[] | null;
 }
 
 const factionLabelColors: Record<string, string> = {
@@ -46,7 +47,7 @@ const isUserTyping = () => {
   return el.isContentEditable;
 };
 
-const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanelProps) => {
+const DialoguePanel = ({ node, onChoice, knownSecrets, factions, lockedChoices }: DialoguePanelProps) => {
   const { playSfx } = useAudio();
 
   const fullText = node.text;
@@ -192,7 +193,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
         const choice = node.choices[idx];
         if (!choice) return;
 
-        const locked = isChoiceLocked(choice, factions, knownSecrets);
+        const locked = lockedChoices?.[idx] ?? isChoiceLocked(choice, factions, knownSecrets);
 
         if (locked) {
           nudgeLockedChoice(choice.id);
@@ -206,7 +207,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
 
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [isRevealing, skipReveal, node.choices, factions, knownSecrets, onChoice, nudgeLockedChoice, playSfx]);
+  }, [isRevealing, skipReveal, node.choices, factions, knownSecrets, lockedChoices, onChoice, nudgeLockedChoice, playSfx]);
 
   const dialogueParagraphs = splitWrappedLinesIntoParagraphs(dialogueLines);
 
@@ -320,10 +321,9 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions }: DialoguePanel
 
           <div className={`flex flex-col gap-2 transition-opacity ${isRevealing ? 'opacity-45 pointer-events-none' : 'opacity-100'}`}>
             {node.choices.map((choice, i) => {
-              const locked = isChoiceLocked(choice, factions, knownSecrets);
+              const locked = lockedChoices?.[i] ?? isChoiceLocked(choice, factions, knownSecrets);
 
               const repReq = choice.requiredReputation;
-
               const reqFactionName = repReq
                 ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
                 : null;

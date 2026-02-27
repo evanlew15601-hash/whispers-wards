@@ -96,6 +96,8 @@ describe('uqm minimal wasm conversation core', () => {
 
     expect(exp.uqm_conv_get_choice_count()).toBe(1);
     expect(exp.uqm_conv_choice_is_locked(0)).toBe(1);
+    expect(exp.uqm_conv_get_locked_choices_lo()).toBe(0x1);
+    expect(exp.uqm_conv_get_locked_choices_hi()).toBe(0x0);
 
     const prevNode = exp.uqm_conv_get_current_node();
     const prevSecretsLo = exp.uqm_conv_get_secrets_lo();
@@ -109,9 +111,17 @@ describe('uqm minimal wasm conversation core', () => {
     expect(exp.uqm_conv_get_secrets_hi()).toBe(prevSecretsHi);
     expect(exp.uqm_conv_get_rep(0)).toBe(prevRep0);
 
+    // Lock bypass should still advance state when explicitly requested.
+    expect(exp.uqm_conv_choose_force(0)).toBe(-1);
+    expect(exp.uqm_conv_get_current_node()).toBe(-1);
+    expect(exp.uqm_conv_get_secrets_lo()).toBe(0x3);
+    expect(exp.uqm_conv_get_secrets_hi()).toBe(0x1);
+
     // Now unlock and choose.
     exp.uqm_conv_reset64(1, 10, 0, 0, 0x1, 0x1);
     expect(exp.uqm_conv_choice_is_locked(0)).toBe(0);
+    expect(exp.uqm_conv_get_locked_choices_lo()).toBe(0x0);
+    expect(exp.uqm_conv_get_locked_choices_hi()).toBe(0x0);
 
     expect(exp.uqm_conv_choose(0)).toBe(-1);
     expect(exp.uqm_conv_get_current_node()).toBe(-1);

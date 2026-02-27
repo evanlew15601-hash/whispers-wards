@@ -77,6 +77,7 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
     <GameScreen
       state={state}
       engineLabel="test"
+      choiceLockedFlags={null}
       makeChoice={vi.fn()}
       resetGame={vi.fn()}
       saveSlots={saveSlots}

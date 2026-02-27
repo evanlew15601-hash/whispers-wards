@@ -162,6 +162,7 @@ const GameScreen = ({
                 onChoice={makeChoice}
                 knownSecrets={state.knownSecrets}
                 factions={state.factions}
+                lockedChoices={choiceLockedFlags}
               />
             </>
           )}

@@ -59,6 +59,7 @@ const renderScreen = () =>
     <GameScreen
       state={state}
       engineLabel="test"
+      choiceLockedFlags={null}
       makeChoice={vi.fn()}
       resetGame={vi.fn()}
       saveSlots={saveSlots}

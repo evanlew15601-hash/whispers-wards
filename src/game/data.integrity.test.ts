@@ -45,8 +45,8 @@ describe('dialogueTree integrity', () => {
       }
     }
 
-    // The minimal WASM conversation core uses a 64-bit mask for secrets (lo/hi u32).
-    // The TS engine will still work beyond 64, but the WASM engine will ignore extras.
+    // The minimal WASM conversation core stores secrets in a 64-bit mask (lo/hi u32).
+    // The TS engine can exceed that, but the WASM engine will ignore extras.
     expect(secrets.size).toBeLessThanOrEqual(64);
   });
 

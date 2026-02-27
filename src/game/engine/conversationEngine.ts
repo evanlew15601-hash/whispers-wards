@@ -15,4 +15,11 @@ export interface ConversationEngine {
 
   /** Apply a player choice and return the next state (pure). */
   applyChoice(prev: GameState, choice: DialogueChoice): GameState;
+
+  /**
+   * Optional: compute which choices are currently locked.
+   *
+   * The UI can use this to stay aligned with whichever engine is active.
+   */
+  getChoiceLockedFlags?: (state: GameState) => boolean[] | null;
 }

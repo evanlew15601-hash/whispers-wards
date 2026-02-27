@@ -183,12 +183,18 @@ function applyChoiceUsingWasm(
     exp.uqm_conv_reset(nodeIdx, rep0, rep1, rep2, secretsMask.lo);
   }
 
-  if (exp.uqm_conv_choice_is_locked(localIdx) && !overrideLocked) {
+  const locked = exp.uqm_conv_choice_is_locked(localIdx) === 1;
+  if (locked && !overrideLocked) {
     // Enforce locks at the engine level too.
     return prev;
   }
 
-  const nextNodeIdx = exp.uqm_conv_choose(localIdx);
+  if (locked && overrideLocked && !exp.uqm_conv_choose_force) {
+    // If the runtime doesn't support bypassing locks in WASM, fall back to TS.
+    return null;
+  }
+
+  const nextNodeIdx = locked && overrideLocked ? exp.uqm_conv_choose_force!(localIdx) : exp.uqm_conv_choose(localIdx);
 
   // `-1` can mean either "end conversation" or "invalid". Disambiguate using the
   // TS node id on the choice; if the choice expects a next node but wasm returned
@@ -336,6 +342,44 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       if (next) return next;
       // Safe fallback (should be rare)
       return tsConversationEngine.applyChoice(prev, choice);
+    },
+    getChoiceLockedFlags(state) {
+      if (!state.currentDialogue) return null;
+      if (state.knownSecrets.includes('override')) return state.currentDialogue.choices.map(() => false);
+
+      const nodeIdx = graph.nodeIdToIndex.get(state.currentDialogue.id);
+      if (nodeIdx === undefined) return null;
+
+      const rep0 = state.factions.find(f => f.id === 'iron-pact')?.reputation ?? 0;
+      const rep1 = state.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0;
+      const rep2 = state.factions.find(f => f.id === 'ember-throne')?.reputation ?? 0;
+
+      const secretsMask = secretsMask64FromKnown(state.knownSecrets, graph.secretToBit);
+
+      const exp = uqm.exports;
+      if (graph.secretBitCapacity > 32 && exp.uqm_conv_reset64) {
+        exp.uqm_conv_reset64(nodeIdx, rep0, rep1, rep2, secretsMask.lo, secretsMask.hi);
+      } else {
+        exp.uqm_conv_reset(nodeIdx, rep0, rep1, rep2, secretsMask.lo);
+      }
+
+      const count = state.currentDialogue.choices.length;
+
+      if (exp.uqm_conv_get_locked_choices_lo && exp.uqm_conv_get_locked_choices_hi) {
+        const lo = exp.uqm_conv_get_locked_choices_lo() >>> 0;
+        const hi = exp.uqm_conv_get_locked_choices_hi() >>> 0;
+
+        return state.currentDialogue.choices.map((_, i) => {
+          if (i < 32) return ((lo >>> i) & 1) === 1;
+          if (i < 64) return ((hi >>> (i - 32)) & 1) === 1;
+          // If a node ever exceeds 64 choices (unlikely), fall back to per-choice calls.
+          return exp.uqm_conv_choice_is_locked(i) === 1;
+        });
+      }
+
+      const lockedFlags: boolean[] = new Array(count);
+      for (let i = 0; i < count; i++) lockedFlags[i] = exp.uqm_conv_choice_is_locked(i) === 1;
+      return lockedFlags;
     },
   };
 }

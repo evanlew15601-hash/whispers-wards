@@ -188,6 +188,10 @@ export const tsConversationEngine: ConversationEngine = {
   createInitialState,
   startNewGame,
   applyChoice,
+  getChoiceLockedFlags(state) {
+    if (!state.currentDialogue) return null;
+    return state.currentDialogue.choices.map(c => isChoiceLocked(c, state.factions, state.knownSecrets));
+  },
 };
 
 export const TS_OPENING_LOG_LINE = OPENING_LOG_LINE;

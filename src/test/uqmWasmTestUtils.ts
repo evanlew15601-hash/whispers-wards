@@ -19,7 +19,10 @@ export type UqmMinimalNormalizedExports = {
   uqm_conv_get_secrets_hi: () => number;
   uqm_conv_get_choice_count: () => number;
   uqm_conv_choice_is_locked: (localIdx: number) => number;
+  uqm_conv_get_locked_choices_lo: () => number;
+  uqm_conv_get_locked_choices_hi: () => number;
   uqm_conv_choose: (localIdx: number) => number;
+  uqm_conv_choose_force: (localIdx: number) => number;
 };
 
 const BUILT_KEY = '__uqm_minimal_wasm_built__';
@@ -70,16 +73,45 @@ export function ensureUqmMinimalWasmBuilt(): void {
     return newest;
   };
 
+  const hasExpectedExports = (bytes: Buffer) => {
+    try {
+      const mod = new WebAssembly.Module(bytes);
+      const instance = new WebAssembly.Instance(mod, {});
+      const exp = instance.exports as unknown as Record<string, unknown>;
+
+      const ok = (names: string[]) => names.some(n => typeof exp[n] === 'function');
+
+      return (
+        ok(['uqm_alloc', '_uqm_alloc']) &&
+        ok(['uqm_line_fit_chars', '_uqm_line_fit_chars']) &&
+        ok(['uqm_conv_reset', '_uqm_conv_reset']) &&
+        ok(['uqm_conv_reset64', '_uqm_conv_reset64']) &&
+        ok(['uqm_conv_set_graph', '_uqm_conv_set_graph']) &&
+        ok(['uqm_conv_get_choice_count', '_uqm_conv_get_choice_count']) &&
+        ok(['uqm_conv_choice_is_locked', '_uqm_conv_choice_is_locked']) &&
+        ok(['uqm_conv_get_locked_choices_lo', '_uqm_conv_get_locked_choices_lo']) &&
+        ok(['uqm_conv_get_locked_choices_hi', '_uqm_conv_get_locked_choices_hi']) &&
+        ok(['uqm_conv_choose', '_uqm_conv_choose']) &&
+        ok(['uqm_conv_choose_force', '_uqm_conv_choose_force'])
+      );
+    } catch {
+      return false;
+    }
+  };
+
   // If a previous step (e.g. `pretest`) already built the artifact, skip spawning
-  // as long as it's newer than the sources.
+  // as long as it's newer than the sources and exports the expected ABI.
   if (fs.existsSync(wasmPath)) {
     waitForFileReady(wasmPath);
     try {
       const outStat = fs.statSync(wasmPath);
       const newestSrc = newestMtimeMs([srcC, srcWat]);
       if (outStat.mtimeMs >= newestSrc) {
-        g[BUILT_KEY] = true;
-        return;
+        const bytes = fs.readFileSync(wasmPath);
+        if (hasExpectedExports(bytes)) {
+          g[BUILT_KEY] = true;
+          return;
+        }
       }
     } catch {
       // continue and rebuild
@@ -174,6 +206,9 @@ export async function loadUqmMinimalWasmExports(): Promise<UqmMinimalNormalizedE
     uqm_conv_get_secrets_hi: getFunction(raw, ['uqm_conv_get_secrets_hi', '_uqm_conv_get_secrets_hi']),
     uqm_conv_get_choice_count: getFunction(raw, ['uqm_conv_get_choice_count', '_uqm_conv_get_choice_count']),
     uqm_conv_choice_is_locked: getFunction(raw, ['uqm_conv_choice_is_locked', '_uqm_conv_choice_is_locked']),
+    uqm_conv_get_locked_choices_lo: getFunction(raw, ['uqm_conv_get_locked_choices_lo', '_uqm_conv_get_locked_choices_lo']),
+    uqm_conv_get_locked_choices_hi: getFunction(raw, ['uqm_conv_get_locked_choices_hi', '_uqm_conv_get_locked_choices_hi']),
     uqm_conv_choose: getFunction(raw, ['uqm_conv_choose', '_uqm_conv_choose']),
+    uqm_conv_choose_force: getFunction(raw, ['uqm_conv_choose_force', '_uqm_conv_choose_force']),
   };
 }

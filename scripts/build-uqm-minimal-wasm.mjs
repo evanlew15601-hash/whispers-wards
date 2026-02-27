@@ -72,7 +72,10 @@ function validateWasm(bytes) {
     if (!ok(['uqm_conv_reset64', '_uqm_conv_reset64'])) return false;
     if (!ok(['uqm_conv_get_choice_count', '_uqm_conv_get_choice_count'])) return false;
     if (!ok(['uqm_conv_choice_is_locked', '_uqm_conv_choice_is_locked'])) return false;
+    if (!ok(['uqm_conv_get_locked_choices_lo', '_uqm_conv_get_locked_choices_lo'])) return false;
+    if (!ok(['uqm_conv_get_locked_choices_hi', '_uqm_conv_get_locked_choices_hi'])) return false;
     if (!ok(['uqm_conv_choose', '_uqm_conv_choose'])) return false;
+    if (!ok(['uqm_conv_choose_force', '_uqm_conv_choose_force'])) return false;
 
     return true;
   } catch {
@@ -82,13 +85,20 @@ function validateWasm(bytes) {
 
 fs.mkdirSync(outDir, { recursive: true });
 
-// Skip if output is newer than sources.
+// Skip if output is newer than sources (but still validate it).
 try {
   const outStat = fs.statSync(outWasm);
   const newestSrc = newestMtimeMs([srcC, srcWat, __filename]);
   if (outStat.mtimeMs >= newestSrc) {
-    console.log(`[uqm-wasm] up-to-date: ${path.relative(root, outWasm)}`);
-    process.exit(0);
+    try {
+      const bytes = fs.readFileSync(outWasm);
+      if (validateWasm(bytes)) {
+        console.log(`[uqm-wasm] up-to-date: ${path.relative(root, outWasm)}`);
+        process.exit(0);
+      }
+    } catch {
+      // fall through and rebuild
+    }
   }
 } catch {
   // continue
@@ -121,7 +131,10 @@ for (const clang of clangCandidates) {
     '-Wl,--export=uqm_conv_reset64',
     '-Wl,--export=uqm_conv_get_choice_count',
     '-Wl,--export=uqm_conv_choice_is_locked',
+    '-Wl,--export=uqm_conv_get_locked_choices_lo',
+    '-Wl,--export=uqm_conv_get_locked_choices_hi',
     '-Wl,--export=uqm_conv_choose',
+    '-Wl,--export=uqm_conv_choose_force',
     '-Wl,--export-memory',
     '-Wl,--strip-all',
     '-o',
@@ -152,7 +165,7 @@ if (!built && commandExists('emcc')) {
     '-s',
     'ERROR_ON_UNDEFINED_SYMBOLS=1',
     '-s',
-    'EXPORTED_FUNCTIONS=["_uqm_alloc","_uqm_version_ptr","_uqm_version_len","_uqm_line_fit_chars","_uqm_conv_reset","_uqm_conv_reset64","_uqm_conv_set_graph","_uqm_conv_get_current_node","_uqm_conv_get_rep","_uqm_conv_get_secrets","_uqm_conv_get_secrets_lo","_uqm_conv_get_secrets_hi","_uqm_conv_get_choice_count","_uqm_conv_choice_is_locked","_uqm_conv_choose"]',
+    'EXPORTED_FUNCTIONS=["_uqm_alloc","_uqm_version_ptr","_uqm_version_len","_uqm_line_fit_chars","_uqm_conv_reset","_uqm_conv_reset64","_uqm_conv_set_graph","_uqm_conv_get_current_node","_uqm_conv_get_rep","_uqm_conv_get_secrets","_uqm_conv_get_secrets_lo","_uqm_conv_get_secrets_hi","_uqm_conv_get_choice_count","_uqm_conv_choice_is_locked","_uqm_conv_get_locked_choices_lo","_uqm_conv_get_locked_choices_hi","_uqm_conv_choose"]',
     '-Wl,--export-memory',
     '-o',
     outWasm,

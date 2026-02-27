@@ -15,7 +15,10 @@ export type UqmWasmExports = {
   uqm_conv_get_secrets_hi?: () => number;
   uqm_conv_get_choice_count: () => number;
   uqm_conv_choice_is_locked: (localIdx: number) => number;
+  uqm_conv_get_locked_choices_lo?: () => number;
+  uqm_conv_get_locked_choices_hi?: () => number;
   uqm_conv_choose: (localIdx: number) => number;
+  uqm_conv_choose_force?: (localIdx: number) => number;
 };
 
 export type UqmWasmRuntime = {
@@ -77,10 +80,16 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
   const uqm_conv_choice_is_locked = (raw.uqm_conv_choice_is_locked ?? raw._uqm_conv_choice_is_locked) as
     | ((localIdx: number) => number)
     | undefined;
+  const uqm_conv_get_locked_choices_lo = (raw.uqm_conv_get_locked_choices_lo ?? raw._uqm_conv_get_locked_choices_lo) as
+    | (() => number)
+    | undefined;
+  const uqm_conv_get_locked_choices_hi = (raw.uqm_conv_get_locked_choices_hi ?? raw._uqm_conv_get_locked_choices_hi) as
+    | (() => number)
+    | undefined;
   const uqm_conv_choose = (raw.uqm_conv_choose ?? raw._uqm_conv_choose) as
     | ((localIdx: number) => number)
     | undefined;
-
+  const uqm_conv_choose_force = (raw.uqm_conv_choose_force ?? raw._uqm_conv_choose_force)        | ((localIdx: numbe    !uqm_conv_    | und    !uqm
   if (
     !memory ||
     !uqm_alloc ||
@@ -93,14 +102,11 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
     !uqm_conv_get_rep ||
     !uqm_conv_get_secrets ||
     !uqm_conv_get_choice_count ||
-    !uqm_conv_choice_is_locked ||
-    !uqm_conv_choose
-  ) {
-    throw new Error('UQM wasm module exports missing expected symbols');
-  }
-
-  return {
-    memory,
+    !uqm_conv_choice_is_locked        !uqm_conv_cho      ) {
+    throw new Error('UQM wasm modul
+    uqm_conv_reset,
+    uqm_conv_reset64,
+    uqm_con    memory,
     uqm_alloc,
     uqm_version_ptr,
     uqm_version_len,
@@ -116,6 +122,8 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
     uqm_conv_get_secrets_hi,
     uqm_conv_get_choice_count,
     uqm_conv_choice_is_locked,
+    uqm_conv_get_locked_choices_lo,
+    uqm_conv_get_locked_choices_hi,
     uqm_conv_choose,
   };
 }
@@ -174,16 +182,15 @@ async function instantiateUqmWasm(): Promise<UqmWasmRuntime> {
     };
   } catch (err) {
     if (controller.signal.aborted) {
-      throw new Error('Timed out loading UQM wasm');
-    }
+    export function loadUqmWasmRuntime(): Promise<Uqm    }
     throw err;
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
-export function loadUqmWasmRuntime(): Promise<UqmWasmRuntime> {
-  if (!cached) {
+export function loadUqmWasmRuntime(): Promise<UqmWasmRuntime>  r  if (!cached)}
+
     cached = instantiateUqmWasm().catch(err => {
       cached = null;
       throw err;

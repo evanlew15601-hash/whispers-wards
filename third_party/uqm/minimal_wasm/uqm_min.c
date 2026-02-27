@@ -460,6 +460,44 @@ uqm_conv_choice_is_locked (int32_t localIdx)
 	return (int32_t) conv_choice_is_locked_internal (localIdx);
 }
 
+UQM_WASM_EXPORT("uqm_conv_get_locked_choices_lo")
+uint32_t
+uqm_conv_get_locked_choices_lo (void)
+{
+	uint32_t count;
+	uint32_t mask;
+	uint32_t i;
+
+	count = conv_current_node_choice_count ();
+	mask = 0u;
+
+	for (i = 0u; i < count && i < 32u; i++)	{
+		if (conv_choice_is_locked_internal ((int32_t) i))
+			mask |= 1u << i;
+	}
+
+	return mask;
+}
+
+UQM_WASM_EXPORT("uqm_conv_get_locked_choices_hi")
+uint32_t
+uqm_conv_get_locked_choices_hi (void)
+{
+	uint32_t count;
+	uint32_t mask;
+	uint32_t i;
+
+	count = conv_current_node_choice_count ();
+	mask = 0u;
+
+	for (i = 32u; i < count && i < 64u; i++)	{
+		if (conv_choice_is_locked_internal ((int32_t) i))
+			mask |= 1u << (i - 32u);
+	}
+
+	return mask;
+}
+
 UQM_WASM_EXPORT("uqm_conv_choose")
 int32_t
 uqm_conv_choose (int32_t localIdx)
@@ -481,6 +519,57 @@ uqm_conv_choose (int32_t localIdx)
 	uLocalIdx = (uint32_t) localIdx;
 
 	nodeMetaPtr = conv_graph_node_meta_ptr ((uint32_t) conv_currentNode);
+	firstChoice = load_u32_le (nodeMetaPtr + 0u);
+	choiceCount = load_u32_le (nodeMetaPtr + 4u);
+	if (uLocalIdx >= choiceCount)
+		return -1;
+
+	absChoice = firstChoice + uLocalIdx;
+	if (absChoice >= conv_graph_total_choices ())
+		return -1;
+	choicePtr = conv_graph_choice_ptr (absChoice);
+
+	nextNode = load_i32_le (choicePtr + 0u);
+	d0 = load_i16_le (choicePtr + 4u);
+	d1 = load_i16_le (choicePtr + 6u);
+	d2 = load_i16_le (choicePtr + 8u);
+	revealLo = load_u32_le (choicePtr + 14u);
+	revealHi = load_u32_le (choicePtr + 18u);
+
+	conv_rep[0] += d0;
+	conv_rep[1] += d1;
+	conv_rep[2] += d2;
+	conv_secretsLo |= revealLo;
+	conv_secretsHi |= revealHi;
+	conv_currentNode = nextNode;
+
+	return nextNode;
+}
+
+UQM_WASM_EXPORT("uqm_conv_choose_force")
+int32_t
+uqm_conv_choose_force (int32_t localIdx)
+{
+	uint32_t uLocalIdx;
+	uint32_t nodeMetaPtr;
+	uint32_t firstChoice;
+	uint32_t choiceCount;
+	uint32_t absChoice;
+	uint32_t choicePtr;
+	int32_t nextNode;
+	int32_t d0, d1, d2;
+	uint32_t revealLo;
+	uint32_t revealHi;
+
+	if (localIdx < 0)
+		return -1;
+
+	uLocalIdx = (uint32_t) localIdx;
+
+	nodeMetaPtr = conv_graph_node_meta_ptr ((uint32_t) conv_currentNode);
+	if (nodeMetaPtr == 0u)
+		return -1;
+
 	firstChoice = load_u32_le (nodeMetaPtr + 0u);
 	choiceCount = load_u32_le (nodeMetaPtr + 4u);
 	if (uLocalIdx >= choiceCount)
