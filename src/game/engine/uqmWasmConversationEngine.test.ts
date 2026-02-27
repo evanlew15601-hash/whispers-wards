@@ -121,38 +121,52 @@ describe('uqmWasmConversationEngine', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 
     const start = tsConversationEngine.startNewGame();
-    const seeded = {
-      ...start,
+    const seeded = { ...start, rngSeed: 123456789 };
+
+    // Jump to a node where we added a new investigative option.
+    const atFollowup = {
+      ...seeded,
       currentDialogue: dialogueTree['aldric-followup'],
-      rngSeed: 123456789,
     };
 
-    const step1Choice = seeded.currentDialogue!.choices.find(c => c.id === 'aldric-dispatches');
-    if (!step1Choice) throw new Error('Expected aldric-dispatches choice');
+    const auditChoice = atFollowup.currentDialogue!.choices.find(c => c.id === 'aldric-dispatches');
+    if (!auditChoice) throw new Error('Expected aldric-dispatches choice');
 
-    const nextTs = tsConversationEngine.applyChoice(seeded, step1Choice);
-    const nextWasm = wasmEngine.applyChoice(seeded, step1Choice);
+    const nextTs = tsConversationEngine.applyChoice(atFollowup, auditChoice);
+    const nextWasm = wasmEngine.applyChoice(atFollowup, auditChoice);
 
     expect(nextWasm.currentDialogue?.id).toBe(nextTs.currentDialogue?.id);
-    expect(nextWasm.world).toEqual(nextTs.world);
+    expect(nextWasm.turnNumber).toBe(nextTs.turnNumber);
     expect(nextWasm.rngSeed).toBe(nextTs.rngSeed);
+    expect(nextWasm.world).toEqual(nextTs.world);
 
-    const step2Choice = nextTs.currentDialogue!.choices.find(c => c.id === 'dispatch-back');
-    if (!step2Choice) throw new Error('Expected dispatch-back choice');
+    const repTs = Object.fromEntries(nextTs.factions.map(f => [f.id, f.reputation] as const));
+    const repWasm = Object.fromEntries(nextWasm.factions.map(f => [f.id, f.reputation] as const));
+    expect(repWasm).toEqual(repTs);
 
-    const nextTs2 = tsConversationEngine.applyChoice(nextTs, step2Choice);
-    const nextWasm2 = wasmEngine.applyChoice(nextWasm, step2Choice);
+    expect(nextWasm.knownSecrets).toEqual(nextTs.knownSecrets);
+
+    const backChoice = nextTs.currentDialogue?.choices?.find(c => c.id === 'dispatch-back');
+    if (!backChoice) throw new Error('Expected dispatch-back choice');
+
+    const nextTs2 = tsConversationEngine.applyChoice(nextTs, backChoice);
+    const nextWasm2 = wasmEngine.applyChoice(nextWasm, backChoice);
 
     expect(nextWasm2.currentDialogue?.id).toBe(nextTs2.currentDialogue?.id);
     expect(nextWasm2.turnNumber).toBe(nextTs2.turnNumber);
-    expect(nextWasm2.world).toEqual(nextTs2.world);
     expect(nextWasm2.rngSeed).toBe(nextTs2.rngSeed);
+    expect(nextWasm2.world).toEqual(nextTs2.world);
 
     const repTs2 = Object.fromEntries(nextTs2.factions.map(f => [f.id, f.reputation] as const));
     const repWasm2 = Object.fromEntries(nextWasm2.factions.map(f => [f.id, f.reputation] as const));
     expect(repWasm2).toEqual(repTs2);
 
     expect(nextWasm2.knownSecrets).toEqual(nextTs2.knownSecrets);
+
+    // Secret learning is now derived from the WASM secrets mask; ensure the log reflects that too.
+    const learnedInTs = nextTs.log.filter(l => l.startsWith('🔍 Secret learned: '));
+    const learnedInWasm = nextWasm.log.filter(l => l.startsWith('🔍 Secret learned: '));
+    expect(learnedInWasm).toEqual(learnedInTs);
   });
 
   it('keeps lock behavior aligned (UI/TS helper vs engine execution) for summit choices', () => {

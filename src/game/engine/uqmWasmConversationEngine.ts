@@ -219,19 +219,24 @@ function applyChoiceUsingWasm(
     return f;
   });
 
+  const prevExpected = secretsFromMask(graph, secretsMask.lo >>> 0, secretsMask.hi >>> 0);
+
   const secretsLo = exp.uqm_conv_get_secrets_lo ? exp.uqm_conv_get_secrets_lo() : exp.uqm_conv_get_secrets();
   const secretsHi = exp.uqm_conv_get_secrets_hi ? exp.uqm_conv_get_secrets_hi() : 0;
 
   const expected = secretsFromMask(graph, secretsLo >>> 0, secretsHi >>> 0);
 
+  const newlyLearned: string[] = [];
+  for (const s of expected) {
+    if (!prevExpected.has(s)) newlyLearned.push(s);
+  }
+
+  // Keep external secrets (e.g. "override") and keep order stable for secrets represented
+  // in the wasm mask.
   const ordered: string[] = prev.knownSecrets.filter(s => {
     if (!graph.secretToBit.has(s)) return true;
     return expected.has(s);
   });
-
-  if (choice.revealsInfo && expected.has(choice.revealsInfo) && !ordered.includes(choice.revealsInfo)) {
-    ordered.push(choice.revealsInfo);
-  }
 
   // Ensure we didn't drop any secrets represented in the mask.
   for (let bit = 0; bit < graph.secretBitCapacity; bit++) {
@@ -263,7 +268,7 @@ function applyChoiceUsingWasm(
     ...prev.log,
     `> ${choice.text}`,
     ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-    ...(choice.revealsInfo ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+    ...newlyLearned.map(s => `🔍 Secret learned: ${s}`),
   ];
 
   const nextTurnNumber = prev.turnNumber + 1;
