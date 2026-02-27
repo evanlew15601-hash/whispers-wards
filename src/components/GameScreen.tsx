@@ -88,7 +88,16 @@ const GameScreen = ({
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div
+        className="pointer-events-none fixed inset-0 opacity-70"
+        style={{
+          backgroundImage:
+            'radial-gradient(900px circle at 50% -10%, hsl(var(--gold-glow) / 0.12), transparent 55%), radial-gradient(700px circle at 12% 110%, hsl(var(--faction-verdant) / 0.08), transparent 60%), radial-gradient(800px circle at 110% 40%, hsl(var(--faction-ember) / 0.08), transparent 60%)',
+        }}
+      />
+      <div className="pointer-events-none fixed inset-0 opacity-25 cc-dialogue-grain" />
+
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/90 px-6 py-3 backdrop-blur-sm">
         <h1 className="font-display text-sm tracking-[0.4em] gold-text-gradient uppercase">
           Crown & Concord

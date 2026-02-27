@@ -35,11 +35,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'opening',
     speaker: 'Commander Aldric Vane',
     speakerFaction: 'iron-pact',
-    text: 'You arrive at the Concord Hall as the last light of dusk bleeds through the stained glass. Commander Aldric Vane of the Iron Pact studies you with cold, appraising eyes.\n\n"So. The envoy arrives. I had expected someone... taller. No matter. The border dispute with the Verdant Court has claimed seventeen lives this moon. We need resolution—or we need war. Which do you bring?"',
+    text: 'Dusk turns the stained glass into bruised jewels as you step into Concord Hall. Commander Aldric Vane of the Iron Pact looks you over the way a quartermaster looks over supplies—quick, unsentimental.\n\n"So. The envoy." His gaze flicks up and down. "I\'d pictured someone taller. No matter. Seventeen bodies this moon on the Greenmarch. We don\'t get another month of speeches. We get an answer. Treaty… or war. Which did you ride in on?"',
     choices: [
       {
         id: 'diplomatic',
-        text: '"I bring words first, Commander. Let us hear all sides before steel speaks."',
+        text: '"Words first, Commander. Let me hear the Court before we bare steel."',
         effects: [
           { factionId: 'iron-pact', reputationChange: -5 },
           { factionId: 'verdant-court', reputationChange: 10 },
@@ -48,7 +48,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'pragmatic',
-        text: '"I bring what serves the realm. Tell me what the Iron Pact truly needs."',
+        text: '"Tell me what you need—without the ceremony."',
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
         ],
@@ -56,7 +56,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'information',
-        text: '"Before I answer—what aren\'t you telling me about those seventeen deaths?"',
+        text: '"Seventeen dead is a story. Who\'s shaping it?"',
         effects: [
           { factionId: 'iron-pact', reputationChange: -3 },
           { factionId: 'ember-throne', reputationChange: 5 },
@@ -151,11 +151,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'thessaly-intro',
     speaker: 'Emissary Thessaly',
     speakerFaction: 'verdant-court',
-    text: 'The eastern wing smells of moss and old rain. Thessaly sits cross-legged on the stone floor, eyes closed, vines crawling lazily up the walls around her. She speaks without opening her eyes.\n\n"The envoy. I felt your footsteps three corridors ago. The stones here remember everything—every boot, every blade, every lie spoken in these halls."\n\nHer eyes open—green as deep forest canopy. "Tell me, envoy. Did the Commander send you to negotiate, or to spy?"',
+    text: 'The eastern wing smells of moss and old rain. Thessaly sits cross-legged on the stone floor, eyes closed, vines looping up the walls like idle handwriting. She speaks without opening her eyes.\n\n"The envoy." A pause—just long enough to make you feel measured. "I heard you three corridors ago. These stones remember everything. Every boot. Every blade. Every lie."\n\nHer eyes open—green as deep canopy after rain. "So tell me. Did Vane send you to bargain… or to count my secrets?"',
     choices: [
       {
         id: 'honest',
-        text: '"Neither. I came of my own accord. The realm needs peace more than any faction needs victory."',
+        text: '"Neither. I came because the next funeral will be on all our hands."',
         effects: [
           { factionId: 'verdant-court', reputationChange: 15 },
           { factionId: 'iron-pact', reputationChange: -5 },
@@ -164,7 +164,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'strategic',
-        text: '"He told me to be careful with you. That you see more than you show. Was he right?"',
+        text: '"He warned me about you. Said you notice what others miss. Is that true?"',
         effects: [
           { factionId: 'verdant-court', reputationChange: 5 },
         ],
@@ -254,35 +254,35 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'concord-hub': {
     id: 'concord-hub',
     speaker: 'Narrator',
-    text: 'Concord Hall is a maze of velvet corridors and stone alcoves built for whispers. The three delegations have taken their corners of the building like wary wolves around a single carcass.\n\nIf you want an ending that isn\'t drenched in ash, you\'ll need leverage, trust, or both.',
+    text: 'Concord Hall was built for secrets. Velvet eats the sound of footsteps. Stone carries voices farther than it should. Every corridor feels like it ends in an eavesdropper.\n\nThe delegations hold their ground like rivals around a hearth—too close to ignore, too proud to share the warmth.\n\nIf you want peace, you\'ll have to earn it the hard way: with proof, with favors, or with a lie sharp enough to cut through everyone\'s pride.',
     choices: [
       {
         id: 'hub-aldric',
-        text: 'Return to Commander Vane and press him for concessions.',
+        text: 'Go back to Vane and see what he\'ll give when pressed.',
         effects: [],
         nextNodeId: 'aldric-followup',
       },
       {
         id: 'hub-thessaly',
-        text: 'Seek Thessaly again in the eastern wing and test the Court\'s true aims.',
+        text: 'Find Thessaly in the eastern wing and read what she\'s not saying.',
         effects: [],
         nextNodeId: 'thessaly-followup',
       },
       {
         id: 'hub-renzo',
-        text: 'Request an audience with Renzo of the Ember Throne.',
+        text: 'Ask for Renzo. Merchants always want something.',
         effects: [],
         nextNodeId: 'renzo-intro',
       },
       {
         id: 'hub-archives',
-        text: 'Search the Concord Hall archives for old treaties and inconvenient truths.',
+        text: 'Dig through the archives for treaties, loopholes, and rot.',
         effects: [],
         nextNodeId: 'hall-archives',
       },
       {
         id: 'hub-summit',
-        text: 'Convene all three emissaries for a formal summit.',
+        text: 'Call the summit and force everyone into the same light.',
         effects: [],
         nextNodeId: 'summit-start',
       },
