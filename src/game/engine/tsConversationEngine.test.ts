@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { tsConversationEngine, TS_OPENING_LOG_LINE } from './tsConversationEngine';
+import { dialogueTree } from '../data';
 
 describe('tsConversationEngine', () => {
   it('startNewGame sets initial scene/dialogue/log', () => {
@@ -63,5 +64,40 @@ describe('tsConversationEngine', () => {
 
     const next = tsConversationEngine.applyChoice(seeded, choice);
     expect(next.knownSecrets).toEqual(['dup']);
+  });
+
+  it('locks proof-gated summit actions until evidence is discovered', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atSummit = {
+      ...initial,
+      currentDialogue: dialogueTree['summit-start'],
+      rngSeed: 123456789,
+      factions: initial.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
+      knownSecrets: [],
+    };
+
+    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose');
+    expect(exposeIdx).toBeGreaterThanOrEqual(0);
+
+    const exposeChoice = atSummit.currentDialogue!.choices[exposeIdx];
+
+    const lockedFlags = tsConversationEngine.getChoiceLockedFlags(atSummit);
+    expect(lockedFlags?.[exposeIdx]).toBe(true);
+
+    const nextLocked = tsConversationEngine.applyChoice(atSummit, exposeChoice);
+    expect(nextLocked).toBe(atSummit);
+
+    const withProof = {
+      ...atSummit,
+      knownSecrets: ['Renzo\'s ledger pages show coded payments tied to the border killings.'],
+    };
+
+    const unlockedFlags = tsConversationEngine.getChoiceLockedFlags(withProof);
+    expect(unlockedFlags?.[exposeIdx]).toBe(false);
+
+    const next = tsConversationEngine.applyChoice(withProof, exposeChoice);
+    expect(next).not.toBe(withProof);
+    expect(next.currentDialogue?.id).toBe('ending-embers-fall');
   });
 });

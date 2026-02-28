@@ -1294,6 +1294,16 @@ export const dialogueTree: Record<string, DialogueNode> = {
         requiredReputation: { factionId: 'iron-pact', min: 5 },
         revealsInfo: 'You publicly accused the Ember Throne of engineering the conflict, citing maps, burns, and ledgers.',
       },
+      {
+        id: 'summit-adjourn',
+        text: 'Call for recess. Adjourn until you have documents everyone will accept as proof.',
+        effects: [
+          { factionId: 'iron-pact', reputationChange: -2 },
+          { factionId: 'verdant-court', reputationChange: -2 },
+          { factionId: 'ember-throne', reputationChange: -2 },
+        ],
+        nextNodeId: 'concord-hub',
+      },
     ],
   },
   'ending-greenmarch-compact': {

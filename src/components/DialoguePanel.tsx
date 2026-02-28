@@ -398,8 +398,6 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, lockedChoices, 
                             requires proof
                           </span>
                         )}
-
-                        
                       </div>
                     </div>
                   </div>
