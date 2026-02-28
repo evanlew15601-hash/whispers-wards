@@ -162,6 +162,77 @@ describe('tsConversationEngine', () => {
     expect(repsAfter).toEqual(repsBefore);
   });
 
+  it('locks mutually-exclusive choices via exclusiveGroup to prevent branch swapping on revisit', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atMaps = {
+      ...initial,
+      currentDialogue: dialogueTree['map-revelation'],
+      rngSeed: 123456789,
+    };
+
+    const keepSecret = atMaps.currentDialogue!.choices.find(c => c.id === 'keep-secret');
+    if (!keepSecret) throw new Error('Expected keep-secret choice');
+
+    const afterKeep = tsConversationEngine.applyChoice(atMaps, keepSecret);
+    expect(afterKeep.selectedChoiceIds).toContain('keep-secret');
+
+    const revisitMaps = {
+      ...afterKeep,
+      currentDialogue: dialogueTree['map-revelation'],
+    };
+
+    const revealForgery = revisitMaps.currentDialogue!.choices.find(c => c.id === 'reveal-forgery');
+    if (!revealForgery) throw new Error('Expected reveal-forgery choice');
+
+    // Since keep-secret and reveal-forgery are mutually exclusive, the second path should be locked.
+    expect(tsConversationEngine.applyChoice(revisitMaps, revealForgery)).toBe(revisitMaps);
+
+    const atArchives = {
+      ...initial,
+      currentDialogue: dialogueTree['hall-archives'],
+      rngSeed: 123456789,
+    };
+
+    const sellAccord = atArchives.currentDialogue!.choices.find(c => c.id === 'archives-renzo');
+    if (!sellAccord) throw new Error('Expected archives-renzo choice');
+
+    const afterSellAccord = tsConversationEngine.applyChoice(atArchives, sellAccord);
+    expect(afterSellAccord.selectedChoiceIds).toContain('archives-renzo');
+
+    const revisitArchives = {
+      ...afterSellAccord,
+      currentDialogue: dialogueTree['hall-archives'],
+    };
+
+    const showToAldric = revisitArchives.currentDialogue!.choices.find(c => c.id === 'archives-aldric');
+    if (!showToAldric) throw new Error('Expected archives-aldric choice');
+
+    expect(tsConversationEngine.applyChoice(revisitArchives, showToAldric)).toBe(revisitArchives);
+
+    const atStolenLedger = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+      rngSeed: 123456789,
+    };
+
+    const sellBack = atStolenLedger.currentDialogue!.choices.find(c => c.id === 'stolen-sell');
+    if (!sellBack) throw new Error('Expected stolen-sell choice');
+
+    const afterSell = tsConversationEngine.applyChoice(atStolenLedger, sellBack);
+    expect(afterSell.selectedChoiceIds).toContain('stolen-sell');
+
+    const revisitStolenLedger = {
+      ...afterSell,
+      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+    };
+
+    const takeToAldric = revisitStolenLedger.currentDialogue!.choices.find(c => c.id === 'stolen-to-aldric');
+    if (!takeToAldric) throw new Error('Expected stolen-to-aldric choice');
+
+    expect(tsConversationEngine.applyChoice(revisitStolenLedger, takeToAldric)).toBe(revisitStolenLedger);
+  });
+
   it('keeps choice history after resolving an encounter (summit-adjourn effects are not re-applied)', () => {
     const initial = tsConversationEngine.startNewGame();
 

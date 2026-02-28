@@ -16,6 +16,15 @@ export interface DialogueChoice {
     reputationChange: number;
   }[];
   nextNodeId: string | null; // null = end conversation
+
+  /**
+   * Marks a mutually-exclusive decision group.
+   *
+   * If the player has previously selected a different choice in the same group,
+   * this choice becomes locked on revisit.
+   */
+  exclusiveGroup?: string;
+
   requiredReputation?: { factionId: string; min: number };
   requiresAllSecrets?: string[];
   requiresAnySecrets?: string[];

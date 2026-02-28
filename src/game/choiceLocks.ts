@@ -3,7 +3,14 @@ import { dialogueTree } from './data';
 
 type LockableChoice = Pick<
   DialogueChoice,
-  'id' | 'text' | 'effects' | 'revealsInfo' | 'requiredReputation' | 'requiresAllSecrets' | 'requiresAnySecrets'
+  'id' |
+    'text' |
+    'effects' |
+    'revealsInfo' |
+    'exclusiveGroup' |
+    'requiredReputation' |
+    'requiresAllSecrets' |
+    'requiresAnySecrets'
 >;
 
 type SecretLockableChoice = Pick<DialogueChoice, 'requiresAllSecrets' | 'requiresAnySecrets'>;
@@ -71,6 +78,34 @@ const uniqueRepChoiceIdByText = (() => {
   return out;
 })();
 
+const choiceIdToExclusiveGroup = (() => {
+  const out = new Map<string, string>();
+
+  for (const node of Object.values(dialogueTree)) {
+    for (const c of node.choices) {
+      if (!c.exclusiveGroup) continue;
+      out.set(c.id, c.exclusiveGroup);
+    }
+  }
+
+  return out;
+})();
+
+const isChoiceLockedByExclusiveGroup = (
+  choice: Pick<DialogueChoice, 'id' | 'exclusiveGroup'>,
+  selectedChoiceIds: string[],
+): boolean => {
+  const group = choice.exclusiveGroup ?? null;
+  if (!group) return false;
+
+  for (const pickedId of selectedChoiceIds) {
+    const pickedGroup = choiceIdToExclusiveGroup.get(pickedId) ?? null;
+    if (pickedGroup === group && pickedId !== choice.id) return true;
+  }
+
+  return false;
+};
+
 export function isChoiceLockedByHistory(
   choice: Pick<DialogueChoice, 'id' | 'text' | 'effects' | 'revealsInfo'>,
   selectedChoiceIds: string[],
@@ -106,6 +141,10 @@ export function isChoiceLocked(
   selectedChoiceIds: string[] = [],
 ): boolean {
   if (knownSecrets.includes('override')) return false;
+
+  // Persistent branching: if the player has already committed to a different choice in the
+  // same exclusivity group, prevent swapping paths on revisit.
+  if (isChoiceLockedByExclusiveGroup(choice, selectedChoiceIds)) return true;
 
   // If the player already took this rep-affecting choice earlier, keep it selectable so
   // revisits can't soft-lock the story (effects are suppressed by the engine).

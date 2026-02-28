@@ -20,7 +20,7 @@ const uniqueRepChoiceIdByText = (() => {
 
   for (const node of Object.values(dialogueTree)) {
     for (const c of node.choices) {
-      if (!c.effects.some(e => e.reputationChange !== 0)) continue;
+      if (!c.exclusiveGroup && !c.effects.some(e => e.reputationChange !== 0)) continue;
 
       const existing = seen.get(c.text);
       if (existing === undefined) seen.set(c.text, c.id);

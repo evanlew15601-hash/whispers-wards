@@ -180,6 +180,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'reveal-forgery',
         text: '"Commander, these maps have been altered. The pass was shared territory."',
+        exclusiveGroup: 'map-forgery-disclosure',
         effects: [
           { factionId: 'iron-pact', reputationChange: 5 },
           { factionId: 'ember-throne', reputationChange: -20 },
@@ -191,6 +192,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'keep-secret',
         text: 'Say nothing for now. This information could be worth more as leverage later.',
+        exclusiveGroup: 'map-forgery-disclosure',
         effects: [
           { factionId: 'ember-throne', reputationChange: 5 },
         ],
@@ -977,6 +979,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'stolen-to-aldric',
         text: 'Take the ledger pages to Commander Vane.',
+        exclusiveGroup: 'stolen-ledger-disposition',
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'ember-throne', reputationChange: -10 },
@@ -987,6 +990,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'stolen-to-thessaly',
         text: 'Take the ledger pages to Thessaly.',
+        exclusiveGroup: 'stolen-ledger-disposition',
         effects: [
           { factionId: 'verdant-court', reputationChange: 10 },
           { factionId: 'ember-throne', reputationChange: -10 },
@@ -997,6 +1001,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'stolen-sell',
         text: 'Return to Renzo and sell the pages back to him. Betrayal has a price.',
+        exclusiveGroup: 'stolen-ledger-disposition',
         effects: [
           { factionId: 'ember-throne', reputationChange: 20 },
           { factionId: 'iron-pact', reputationChange: -15 },
@@ -1008,6 +1013,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'stolen-summit',
         text: 'Keep the pages and use them at the summit when all eyes are watching.',
+        exclusiveGroup: 'stolen-ledger-disposition',
         effects: [],
         nextNodeId: 'summit-start',
       },
@@ -1124,6 +1130,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'archives-summit',
         text: 'Take the treaty to the summit as leverage.',
+        exclusiveGroup: 'greenmarch-accord-disposition',
         effects: [
           { factionId: 'iron-pact', reputationChange: 3 },
           { factionId: 'verdant-court', reputationChange: 3 },
@@ -1134,6 +1141,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'archives-aldric',
         text: 'Show the accord to Aldric first. Soldiers respect paper when it\'s stamped with oaths.',
+        exclusiveGroup: 'greenmarch-accord-disposition',
         effects: [
           { factionId: 'iron-pact', reputationChange: 5 },
         ],
@@ -1143,6 +1151,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'archives-thessaly',
         text: 'Show the accord to Thessaly. Druids respect old bindings.',
+        exclusiveGroup: 'greenmarch-accord-disposition',
         effects: [
           { factionId: 'verdant-court', reputationChange: 5 },
         ],
@@ -1152,6 +1161,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'archives-renzo',
         text: 'Sell the accord to Renzo. If history is a weapon, Ember will pay for ammunition.',
+        exclusiveGroup: 'greenmarch-accord-disposition',
         effects: [
           { factionId: 'ember-throne', reputationChange: 15 },
           { factionId: 'iron-pact', reputationChange: -10 },
