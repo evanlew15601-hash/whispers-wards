@@ -59,8 +59,8 @@ const GameScreen = ({
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
 
   const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
-  const canAddressEncounter = state.currentDialogue?.id === 'concord-hub';
-  const shouldShowEncounterPrompt = Boolean(state.pendingEncounter && canAddressEncounter && !isEncounterDialogue);
+  const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue);
+  const shouldShowEncounterPrompt = Boolean(state.pendingEncounter && !isEncounterDialogue);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -142,15 +142,29 @@ const GameScreen = ({
         <main className="flex-1 min-w-0">
           {conversationEnded ? (
             <motion.div className="flex flex-col items-center justify-center gap-6 py-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <p className="font-display text-lg text-muted-foreground text-center">The conversation has reached its conclusion.</p>
-              <p className="font-body text-sm italic text-muted-foreground/60 text-center max-w-md">Your choices have shaped the realm's future. The factions remember.</p>
-              <Button
-                onClick={resetGame}
-                variant="outline"
-                className="h-auto rounded-sm border-primary/30 px-6 py-2 font-display text-sm tracking-[0.2em] text-primary transition-colors hover:border-primary/60 hover:text-gold-glow"
-              >
-                Begin Again
-              </Button>
+              {state.pendingEncounter ? (
+                <>
+                  <p className="font-display text-lg text-muted-foreground text-center">An encounter awaits your attention.</p>
+                  <p className="font-body text-sm italic text-muted-foreground/60 text-center max-w-md">
+                    You can resolve it now to shape the realm's trajectory.
+                  </p>
+                  <Button onClick={enterPendingEncounter} className="font-display tracking-[0.18em] uppercase">
+                    Address encounter
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="font-display text-lg text-muted-foreground text-center">The conversation has reached its conclusion.</p>
+                  <p className="font-body text-sm italic text-muted-foreground/60 text-center max-w-md">Your choices have shaped the realm's future. The factions remember.</p>
+                  <Button
+                    onClick={resetGame}
+                    variant="outline"
+                    className="h-auto rounded-sm border-primary/30 px-6 py-2 font-display text-sm tracking-[0.2em] text-primary transition-colors hover:border-primary/60 hover:text-gold-glow"
+                  >
+                    Begin Again
+                  </Button>
+                </>
+              )}
             </motion.div>
           ) : (
             <>

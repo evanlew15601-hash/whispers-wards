@@ -25,6 +25,7 @@ const InfoPanel = (
 ) => {
   const encounterTurnsLeft = pendingEncounter ? pendingEncounter.expiresOnTurn - turnNumber : null;
   const leadHints = getLeadHintsForCurrentDialogue(currentDialogue, knownSecrets);
+  const isEncounterDialogue = currentDialogue?.id.startsWith('encounter:') ?? false;
 
   return (
     <Tabs defaultValue="chronicle" className="flex flex-col gap-4">
@@ -151,13 +152,13 @@ const InfoPanel = (
                 </div>
               </div>
 
-              {onAddressEncounter && (
+              {onAddressEncounter && !isEncounterDialogue && (
                 <Button
                   size="sm"
                   variant={canAddressEncounter ? 'default' : 'secondary'}
                   disabled={!canAddressEncounter}
                   onClick={onAddressEncounter}
-                  title={canAddressEncounter ? 'Address this encounter' : 'Return to the Concord Hall hub to address this encounter'}
+                  title={canAddressEncounter ? 'Address this encounter' : 'Cannot address this encounter right now'}
                 >
                   Address
                 </Button>
