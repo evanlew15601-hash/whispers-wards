@@ -29,10 +29,26 @@ export const ENCOUNTER_POOLS: Record<string, EncounterPool> = {
   'encounters:chapter-1': {
     id: 'encounters:chapter-1',
     rules: [
-      { id: 'summits', kind: 'summit', weight: 1 },
-      { id: 'embargoes', kind: 'embargo', weight: 1 },
-      { id: 'raids', kind: 'raid', weight: 1 },
-      { id: 'skirmishes', kind: 'skirmish', weight: 1 },
+      // Summits are only possible between the three founding factions.
+      { id: 'summit:iron-verdant', kind: 'summit', a: 'iron-pact', b: 'verdant-court', weight: 1 },
+      { id: 'summit:iron-ember', kind: 'summit', a: 'iron-pact', b: 'ember-throne', weight: 1 },
+      { id: 'summit:verdant-ember', kind: 'summit', a: 'verdant-court', b: 'ember-throne', weight: 1 },
+
+      // Route crises stay tied to the core trade routes.
+      { id: 'embargo:ashroad', kind: 'embargo', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad', weight: 1 },
+      { id: 'embargo:rootway', kind: 'embargo', a: 'ember-throne', b: 'verdant-court', routeId: 'rootway', weight: 1 },
+      { id: 'embargo:passcourier', kind: 'embargo', a: 'iron-pact', b: 'verdant-court', routeId: 'passcourier', weight: 1 },
+
+      { id: 'raid:ashroad', kind: 'raid', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad', weight: 1 },
+      { id: 'raid:rootway', kind: 'raid', a: 'ember-throne', b: 'verdant-court', routeId: 'rootway', weight: 1 },
+      { id: 'raid:passcourier', kind: 'raid', a: 'iron-pact', b: 'verdant-court', routeId: 'passcourier', weight: 1 },
+
+      // Early conflict is localized to Greenmarch.
+      {
+        id: 'skirmish:greenmarch',
+        templateId: 'skirmish:iron-pact|verdant-court:region:greenmarch',
+        weight: 1,
+      },
     ],
   },
 
