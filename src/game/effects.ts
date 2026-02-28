@@ -42,6 +42,48 @@ const adjustTensionPair = (world: WorldState, a: string, b: string, delta: numbe
   world.tensions[b][a] = next;
 };
 
+export const applyWorldEffects = (prevWorld: WorldState, effects: GameEffect[]): WorldState => {
+  let world: WorldState | null = null;
+
+  for (const eff of effects) {
+    if (eff.kind === 'tension') {
+      if (eff.delta === 0) continue;
+      if (!world) world = cloneWorld(prevWorld);
+      adjustTensionPair(world, eff.a, eff.b, eff.delta);
+      continue;
+    }
+
+    if (eff.kind === 'tradeRoute:setStatus') {
+      if (!prevWorld.tradeRoutes[eff.routeId]) continue;
+      if (!world) world = cloneWorld(prevWorld);
+      const route = world.tradeRoutes[eff.routeId];
+      if (!route) continue;
+      world.tradeRoutes[eff.routeId] = {
+        ...route,
+        status: eff.status,
+        untilTurn: eff.untilTurn,
+        embargoedBy: eff.embargoedBy,
+      };
+      continue;
+    }
+
+    if (eff.kind === 'region:setControl') {
+      if (!prevWorld.regions[eff.regionId]) continue;
+      if (!world) world = cloneWorld(prevWorld);
+      const region = world.regions[eff.regionId];
+      if (!region) continue;
+      world.regions[eff.regionId] = {
+        ...region,
+        control: eff.control,
+        contested: eff.contested,
+      };
+      continue;
+    }
+  }
+
+  return world ?? prevWorld;
+};
+
 export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState => {
   if (!effects.length) return prev;
 
@@ -126,6 +168,15 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
   if (world) {
     if (next === prev) next = { ...next };
     next.world = world;
+  }
+
+  if (next !== prev) {
+    if (new Set(next.knownSecrets).size !== next.knownSecrets.length) {
+      next.knownSecrets = [...new Set(next.knownSecrets)];
+    }
+    if (new Set(next.milestones).size !== next.milestones.length) {
+      next.milestones = [...new Set(next.milestones)];
+    }
   }
 
   return next;

@@ -6,11 +6,11 @@ import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
 import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import { applyEffects, type GameEffect } from '../effects';
+import { evaluateChapterTransition } from '../chapters';
 import { DEFAULT_PLAYER_PROFILE } from '../player';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
-
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
 const createInitialState = (): GameState => ({
   currentScene: 'title',
@@ -61,98 +61,11 @@ const suppressReputationEffects = (choice: DialogueChoice): DialogueChoice => {
   };
 };
 
-const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
-  const alreadyDecided = isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log);
-
-  // Only block genuinely unavailable choices. If the player already made this decision in
-  // the past, keep it selectable and suppress its reputation effects.
-  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds) && !alreadyDecided) {
-    return prev;
-  }
-
-  const effectiveChoice = alreadyDecided ? suppressReputationEffects(choice) : choice;
-
-  const secretLearned = Boolean(
-    choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo)
-  );
-
-  const encounterPick = prev.pendingEncounter ? parseEncounterResolutionChoiceId(choice.id) : null;
-  if (prev.pendingEncounter && encounterPick && encounterPick.encounterId === prev.pendingEncounter.id) {
-    // Even though encounter choices are dynamically generated, we still want to apply
-    // any standard choice side-effects (rep, secrets, event triggers).
-    const newFactions = prev.factions.map(f => {
-      const effect = effectiveChoice.effects.find(e => e.factionId === f.id);
-      if (!effect) return f;
-
-      return {
-        ...f,
-        reputation: clamp(f.reputation + effect.reputationChange, -100, 100),
-      };
-    });
-
-    const newSecrets = secretLearned ? [...prev.knownSecrets, choice.revealsInfo!] : prev.knownSecrets;
-
-    const newEvents = prev.events.map(event => {
-      if (event.triggered || !event.triggerCondition) return event;
-
-      const faction = newFactions.find(f => f.id === event.triggerCondition!.factionId);
-      if (!faction) return event;
-
-      const met =
-        event.triggerCondition.direction === 'above'
-          ? faction.reputation >= event.triggerCondition.reputationThreshold
-          : faction.reputation <= event.triggerCondition.reputationThreshold;
-
-      return met ? { ...event, triggered: true } : event;
-    });
-
-    const triggeredEvents = newEvents.filter((e, i) => e.triggered && !prev.events[i].triggered);
-
-    const resolved = resolveEncounter({
-      world: prev.world,
-      encounter: prev.pendingEncounter,
-      turnNumber: prev.turnNumber,
-      resolution: encounterPick.resolution,
-    });
-
-    return {
-      ...prev,
-      factions: newFactions,
-      events: newEvents,
-      knownSecrets: [...new Set(newSecrets)],
-      selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
-      stepNumber: prev.stepNumber + 1,
-      // Return to the main hall hub so the campaign continues.
-      currentDialogue: dialogueTree['concord-hub'] ?? prev.currentDialogue,
-      pendingEncounter: null,
-      log: [
-        ...prev.log,
-        `> ${choice.text}`,
-        ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-        ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
-        ...resolved.logEntries,
-      ],
-      world: resolved.world,
-    };
-  }
-
-  const newFactions = prev.factions.map(f => {
-    const effect = effectiveChoice.effects.find(e => e.factionId === f.id);
-    if (!effect) return f;
-
-    return {
-      ...f,
-      reputation: clamp(f.reputation + effect.reputationChange, -100, 100),
-    };
-  });
-
-  const newSecrets = secretLearned ? [...prev.knownSecrets, choice.revealsInfo!] : prev.knownSecrets;
-
-  // Check events
+const evaluateEvents = (prev: GameState, factions: GameState['factions']) => {
   const newEvents = prev.events.map(event => {
     if (event.triggered || !event.triggerCondition) return event;
 
-    const faction = newFactions.find(f => f.id === event.triggerCondition!.factionId);
+    const faction = factions.find(f => f.id === event.triggerCondition!.factionId);
     if (!faction) return event;
 
     const met =
@@ -165,24 +78,83 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   const triggeredEvents = newEvents.filter((e, i) => e.triggered && !prev.events[i].triggered);
 
-  const newLog = [
-    ...prev.log,
-    `> ${choice.text}`,
-    ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-    ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
-  ];
+  return { newEvents, triggeredEvents };
+};
+
+const choiceToEffects = (prev: GameState, choice: DialogueChoice): GameEffect[] => {
+  const effects: GameEffect[] = [];
+
+  for (const e of choice.effects) {
+    if (e.reputationChange === 0) continue;
+    effects.push({ kind: 'rep', factionId: e.factionId, delta: e.reputationChange });
+  }
+
+  if (choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo)) {
+    effects.push({ kind: 'secret:add', secret: choice.revealsInfo });
+  }
+
+  return effects;
+};
+
+const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
+  const alreadyDecided = isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log);
+
+  // Only block genuinely unavailable choices. If the player already made this decision in
+  // the past, keep it selectable and suppress its reputation effects.
+  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds) && !alreadyDecided) {
+    return prev;
+  }
+
+  const effectiveChoice = alreadyDecided ? suppressReputationEffects(choice) : choice;
+
+  const secretLearned = Boolean(choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo));
+
+  const withEffects = applyEffects(prev, choiceToEffects(prev, effectiveChoice));
+
+  const { newEvents, triggeredEvents } = evaluateEvents(prev, withEffects.factions);
+
+  const encounterPick = withEffects.pendingEncounter ? parseEncounterResolutionChoiceId(choice.id) : null;
+  if (withEffects.pendingEncounter && encounterPick && encounterPick.encounterId === withEffects.pendingEncounter.id) {
+    const resolved = resolveEncounter({
+      world: withEffects.world,
+      encounter: withEffects.pendingEncounter,
+      turnNumber: withEffects.turnNumber,
+      resolution: encounterPick.resolution,
+    });
+
+    return {
+      ...withEffects,
+      events: newEvents,
+      selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
+      stepNumber: prev.stepNumber + 1,
+      // Return to the main hall hub so the campaign continues.
+      currentDialogue: dialogueTree['concord-hub'] ?? withEffects.currentDialogue,
+      pendingEncounter: null,
+      log: [
+        ...prev.log,
+        `> ${choice.text}`,
+        ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
+        ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+        ...resolved.logEntries,
+      ],
+      world: resolved.world,
+    };
+  }
 
   const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : null;
 
   return {
-    ...prev,
-    factions: newFactions,
+    ...withEffects,
     currentDialogue: nextDialogue,
     events: newEvents,
-    knownSecrets: [...new Set(newSecrets)],
     selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
     stepNumber: prev.stepNumber + 1,
-    log: newLog,
+    log: [
+      ...prev.log,
+      `> ${choice.text}`,
+      ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
+      ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+    ],
   };
 };
 
@@ -223,7 +195,7 @@ const endTurn = (prev: GameState): GameState => {
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
   const nextEncounter = existingEncounter ?? sim.pendingEncounter;
 
-  return {
+  const nextState: GameState = {
     ...prev,
     stepNumber: prev.stepNumber + 1,
     turnNumber: nextTurnNumber,
@@ -238,6 +210,8 @@ const endTurn = (prev: GameState): GameState => {
       actionsTakenThisTurn: [],
     },
   };
+
+  return evaluateChapterTransition(nextState);
 };
 
 export const tsConversationEngine: ConversationEngine = {

@@ -24,11 +24,24 @@ describe('tsConversationEngine', () => {
     const afterChoice = tsConversationEngine.applyChoice(seeded, choice);
 
     expect(afterChoice.turnNumber).toBe(seeded.turnNumber);
+    expect(afterChoice.stepNumber).toBe(seeded.stepNumber + 1);
     expect(afterChoice.currentDialogue?.id).toBe('aldric-diplomatic');
     expect(afterChoice.log.some(l => l.startsWith('> '))).toBe(true);
 
-    const afterTurn = tsConversationEngine.endTurn(afterChoice);
+    const drained = {
+      ...afterChoice,
+      management: {
+        ...afterChoice.management,
+        apRemaining: 0,
+        actionsTakenThisTurn: ['test-action'],
+      },
+    };
+
+    const afterTurn = tsConversationEngine.endTurn(drained);
     expect(afterTurn.turnNumber).toBe(seeded.turnNumber + 1);
+    expect(afterTurn.stepNumber).toBe(seeded.stepNumber + 2);
+    expect(afterTurn.management.apRemaining).toBe(afterTurn.management.apMax);
+    expect(afterTurn.management.actionsTakenThisTurn).toEqual([]);
     expect(afterTurn.log.some(l => l.startsWith('🌍 '))).toBe(true);
   });
 
