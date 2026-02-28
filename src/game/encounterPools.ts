@@ -29,10 +29,10 @@ export const ENCOUNTER_POOLS: Record<string, EncounterPool> = {
   'encounters:chapter-1': {
     id: 'encounters:chapter-1',
     rules: [
-      // Summits are only possible between the three founding factions.
-      { id: 'summit:iron-verdant', kind: 'summit', a: 'iron-pact', b: 'verdant-court', weight: 1 },
-      { id: 'summit:iron-ember', kind: 'summit', a: 'iron-pact', b: 'ember-throne', weight: 1 },
-      { id: 'summit:verdant-ember', kind: 'summit', a: 'verdant-court', b: 'ember-throne', weight: 1 },
+      // Summits are impactful and should be a bit rarer than routine trade disruptions.
+      { id: 'summit:iron-verdant', kind: 'summit', a: 'iron-pact', b: 'verdant-court', weight: 0.6 },
+      { id: 'summit:iron-ember', kind: 'summit', a: 'iron-pact', b: 'ember-throne', weight: 0.6 },
+      { id: 'summit:verdant-ember', kind: 'summit', a: 'verdant-court', b: 'ember-throne', weight: 0.6 },
 
       // Route crises stay tied to the core trade routes.
       { id: 'embargo:ashroad', kind: 'embargo', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad', weight: 1 },
@@ -47,7 +47,7 @@ export const ENCOUNTER_POOLS: Record<string, EncounterPool> = {
       {
         id: 'skirmish:greenmarch',
         templateId: 'skirmish:iron-pact|verdant-court:region:greenmarch',
-        weight: 1,
+        weight: 0.9,
       },
     ],
   },

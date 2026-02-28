@@ -32,4 +32,19 @@ describe('encounterPools', () => {
       )
     ).toBe(0);
   });
+
+  it('supports weights (summits slightly rarer than crises)', () => {
+    const summit = getEncounterCandidateWeightForPool(
+      { kind: 'summit', a: 'iron-pact', b: 'ember-throne' },
+      'encounters:chapter-1'
+    );
+
+    const embargo = getEncounterCandidateWeightForPool(
+      { kind: 'embargo', a: 'iron-pact', b: 'ember-throne', routeId: 'ashroad' },
+      'encounters:chapter-1'
+    );
+
+    expect(summit).toBeCloseTo(0.6);
+    expect(embargo).toBe(1);
+  });
 });

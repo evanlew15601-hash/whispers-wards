@@ -66,4 +66,64 @@ describe('pickEncounterCandidate', () => {
     expect(pick!.templateId).toBe('raid:ember-throne|iron-pact:route:ashroad');
     expect(pick!.usedFallbackPool).toBe(true);
   });
+
+  it('uses weights when provided (seed-search proof)', () => {
+    const candidates: EncounterCandidate[] = [
+      { kind: 'embargo', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad' },
+      { kind: 'raid', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad' },
+    ];
+
+    const memory = {
+      lastSeenTurnByTemplateId: {},
+      seenThisChapter: {},
+    };
+
+    const equalWeights = (c: EncounterCandidate) => (c.kind === 'embargo' ? 1 : 1);
+    const skewedWeights = (c: EncounterCandidate) => (c.kind === 'embargo' ? 10 : 1);
+
+    let seedThatDiffers: number | null = null;
+    for (let seed = 1; seed <= 5000; seed++) {
+      const uniform = pickEncounterCandidate({
+        candidates,
+        turnNumber: 10,
+        rngSeed: seed,
+        memory,
+        getWeight: equalWeights,
+      });
+      const weighted = pickEncounterCandidate({
+        candidates,
+        turnNumber: 10,
+        rngSeed: seed,
+        memory,
+        getWeight: skewedWeights,
+      });
+
+      if (!uniform || !weighted) continue;
+      if (uniform.templateId !== weighted.templateId) {
+        seedThatDiffers = seed;
+        break;
+      }
+    }
+
+    expect(seedThatDiffers).not.toBeNull();
+
+    const uniform = pickEncounterCandidate({
+      candidates,
+      turnNumber: 10,
+      rngSeed: seedThatDiffers!,
+      memory,
+      getWeight: equalWeights,
+    });
+    const weighted = pickEncounterCandidate({
+      candidates,
+      turnNumber: 10,
+      rngSeed: seedThatDiffers!,
+      memory,
+      getWeight: skewedWeights,
+    });
+
+    expect(uniform).toBeTruthy();
+    expect(weighted).toBeTruthy();
+    expect(uniform!.templateId).not.toBe(weighted!.templateId);
+  });
 });
