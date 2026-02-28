@@ -4,6 +4,7 @@ import { useAmbience } from '@/audio/useAmbience';
 import { GameState, DialogueChoice } from '@/game/types';
 import { SaveSlotInfo } from '@/game/storage';
 import DialoguePanel from '@/components/DialoguePanel';
+import ManagementPanel from '@/components/ManagementPanel';
 import FactionPanel from '@/components/FactionPanel';
 import InfoPanel from '@/components/InfoPanel';
 import GameMenu from '@/components/GameMenu';
@@ -16,6 +17,7 @@ interface GameScreenProps {
   engineLabel: string;
   makeChoice: (choice: DialogueChoice) => void;
   endTurn: () => void;
+  takeManagementAction: (actionId: string) => void;
   resetGame: () => void;
   saveSlots: SaveSlotInfo[];
   saveToSlot: (slotId: number) => void;
@@ -44,6 +46,7 @@ const GameScreen = ({
   engineLabel,
   makeChoice,
   endTurn,
+  takeManagementAction,
   resetGame,
   saveSlots,
   saveToSlot,
@@ -145,7 +148,10 @@ const GameScreen = ({
 
       <div className="mx-auto flex max-w-7xl flex-col gap-6 p-6 lg:flex-row">
         <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-          <FactionPanel factions={state.factions} />
+          <div className="flex flex-col gap-6">
+            <ManagementPanel state={state} onTakeAction={takeManagementAction} />
+            <FactionPanel factions={state.factions} />
+          </div>
         </motion.aside>
 
         <main className="flex-1 min-w-0">

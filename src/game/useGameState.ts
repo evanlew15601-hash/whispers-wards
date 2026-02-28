@@ -14,6 +14,7 @@ import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 import { buildEncounterDialogueNode } from './encounters';
+import { applyManagementAction } from './management/applyManagementAction';
 
 const uniqueRepChoiceIdByText = (() => {
   const seen = new Map<string, string | null>();
@@ -223,6 +224,10 @@ export function useGameState() {
     setState(prev => engineRef.current.endTurn(prev));
   }, []);
 
+  const takeManagementAction = useCallback((actionId: string) => {
+    setState(prev => applyManagementAction(prev, actionId));
+  }, []);
+
   const resetGame = useCallback(() => {
     setState(engineRef.current.createInitialState());
   }, []);
@@ -255,6 +260,7 @@ export function useGameState() {
     listSlots,
     makeChoice,
     endTurn,
+    takeManagementAction,
     resetGame,
     enterPendingEncounter,
   };

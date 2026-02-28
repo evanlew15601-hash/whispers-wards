@@ -20,6 +20,7 @@ const Index = () => {
     listSlots,
     makeChoice,
     endTurn,
+    takeManagementAction,
     resetGame,
     enterPendingEncounter,
   } = useGameState();
@@ -65,6 +66,7 @@ const Index = () => {
       engineLabel={engineLabel}
       makeChoice={makeChoice}
       endTurn={endTurn}
+      takeManagementAction={takeManagementAction}
       resetGame={resetGame}
       saveSlots={slots}
       saveToSlot={saveToSlot}

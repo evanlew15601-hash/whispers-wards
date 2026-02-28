@@ -136,6 +136,8 @@ export interface GameState {
     apMax: number;
     apRemaining: number;
     actionsTakenThisTurn: string[];
+    lastUsedTurnByActionId: Record<string, number>;
+    usedThisChapter: Record<string, boolean>;
   };
 
   log: string[];

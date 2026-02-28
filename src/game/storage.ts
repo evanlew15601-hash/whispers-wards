@@ -165,6 +165,8 @@ export const persistedStateV3Schema = persistedStateV2Schema
         apMax: z.number().optional(),
         apRemaining: z.number().optional(),
         actionsTakenThisTurn: z.array(z.string()).optional(),
+        lastUsedTurnByActionId: z.record(z.number()).optional(),
+        usedThisChapter: z.record(z.boolean()).optional(),
       })
       .optional(),
   })

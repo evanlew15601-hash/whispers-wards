@@ -72,6 +72,10 @@ export const evaluateChapterTransition = (prev: GameState): GameState => {
     ...prev,
     chapterId: nextDef.id,
     chapterTurn: 1,
+    management: {
+      ...prev.management,
+      usedThisChapter: {},
+    },
   };
 
   if (nextDef.entryEffects?.length) {
