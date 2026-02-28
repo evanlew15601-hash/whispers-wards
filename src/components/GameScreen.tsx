@@ -62,6 +62,24 @@ const GameScreen = ({
   const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue);
   const shouldShowEncounterPrompt = Boolean(state.pendingEncounter && !isEncounterDialogue);
 
+  const encounterTurnsLeft = state.pendingEncounter ? state.pendingEncounter.expiresOnTurn - state.turnNumber : null;
+  const encounterLocationLabel = (() => {
+    const enc = state.pendingEncounter;
+    if (!enc) return null;
+
+    if (enc.routeId) {
+      const routeName = state.world.tradeRoutes[enc.routeId]?.name ?? enc.routeId;
+      return `Route: ${routeName}`;
+    }
+
+    if (enc.regionId) {
+      const regionName = state.world.regions[enc.regionId]?.name ?? enc.regionId;
+      return `Region: ${regionName}`;
+    }
+
+    return null;
+  })();
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
@@ -144,10 +162,26 @@ const GameScreen = ({
             <motion.div className="flex flex-col items-center justify-center gap-6 py-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {state.pendingEncounter ? (
                 <>
-                  <p className="font-display text-lg text-muted-foreground text-center">An encounter awaits your attention.</p>
-                  <p className="font-body text-sm italic text-muted-foreground/60 text-center max-w-md">
-                    You can resolve it now to shape the realm's trajectory.
-                  </p>
+                  <div className="text-center">
+                    <p className="font-display text-lg text-muted-foreground">{state.pendingEncounter.title}</p>
+                    <p className="mt-2 font-body text-sm italic text-muted-foreground/60 max-w-md">
+                      {state.pendingEncounter.description}
+                    </p>
+
+                    {(encounterLocationLabel || encounterTurnsLeft !== null) && (
+                      <div className="mt-3 text-xs text-muted-foreground">
+                        {encounterLocationLabel && <div>{encounterLocationLabel}</div>}
+                        {encounterTurnsLeft !== null && (
+                          <div className={encounterTurnsLeft <= 1 ? 'text-destructive' : undefined}>
+                            {encounterTurnsLeft >= 0
+                              ? <>Expires in {encounterTurnsLeft} turn{encounterTurnsLeft === 1 ? '' : 's'} (turn {state.pendingEncounter.expiresOnTurn})</>
+                              : <>Expired on turn {state.pendingEncounter.expiresOnTurn}</>}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <Button onClick={enterPendingEncounter} className="font-display tracking-[0.18em] uppercase">
                     Address encounter
                   </Button>
@@ -168,13 +202,32 @@ const GameScreen = ({
             </motion.div>
           ) : (
             <>
-              {shouldShowEncounterPrompt && (
+              {shouldShowEncounterPrompt && state.pendingEncounter && (
                 <div className="parchment-border mb-4 flex items-center justify-between gap-4 rounded-sm bg-card p-4">
-                  <div>
+                  <div className="min-w-0">
                     <div className="font-display text-xs tracking-[0.2em] text-primary uppercase">Pending encounter</div>
-                    <div className="mt-1 text-sm text-card-foreground">An encounter awaits your attention.</div>
+                    <div className="mt-1 text-sm text-card-foreground truncate">{state.pendingEncounter.title}</div>
+                    <div className="mt-1 text-xs text-muted-foreground line-clamp-2">{state.pendingEncounter.description}</div>
+
+                    {(encounterLocationLabel || encounterTurnsLeft !== null) && (
+                      <div className="mt-2 text-[11px] text-muted-foreground">
+                        {encounterLocationLabel && <span className="mr-3">{encounterLocationLabel}</span>}
+                        {encounterTurnsLeft !== null && (
+                          <span className={encounterTurnsLeft <= 1 ? 'text-destructive' : undefined}>
+                            {encounterTurnsLeft >= 0
+                              ? <>Expires in {encounterTurnsLeft} turn{encounterTurnsLeft === 1 ? '' : 's'}</>
+                              : <>Expired (turn {state.pendingEncounter.expiresOnTurn})</>}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <Button onClick={enterPendingEncounter} className="font-display tracking-[0.18em] uppercase">
+
+                  <Button
+                    onClick={enterPendingEncounter}
+                    className="font-display tracking-[0.18em] uppercase"
+                    title="Open encounter resolution (you'll return to the Concord Hall afterward)"
+                  >
                     Address encounter
                   </Button>
                 </div>

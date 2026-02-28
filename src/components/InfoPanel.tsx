@@ -136,7 +136,7 @@ const InfoPanel = (
               <div>
                 <h3 className="mb-2 flex items-center gap-2 font-display text-xs tracking-[0.2em] text-primary uppercase">
                   <Swords className="h-4 w-4" aria-hidden="true" />
-                  Pending Encounter
+                  {isEncounterDialogue ? 'Encounter' : 'Pending Encounter'}
                 </h3>
                 <div className="text-sm text-card-foreground">{pendingEncounter.title}</div>
                 <div className="mt-1 text-xs text-muted-foreground">{pendingEncounter.description}</div>
@@ -158,7 +158,7 @@ const InfoPanel = (
                   variant={canAddressEncounter ? 'default' : 'secondary'}
                   disabled={!canAddressEncounter}
                   onClick={onAddressEncounter}
-                  title={canAddressEncounter ? 'Address this encounter' : 'Cannot address this encounter right now'}
+                  title={canAddressEncounter ? "Open encounter resolution (you'll return to the Concord Hall afterward)" : 'Cannot address this encounter right now'}
                 >
                   Address
                 </Button>
