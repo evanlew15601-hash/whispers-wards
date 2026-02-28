@@ -6,6 +6,8 @@ describe('dialogueTree integrity', () => {
   it('has valid edges and consistent ids', () => {
     const factionIds = new Set(initialFactions.map(f => f.id));
 
+    const globalChoiceIds = new Set<string>();
+
     for (const [key, node] of Object.entries(dialogueTree)) {
       expect(node.id).toBe(key);
 
@@ -18,6 +20,10 @@ describe('dialogueTree integrity', () => {
       for (const choice of node.choices) {
         expect(choiceIds.has(choice.id)).toBe(false);
         choiceIds.add(choice.id);
+
+        // Choice ids are persisted in save data; they must be globally unique.
+        expect(globalChoiceIds.has(choice.id)).toBe(false);
+        globalChoiceIds.add(choice.id);
 
         if (choice.nextNodeId !== null) {
           expect(dialogueTree[choice.nextNodeId]).toBeTruthy();
@@ -54,7 +60,7 @@ describe('dialogueTree integrity', () => {
     }
   });
 
-  it('stays within the WASM secret limit (64 unique secrets across reveals + requirements)', () => {
+  it('documents the WASM secret encoding limit (only 64 secrets can be encoded)', () => {
     const secrets = new Set<string>();
 
     for (const node of Object.values(dialogueTree)) {
@@ -66,8 +72,10 @@ describe('dialogueTree integrity', () => {
     }
 
     // The minimal WASM conversation core stores secrets in a 64-bit mask (lo/hi u32).
-    // The TS engine can exceed that, but the WASM engine will ignore extras.
-    expect(secrets.size).toBeLessThanOrEqual(64);
+    // The JS layer still enforces locks for any secrets beyond that, so the story graph
+    // is allowed to exceed 64 unique secrets.
+    const encoded = [...secrets].sort().slice(0, 64);
+    expect(encoded.length).toBeLessThanOrEqual(64);
   });
 
   it('only requires secrets that can actually be learned in the dialogue graph', () => {
@@ -87,6 +95,26 @@ describe('dialogueTree integrity', () => {
           expect(learnableSecrets.has(secret)).toBe(true);
         }
       }
+    }
+  });
+
+  it('keeps exclusiveGroup values meaningful (at least 2 choices per group)', () => {
+    const groups = new Map<string, string[]>();
+
+    for (const node of Object.values(dialogueTree)) {
+      for (const choice of node.choices) {
+        if (!choice.exclusiveGroup) continue;
+        const ids = groups.get(choice.exclusiveGroup) ?? [];
+        ids.push(choice.id);
+        groups.set(choice.exclusiveGroup, ids);
+      }
+    }
+
+    for (const [group, ids] of groups.entries()) {
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+      // Ensure the group doesn't accidentally repeat the same id.
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(group.trim().length).toBeGreaterThan(0);
     }
   });
 

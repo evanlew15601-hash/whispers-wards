@@ -274,6 +274,11 @@ function applyChoiceUsingWasm(
     if (!prevExpected.has(s)) newlyLearned.push(s);
   }
 
+  // Track secrets even when they exceed the wasm mask capacity.
+  if (choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo) && !newlyLearned.includes(choice.revealsInfo)) {
+    newlyLearned.push(choice.revealsInfo);
+  }
+
   // Keep external secrets (e.g. "override") and keep order stable for secrets represented
   // in the wasm mask.
   const ordered: string[] = prev.knownSecrets.filter(s => {
@@ -286,6 +291,10 @@ function applyChoiceUsingWasm(
     const s = graph.bitToSecret[bit];
     if (!s) continue;
     if (expected.has(s) && !ordered.includes(s)) ordered.push(s);
+  }
+
+  for (const s of newlyLearned) {
+    if (!ordered.includes(s)) ordered.push(s);
   }
 
   const newSecrets = [...new Set(ordered)];
@@ -521,7 +530,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
           locked,
           requiredReputation: reqFactionId ? { factionId: reqFactionId, min: reqMin } : null,
           effects,
-          revealsInfo: revealInfo,
+          revealsInfo: revealInfo ?? choice.revealsInfo ?? null,
         };
       });
     },
