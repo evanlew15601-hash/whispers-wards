@@ -102,4 +102,74 @@ describe('encounter pools', () => {
 
     expect(result.pendingEncounter?.kind).toBe('summit');
   });
+
+  it('weights influence which encounter is selected (full simulateWorldTurn)', () => {
+    const factions = [
+      initialFactions.find(f => f.id === 'ember-throne')!,
+      initialFactions.find(f => f.id === 'iron-pact')!,
+    ];
+
+    const makeWorld = () => {
+      const world = createInitialWorldState(factions);
+      // Remove unrelated RNG consumption from contested-region cooling.
+      world.regions.greenmarch = { ...world.regions.greenmarch, contested: false };
+
+      // Push toward crisis actions (embargo/raid) so multiple candidates exist.
+      world.tensions['ember-throne']['iron-pact'] = 80;
+      world.tensions['iron-pact']['ember-throne'] = 80;
+
+      return world;
+    };
+
+    let seedThatShowsWeighting: number | null = null;
+
+    for (let seed = 1; seed <= 10000; seed++) {
+      const baseline = simulateWorldTurn({
+        world: makeWorld(),
+        factions,
+        turnNumber: 3,
+        rngSeed: seed,
+        encounterPoolId: 'encounters:chapter-1',
+      });
+
+      const raidHeavy = simulateWorldTurn({
+        world: makeWorld(),
+        factions,
+        turnNumber: 3,
+        rngSeed: seed,
+        encounterPoolId: 'encounters:chapter-1-raid-heavy',
+      });
+
+      if (!baseline.pendingEncounter || !raidHeavy.pendingEncounter) continue;
+
+      if (baseline.pendingEncounter.kind !== 'raid' && raidHeavy.pendingEncounter.kind === 'raid') {
+        seedThatShowsWeighting = seed;
+        break;
+      }
+    }
+
+    expect(seedThatShowsWeighting).not.toBeNull();
+
+    const baseline = simulateWorldTurn({
+      world: makeWorld(),
+      factions,
+      turnNumber: 3,
+      rngSeed: seedThatShowsWeighting!,
+      encounterPoolId: 'encounters:chapter-1',
+    });
+
+    const raidHeavy = simulateWorldTurn({
+      world: makeWorld(),
+      factions,
+      turnNumber: 3,
+      rngSeed: seedThatShowsWeighting!,
+      encounterPoolId: 'encounters:chapter-1-raid-heavy',
+    });
+
+    expect(baseline.pendingEncounter).toBeTruthy();
+    expect(raidHeavy.pendingEncounter).toBeTruthy();
+
+    expect(baseline.pendingEncounter!.kind).not.toBe('raid');
+    expect(raidHeavy.pendingEncounter!.kind).toBe('raid');
+  });
 });
