@@ -251,6 +251,122 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextWasm.currentDialogue?.id).toBe(nextTs.currentDialogue?.id);
   });
 
+  it('locks mutually-exclusive choices via exclusiveGroup to prevent branch swapping on revisit', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const initial = tsConversationEngine.startNewGame();
+
+    const atMaps = {
+      ...initial,
+      currentDialogue: dialogueTree['map-revelation'],
+      rngSeed: 123456789,
+    };
+
+    const keepSecret = atMaps.currentDialogue!.choices.find(c => c.id === 'keep-secret');
+    if (!keepSecret) throw new Error('Expected keep-secret choice');
+
+    const afterKeep = wasmEngine.applyChoice(atMaps, keepSecret);
+    expect(afterKeep.selectedChoiceIds).toContain('keep-secret');
+
+    const revisitMaps = {
+      ...afterKeep,
+      currentDialogue: dialogueTree['map-revelation'],
+    };
+
+    const revealForgery = revisitMaps.currentDialogue!.choices.find(c => c.id === 'reveal-forgery');
+    if (!revealForgery) throw new Error('Expected reveal-forgery choice');
+
+    expect(wasmEngine.applyChoice(revisitMaps, revealForgery)).toBe(revisitMaps);
+
+    const atArchives = {
+      ...initial,
+      currentDialogue: dialogueTree['hall-archives'],
+      rngSeed: 123456789,
+    };
+
+    const sellAccord = atArchives.currentDialogue!.choices.find(c => c.id === 'archives-renzo');
+    if (!sellAccord) throw new Error('Expected archives-renzo choice');
+
+    const afterSellAccord = wasmEngine.applyChoice(atArchives, sellAccord);
+    expect(afterSellAccord.selectedChoiceIds).toContain('archives-renzo');
+
+    const revisitArchives = {
+      ...afterSellAccord,
+      currentDialogue: dialogueTree['hall-archives'],
+    };
+
+    const showToAldric = revisitArchives.currentDialogue!.choices.find(c => c.id === 'archives-aldric');
+    if (!showToAldric) throw new Error('Expected archives-aldric choice');
+
+    expect(wasmEngine.applyChoice(revisitArchives, showToAldric)).toBe(revisitArchives);
+
+    const atRenzoOffer = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-offer'],
+      rngSeed: 123456789,
+    };
+
+    const refuse = atRenzoOffer.currentDialogue!.choices.find(c => c.id === 'offer-refuse');
+    if (!refuse) throw new Error('Expected offer-refuse choice');
+
+    const afterRefuse = wasmEngine.applyChoice(atRenzoOffer, refuse);
+    expect(afterRefuse.selectedChoiceIds).toContain('offer-refuse');
+
+    const revisitOffer = {
+      ...afterRefuse,
+      currentDialogue: dialogueTree['renzo-offer'],
+    };
+
+    const sign = revisitOffer.currentDialogue!.choices.find(c => c.id === 'offer-sign');
+    if (!sign) throw new Error('Expected offer-sign choice');
+
+    expect(wasmEngine.applyChoice(revisitOffer, sign)).toBe(revisitOffer);
+
+    const atLedgerRequest = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+      rngSeed: 123456789,
+    };
+
+    const buy = atLedgerRequest.currentDialogue!.choices.find(c => c.id === 'ledger-buy');
+    if (!buy) throw new Error('Expected ledger-buy choice');
+
+    const afterBuy = wasmEngine.applyChoice(atLedgerRequest, buy);
+    expect(afterBuy.selectedChoiceIds).toContain('ledger-buy');
+
+    const revisitLedgerRequest = {
+      ...afterBuy,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+    };
+
+    const steal = revisitLedgerRequest.currentDialogue!.choices.find(c => c.id === 'ledger-steal');
+    if (!steal) throw new Error('Expected ledger-steal choice');
+
+    expect(wasmEngine.applyChoice(revisitLedgerRequest, steal)).toBe(revisitLedgerRequest);
+
+    const atStolenLedger = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+      rngSeed: 123456789,
+    };
+
+    const sellBack = atStolenLedger.currentDialogue!.choices.find(c => c.id === 'stolen-sell');
+    if (!sellBack) throw new Error('Expected stolen-sell choice');
+
+    const afterSell = wasmEngine.applyChoice(atStolenLedger, sellBack);
+    expect(afterSell.selectedChoiceIds).toContain('stolen-sell');
+
+    const revisitStolenLedger = {
+      ...afterSell,
+      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+    };
+
+    const takeToAldric = revisitStolenLedger.currentDialogue!.choices.find(c => c.id === 'stolen-to-aldric');
+    if (!takeToAldric) throw new Error('Expected stolen-to-aldric choice');
+
+    expect(wasmEngine.applyChoice(revisitStolenLedger, takeToAldric)).toBe(revisitStolenLedger);
+  });
+
   it('keeps choice history after resolving an encounter (summit-adjourn effects are not re-applied)', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 

@@ -210,6 +210,50 @@ describe('tsConversationEngine', () => {
 
     expect(tsConversationEngine.applyChoice(revisitArchives, showToAldric)).toBe(revisitArchives);
 
+    const atRenzoOffer = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-offer'],
+      rngSeed: 123456789,
+    };
+
+    const refuse = atRenzoOffer.currentDialogue!.choices.find(c => c.id === 'offer-refuse');
+    if (!refuse) throw new Error('Expected offer-refuse choice');
+
+    const afterRefuse = tsConversationEngine.applyChoice(atRenzoOffer, refuse);
+    expect(afterRefuse.selectedChoiceIds).toContain('offer-refuse');
+
+    const revisitOffer = {
+      ...afterRefuse,
+      currentDialogue: dialogueTree['renzo-offer'],
+    };
+
+    const sign = revisitOffer.currentDialogue!.choices.find(c => c.id === 'offer-sign');
+    if (!sign) throw new Error('Expected offer-sign choice');
+
+    expect(tsConversationEngine.applyChoice(revisitOffer, sign)).toBe(revisitOffer);
+
+    const atLedgerRequest = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+      rngSeed: 123456789,
+    };
+
+    const buy = atLedgerRequest.currentDialogue!.choices.find(c => c.id === 'ledger-buy');
+    if (!buy) throw new Error('Expected ledger-buy choice');
+
+    const afterBuy = tsConversationEngine.applyChoice(atLedgerRequest, buy);
+    expect(afterBuy.selectedChoiceIds).toContain('ledger-buy');
+
+    const revisitLedgerRequest = {
+      ...afterBuy,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+    };
+
+    const steal = revisitLedgerRequest.currentDialogue!.choices.find(c => c.id === 'ledger-steal');
+    if (!steal) throw new Error('Expected ledger-steal choice');
+
+    expect(tsConversationEngine.applyChoice(revisitLedgerRequest, steal)).toBe(revisitLedgerRequest);
+
     const atStolenLedger = {
       ...initial,
       currentDialogue: dialogueTree['renzo-ledger-stolen'],
