@@ -5,7 +5,7 @@ import type { ComponentType, CSSProperties } from 'react';
 import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } from '@/game/engine/uqmTextWrap';
 import { isChoiceLocked, isChoiceLockedBySecrets } from '@/game/choiceLocks';
 import { useAudio } from '@/audio/useAudio';
-import { Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
+import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -396,6 +396,28 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, lockedChoices, 
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
                             <Lock className="h-3 w-3" />
                             requires proof
+                          </span>
+                        )}
+
+                        {(hint?.effects ?? choice.effects).map(effect => (
+                          <span
+                            key={effect.factionId}
+                            className={`text-[10px] font-display tracking-wider ${
+                              effect.reputationChange > 0
+                                ? 'text-primary'
+                                : effect.reputationChange < 0
+                                ? 'text-destructive'
+                                : 'text-muted-foreground'
+                            }`}
+                          >
+                            {effect.factionId.replace('-', ' ')} {effect.reputationChange > 0 ? '▲' : effect.reputationChange < 0 ? '▼' : '—'}
+                          </span>
+                        ))}
+
+                        {(hint?.revealsInfo ?? choice.revealsInfo) && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-accent">
+                            <Eye className="h-3 w-3" />
+                            intel
                           </span>
                         )}
                       </div>
