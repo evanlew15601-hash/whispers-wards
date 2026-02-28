@@ -2,7 +2,7 @@ import type { DialogueChoice, Faction } from './types';
 
 type LockableChoice = Pick<
   DialogueChoice,
-  'id' | 'effects' | 'requiredReputation' | 'requiresAllSecrets' | 'requiresAnySecrets'
+  'id' | 'effects' | 'revealsInfo' | 'requiredReputation' | 'requiresAllSecrets' | 'requiresAnySecrets'
 >;
 
 type SecretLockableChoice = Pick<DialogueChoice, 'requiresAllSecrets' | 'requiresAnySecrets'>;
@@ -27,8 +27,21 @@ const hasNonZeroReputationEffect = (choice: Pick<DialogueChoice, 'effects'>) => 
   return choice.effects.some(e => e.reputationChange !== 0);
 };
 
-export function isChoiceLockedByHistory(choice: Pick<DialogueChoice, 'id' | 'effects'>, selectedChoiceIds: string[]): boolean {
-  return selectedChoiceIds.includes(choice.id) && hasNonZeroReputationEffect(choice);
+export function isChoiceLockedByHistory(
+  choice: Pick<DialogueChoice, 'id' | 'effects' | 'revealsInfo'>,
+  selectedChoiceIds: string[],
+  knownSecrets: string[] = [],
+): boolean {
+  if (!hasNonZeroReputationEffect(choice)) return false;
+
+  // Primary guard: record by id.
+  if (selectedChoiceIds.includes(choice.id)) return true;
+
+  // Secondary guard: if a rep-affecting choice represents learning a specific fact,
+  // treat that fact as proof the choice has already been taken (helps older saves).
+  if (choice.revealsInfo && knownSecrets.includes(choice.revealsInfo)) return true;
+
+  return false;
 }
 
 export function isChoiceLocked(
@@ -40,7 +53,7 @@ export function isChoiceLocked(
   if (knownSecrets.includes('override')) return false;
 
   // Prevent farming reputation by repeating past decisions.
-  if (isChoiceLockedByHistory(choice, selectedChoiceIds)) return true;
+  if (isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets)) return true;
 
   if (isChoiceLockedBySecrets(choice, knownSecrets)) return true;
 

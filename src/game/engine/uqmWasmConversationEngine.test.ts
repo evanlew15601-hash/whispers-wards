@@ -6,6 +6,8 @@ import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { loadUqmMinimalWasmExports } from '@/test/uqmWasmTestUtils';
 import { dialogueTree } from '../data';
 import { isChoiceLocked } from '../choiceLocks';
+import { buildEncounterDialogueNode } from '../encounters';
+import type { SecondaryEncounter } from '../types';
 
 function makeRuntime(exports: Awaited<ReturnType<typeof loadUqmMinimalWasmExports>>): UqmWasmRuntime {
   const encoder = new TextEncoder();
@@ -247,5 +249,52 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextTs).not.toBe(withOverride);
     expect(nextWasm).not.toBe(withOverride);
     expect(nextWasm.currentDialogue?.id).toBe(nextTs.currentDialogue?.id);
+  });
+
+  it('keeps choice history after resolving an encounter (summit-adjourn remains locked)', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+    const atSummit = {
+      ...start,
+      currentDialogue: dialogueTree['summit-start'],
+      rngSeed: 123456789,
+    };
+
+    const adjournIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-adjourn');
+    expect(adjournIdx).toBeGreaterThanOrEqual(0);
+
+    const adjourn = atSummit.currentDialogue!.choices[adjournIdx];
+    const afterAdjourn = wasmEngine.applyChoice(atSummit, adjourn);
+    expect(afterAdjourn.selectedChoiceIds).toContain('summit-adjourn');
+
+    const encounter: SecondaryEncounter = {
+      id: 'enc-test',
+      kind: 'embargo',
+      routeId: 'ashroad',
+      title: 'Embargo crisis',
+      description: 'Test encounter.',
+      relatedFactions: ['ember-throne', 'iron-pact'],
+      expiresOnTurn: afterAdjourn.turnNumber + 2,
+    };
+
+    const encounterNode = buildEncounterDialogueNode(encounter);
+
+    const inEncounter = {
+      ...afterAdjourn,
+      currentDialogue: encounterNode,
+      pendingEncounter: encounter,
+    };
+
+    const resolveChoice = encounterNode.choices[0];
+    const afterEncounter = wasmEngine.applyChoice(inEncounter, resolveChoice);
+
+    const revisitSummit = {
+      ...afterEncounter,
+      currentDialogue: dialogueTree['summit-start'],
+    };
+
+    const lockedFlags = wasmEngine.getChoiceLockedFlags?.(revisitSummit);
+    expect(lockedFlags?.[adjournIdx]).toBe(true);
   });
 });

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { tsConversationEngine, TS_OPENING_LOG_LINE } from './tsConversationEngine';
 import { dialogueTree } from '../data';
+import { buildEncounterDialogueNode } from '../encounters';
+import type { SecondaryEncounter } from '../types';
 
 describe('tsConversationEngine', () => {
   it('startNewGame sets initial scene/dialogue/log', () => {
@@ -101,6 +103,28 @@ describe('tsConversationEngine', () => {
     expect(next.currentDialogue?.id).toBe('ending-embers-fall');
   });
 
+  it('locks rep-affecting choices if their revealed secret is already known (legacy saves)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const legacyState = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+      knownSecrets: ['You stole a copy of Renzo\'s ledger pages while his guards were distracted.'],
+      selectedChoiceIds: [],
+      rngSeed: 123456789,
+    };
+
+    const stealIdx = legacyState.currentDialogue!.choices.findIndex(c => c.id === 'ledger-steal');
+    expect(stealIdx).toBeGreaterThanOrEqual(0);
+
+    const lockedFlags = tsConversationEngine.getChoiceLockedFlags(legacyState);
+    expect(lockedFlags?.[stealIdx]).toBe(true);
+
+    const stealChoice = legacyState.currentDialogue!.choices[stealIdx];
+    const next = tsConversationEngine.applyChoice(legacyState, stealChoice);
+    expect(next).toBe(legacyState);
+  });
+
   it('prevents repeating reputation-affecting choices (e.g. stealing Renzo\'s ledger pages)', () => {
     const initial = tsConversationEngine.startNewGame();
 
@@ -129,5 +153,52 @@ describe('tsConversationEngine', () => {
 
     const shouldNotChange = tsConversationEngine.applyChoice(revisit, stealChoice);
     expect(shouldNotChange).toBe(revisit);
+  });
+
+  it('keeps choice history after resolving an encounter (summit-adjourn remains locked)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atSummit = {
+      ...initial,
+      currentDialogue: dialogueTree['summit-start'],
+      rngSeed: 123456789,
+    };
+
+    const adjournIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-adjourn');
+    expect(adjournIdx).toBeGreaterThanOrEqual(0);
+
+    const adjourn = atSummit.currentDialogue!.choices[adjournIdx];
+
+    const afterAdjourn = tsConversationEngine.applyChoice(atSummit, adjourn);
+    expect(afterAdjourn.selectedChoiceIds).toContain('summit-adjourn');
+
+    const encounter: SecondaryEncounter = {
+      id: 'enc-test',
+      kind: 'embargo',
+      routeId: 'ashroad',
+      title: 'Embargo crisis',
+      description: 'Test encounter.',
+      relatedFactions: ['ember-throne', 'iron-pact'],
+      expiresOnTurn: afterAdjourn.turnNumber + 2,
+    };
+
+    const encounterNode = buildEncounterDialogueNode(encounter);
+
+    const inEncounter = {
+      ...afterAdjourn,
+      currentDialogue: encounterNode,
+      pendingEncounter: encounter,
+    };
+
+    const resolveChoice = encounterNode.choices[0];
+    const afterEncounter = tsConversationEngine.applyChoice(inEncounter, resolveChoice);
+
+    const revisitSummit = {
+      ...afterEncounter,
+      currentDialogue: dialogueTree['summit-start'],
+    };
+
+    const lockedFlags = tsConversationEngine.getChoiceLockedFlags(revisitSummit);
+    expect(lockedFlags?.[adjournIdx]).toBe(true);
   });
 });

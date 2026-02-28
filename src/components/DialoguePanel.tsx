@@ -410,7 +410,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
               };
 
               const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
-              const historyLocked = locked && !repLocked && !secretsLocked && isChoiceLockedByHistory(choice, selectedChoiceIds);
+              const historyLocked = locked && !repLocked && !secretsLocked && isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
 
               return (
                 <motion.button
