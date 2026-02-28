@@ -62,4 +62,23 @@ describe('applyManagementAction', () => {
     const allowed = applyManagementAction(nextTurn2, 'routes:escort:ashroad');
     expect(allowed).not.toBe(nextTurn2);
   });
+
+  it('can start and accelerate a project', () => {
+    const base = tsConversationEngine.startNewGame();
+
+    const blocked = applyManagementAction(base, 'projects:accelerate:scribe-audit');
+    expect(blocked).toBe(base);
+
+    const started = applyManagementAction(base, 'projects:start:scribe-audit');
+    expect(started).not.toBe(base);
+    expect(started.projects[0]?.templateId).toBe('scribe-audit');
+    expect(started.projects[0]?.remainingTurns).toBe(2);
+
+    const beforeCoin = started.resources.coin;
+    const accelerated = applyManagementAction(started, 'projects:accelerate:scribe-audit');
+
+    expect(accelerated).not.toBe(started);
+    expect(accelerated.projects[0]?.remainingTurns).toBe(1);
+    expect(accelerated.resources.coin).toBe(beforeCoin - 2);
+  });
 });

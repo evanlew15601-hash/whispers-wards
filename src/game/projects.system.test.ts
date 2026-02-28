@@ -15,17 +15,16 @@ describe('projects system', () => {
     expect(started.projects[0]?.remainingTurns).toBe(2);
     expect(started.projects[0]?.status).toBe('active');
 
-    const after1 = tsConversationEngine.endTurn({ ...started, rngSeed: 1 });
-    expect(after1.projects[0]?.remainingTurns).toBe(1);
-    expect(after1.projects[0]?.status).toBe('active');
+    const accelerated = applyManagementAction(started, 'projects:accelerate:scribe-audit');
+    expect(accelerated.projects[0]?.remainingTurns).toBe(1);
 
-    const after2 = tsConversationEngine.endTurn({ ...after1, rngSeed: 1 });
-    expect(after2.projects[0]?.remainingTurns).toBe(0);
-    expect(after2.projects[0]?.status).toBe('completed');
+    const after1 = tsConversationEngine.endTurn({ ...accelerated, rngSeed: 1 });
+    expect(after1.projects[0]?.remainingTurns).toBe(0);
+    expect(after1.projects[0]?.status).toBe('completed');
 
-    expect(after2.milestones).toContain('project:scribe-audit:complete');
-    expect(after2.resources.intel).toBeGreaterThan(started.resources.intel);
-    expect(after2.log.some(l => l.includes('Project completed:'))).toBe(true);
-    expect(after2.log.some(l => l.includes('🔍 Project complete:'))).toBe(true);
+    expect(after1.milestones).toContain('project:scribe-audit:complete');
+    expect(after1.resources.intel).toBeGreaterThan(started.resources.intel);
+    expect(after1.log.some(l => l.includes('Project completed:'))).toBe(true);
+    expect(after1.log.some(l => l.includes('🔍 Project complete:'))).toBe(true);
   });
 });

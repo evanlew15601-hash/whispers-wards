@@ -118,6 +118,12 @@ export const getManagementActionAvailability = (state: GameState, action: Manage
     ) {
       return { available: false, reason: 'Project already underway' };
     }
+
+    const accelerate = action.effects.find(e => e.kind === 'project:accelerateByTemplate');
+    if (accelerate) {
+      const hasActive = state.projects.some(p => p.templateId === accelerate.templateId && p.status === 'active');
+      if (!hasActive) return { available: false, reason: 'No active project to accelerate' };
+    }
   }
 
   return { available: true };
@@ -216,6 +222,37 @@ const mkProjectStart = (args: {
   };
 };
 
+const mkProjectAccelerate = (args: {
+  id: string;
+  title: string;
+  description: string;
+  templateId: string;
+  apCost?: number;
+  coinCost?: number;
+  deltaTurns: number;
+  cooldownTurns?: number;
+}): ManagementAction => {
+  const apCost = args.apCost ?? 1;
+  const coinCost = args.coinCost ?? 1;
+
+  const costs: Array<{ resourceId: keyof GameState['resources']; amount: number }> = [];
+  if (coinCost > 0) costs.push({ resourceId: 'coin', amount: coinCost });
+
+  return {
+    id: args.id,
+    title: args.title,
+    description: args.description,
+    category: 'projects',
+    apCost,
+    cooldownTurns: args.cooldownTurns ?? 1,
+    costs: costs.length ? costs : undefined,
+    effects: [
+      { kind: 'project:accelerateByTemplate', templateId: args.templateId, deltaTurns: args.deltaTurns },
+      { kind: 'log', message: `⏩ Project accelerated: ${args.title}` },
+    ],
+  };
+};
+
 export const MANAGEMENT_ACTIONS: ManagementAction[] = [
   mkProjectStart({
     id: 'projects:start:scribe-audit',
@@ -225,6 +262,16 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     apCost: 2,
     coinCost: 3,
     influenceCost: 1,
+  }),
+  mkProjectAccelerate({
+    id: 'projects:accelerate:scribe-audit',
+    title: 'Scribes’ audit',
+    description: 'Assign additional clerks and couriers to shorten the audit by one turn.',
+    templateId: 'scribe-audit',
+    apCost: 1,
+    coinCost: 2,
+    deltaTurns: 1,
+    cooldownTurns: 0,
   }),
 
   mkDiplomacy({

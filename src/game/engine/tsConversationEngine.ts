@@ -204,8 +204,13 @@ const endTurn = (prev: GameState): GameState => {
   const baseSuppliesIncome = 1;
   const baseIntelIncome = 0;
 
-  const openRoutes = Object.values(sim.world.tradeRoutes).filter(r => r.status === 'open').length;
-  const coinIncome = baseCoinIncome + openRoutes;
+  const routes = Object.values(sim.world.tradeRoutes);
+  const openRoutes = routes.filter(r => r.status === 'open').length;
+  const embargoedRoutes = routes.filter(r => r.status === 'embargoed').length;
+  const raidedRoutes = routes.filter(r => r.status === 'raided').length;
+  const blockedRoutes = embargoedRoutes + raidedRoutes;
+
+  const coinIncome = Math.max(0, baseCoinIncome + openRoutes - blockedRoutes);
 
   const incomeEffects: GameEffect[] = [
     { kind: 'resource', resourceId: 'coin', delta: coinIncome },
@@ -234,6 +239,7 @@ const endTurn = (prev: GameState): GameState => {
 
   const incomeLog =
     `💰 Income: +${coinIncome} coin, +${baseInfluenceIncome} influence, +${baseSuppliesIncome} supplies` +
+    (blockedRoutes ? ` (routes disrupted: ${blockedRoutes})` : '') +
     (baseIntelIncome ? `, +${baseIntelIncome} intel` : '');
 
   withIncome = {

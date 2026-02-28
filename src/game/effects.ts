@@ -14,6 +14,7 @@ export type GameEffect =
   | { kind: 'project:pause'; projectId: string }
   | { kind: 'project:cancel'; projectId: string }
   | { kind: 'project:accelerate'; projectId: string; deltaTurns: number }
+  | { kind: 'project:accelerateByTemplate'; templateId: string; deltaTurns: number }
   | { kind: 'log'; message: string };
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
@@ -98,6 +99,7 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
   let next = prev;
   let world: WorldState | null = null;
   let projectStartIdx = 0;
+  const followUpEffects: GameEffect[] = [];
 
   for (const eff of effects) {
     if (eff.kind === 'rep') {
@@ -192,7 +194,45 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
 
       if (remainingTurns === p.remainingTurns) continue;
       if (next === prev) next = { ...next };
-      next.projects = next.projects.map(x => (x.id === eff.projectId ? { ...x, remainingTurns } : x));
+
+      const completed = remainingTurns === 0;
+
+      next.projects = next.projects.map(x =>
+        x.id === eff.projectId ? { ...x, remainingTurns, status: completed ? 'completed' : x.status } : x
+      );
+
+      if (completed) {
+        const template = getProjectTemplateById(p.templateId);
+        if (template) followUpEffects.push(...template.onCompleteEffects);
+        followUpEffects.push({ kind: 'log', message: `📌 Project completed: ${p.title}` });
+      }
+
+      continue;
+    }
+
+    if (eff.kind === 'project:accelerateByTemplate') {
+      const idx = next.projects.findIndex(p => p.templateId === eff.templateId && p.status === 'active');
+      if (idx < 0) continue;
+      const p = next.projects[idx];
+      if (!p) continue;
+
+      const remainingTurns = Math.max(0, p.remainingTurns - eff.deltaTurns);
+
+      if (remainingTurns === p.remainingTurns) continue;
+      if (next === prev) next = { ...next };
+
+      const completed = remainingTurns === 0;
+
+      next.projects = next.projects.map(x =>
+        x.id === p.id ? { ...x, remainingTurns, status: completed ? 'completed' : x.status } : x
+      );
+
+      if (completed) {
+        const template = getProjectTemplateById(p.templateId);
+        if (template) followUpEffects.push(...template.onCompleteEffects);
+        followUpEffects.push({ kind: 'log', message: `📌 Project completed: ${p.title}` });
+      }
+
       continue;
     }
 
@@ -226,8 +266,6 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
       };
       continue;
     }
-
-    
   }
 
   if (world) {
@@ -242,6 +280,10 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
     if (new Set(next.milestones).size !== next.milestones.length) {
       next.milestones = [...new Set(next.milestones)];
     }
+  }
+
+  if (followUpEffects.length) {
+    return applyEffects(next, followUpEffects);
   }
 
   return next;

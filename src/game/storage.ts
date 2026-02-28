@@ -166,6 +166,7 @@ export const persistedStateV3Schema = persistedStateV2Schema
     chapterTurn: z.number().optional(),
     milestones: z.array(z.string()).optional(),
     resources: z.record(z.number()).optional(),
+    projects: z.array(z.unknown()).optional(),
     management: z
       .object({
         apMax: z.number().optional(),

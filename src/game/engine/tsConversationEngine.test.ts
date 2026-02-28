@@ -44,8 +44,11 @@ describe('tsConversationEngine', () => {
     expect(afterTurn.management.actionsTakenThisTurn).toEqual([]);
     expect(afterTurn.log.some(l => l.startsWith('🌍 '))).toBe(true);
 
-    const openRoutes = Object.values(afterTurn.world.tradeRoutes).filter(r => r.status === 'open').length;
-    expect(afterTurn.resources.coin).toBe(drained.resources.coin + 1 + openRoutes);
+    const routes = Object.values(afterTurn.world.tradeRoutes);
+    const openRoutes = routes.filter(r => r.status === 'open').length;
+    const blockedRoutes = routes.filter(r => r.status !== 'open').length;
+    const coinIncome = Math.max(0, 1 + openRoutes - blockedRoutes);
+    expect(afterTurn.resources.coin).toBe(drained.resources.coin + coinIncome);
     expect(afterTurn.resources.influence).toBe(drained.resources.influence + 1);
     expect(afterTurn.resources.supplies).toBe(drained.resources.supplies + 1);
     expect(afterTurn.log.some(l => l.startsWith('💰 Income: '))).toBe(true);
