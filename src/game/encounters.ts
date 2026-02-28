@@ -113,8 +113,8 @@ function resolutionEffectsFor(
     }
   } else if (kind === 'raid') {
     if (resolution === 'raid-patrol') {
-      aDelta = -2;
-      bDelta = 2;
+      aDelta = 1;
+      bDelta = 1;
     } else if (resolution === 'raid-compensate') {
       aDelta = -1;
       bDelta = 2;

@@ -137,8 +137,8 @@ describe('encounter resolution (engine integration)', () => {
         expect(route.status).toBe('open');
         expect(route.untilTurn).toBeUndefined();
         expect(tension).toBe(40);
-        expect(repById(next, a)).toBe(baseRepA - 2);
-        expect(repById(next, b)).toBe(baseRepB + 2);
+        expect(repById(next, a)).toBe(baseRepA + 1);
+        expect(repById(next, b)).toBe(baseRepB + 1);
       } else if (resolution === 'raid-compensate') {
         expect(route.status).toBe('open');
         expect(route.untilTurn).toBeUndefined();
