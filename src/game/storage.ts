@@ -137,6 +137,7 @@ export const persistedStateV2Schema = z
     rngSeed: z.number().optional(),
     world: worldStateSchema.optional(),
     pendingEncounter: secondaryEncounterSchema.nullable().optional(),
+    encounterReturnDialogueId: z.string().nullable().optional(),
     currentScene: z.enum(['title', 'load', 'create', 'game']).optional(),
     currentDialogueId: z.string().nullable(),
   })
@@ -302,6 +303,7 @@ const migrateSlotV1ToV2 = (slot: PersistedSlotV1 | undefined): PersistedSlotV2 |
     rngSeed: s?.rngSeed,
     world: s?.world,
     pendingEncounter: (s?.pendingEncounter as unknown) ?? null,
+    encounterReturnDialogueId: (s?.encounterReturnDialogueId as unknown) ?? null,
     currentScene: s?.currentScene,
     currentDialogueId:
       s && typeof s.currentDialogue === 'object' && s.currentDialogue && 'id' in s.currentDialogue
@@ -412,6 +414,7 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
       rngSeed: state.rngSeed,
       world: state.world as any,
       pendingEncounter: state.pendingEncounter as any,
+      encounterReturnDialogueId: state.encounterReturnDialogueId,
       currentScene: state.currentScene,
       currentDialogueId: state.currentDialogue?.id ?? null,
     },

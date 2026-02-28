@@ -26,6 +26,7 @@ const createInitialState = (): GameState => ({
   rngSeed: createInitialRngSeed(),
   world: createInitialWorldState(initialFactions),
   pendingEncounter: null,
+  encounterReturnDialogueId: null,
 });
 
 const startNewGame = (): GameState => {
@@ -107,15 +108,19 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       resolution: encounterPick.resolution,
     });
 
+    const returnId = prev.encounterReturnDialogueId;
+    const returnDialogue =
+      returnId && !returnId.startsWith('encounter:') ? (dialogueTree[returnId] ?? null) : null;
+
     return {
       ...prev,
       factions: newFactions,
       events: newEvents,
       knownSecrets: [...new Set(newSecrets)],
       usedChoiceKeys: [...new Set(nextUsedChoiceKeys)],
-      // Return to the main hall hub so the campaign continues.
-      currentDialogue: dialogueTree['concord-hub'] ?? prev.currentDialogue,
+      currentDialogue: returnDialogue ?? dialogueTree['concord-hub'] ?? prev.currentDialogue,
       pendingEncounter: null,
+      encounterReturnDialogueId: null,
       log: [
         ...prev.log,
         `> ${choice.text}`,

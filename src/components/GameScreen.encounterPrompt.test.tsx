@@ -74,6 +74,7 @@ const baseState: GameState = {
     aiMemory: { lastOfferTurn: {}, lastEmbargoTurn: {} },
   },
   pendingEncounter: null,
+  encounterReturnDialogueId: null,
 };
 
 const saveSlots: SaveSlotInfo[] = [{ id: 1, meta: null }];

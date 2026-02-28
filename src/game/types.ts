@@ -116,4 +116,9 @@ export interface GameState {
   rngSeed: number;
   world: WorldState;
   pendingEncounter: SecondaryEncounter | null;
+  /**
+   * When the player opens a pending encounter mid-conversation, we suspend the current dialogue
+   * and resume it after the encounter resolves.
+   */
+  encounterReturnDialogueId: string | null;
 }

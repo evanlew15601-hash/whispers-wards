@@ -126,6 +126,7 @@ export function useGameState() {
       rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
       world: loadedAny.world ?? base.world,
       pendingEncounter,
+      encounterReturnDialogueId: pendingEncounter ? (loadedAny.encounterReturnDialogueId ?? base.encounterReturnDialogueId) : null,
       currentDialogue: loadedDialogueId
         ? loadedDialogueId.startsWith('encounter:') && pendingEncounter
           ? buildEncounterDialogueNode(pendingEncounter)
@@ -164,8 +165,11 @@ export function useGameState() {
   const enterPendingEncounter = useCallback(() => {
     setState(prev => {
       if (!prev.pendingEncounter) return prev;
+      if (prev.currentDialogue?.id.startsWith('encounter:')) return prev;
+
       return {
         ...prev,
+        encounterReturnDialogueId: prev.currentDialogue?.id ?? null,
         currentDialogue: buildEncounterDialogueNode(prev.pendingEncounter),
       };
     });
