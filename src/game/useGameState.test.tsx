@@ -64,6 +64,10 @@ describe('useGameState', () => {
     });
 
     expect(result.current.state.currentScene).toBe('game');
+    expect(result.current.state.player).toBeTruthy();
+    expect(result.current.state.player.name).toBeTruthy();
+    expect(result.current.state.player.pronouns).toBeTruthy();
+    expect(result.current.state.player.portraitId).toBeTruthy();
     expect(typeof result.current.state.rngSeed).toBe('number');
     expect(result.current.state.world).toBeTruthy();
     expect(Object.keys(result.current.state.world.regions).length).toBeGreaterThan(0);

@@ -33,11 +33,12 @@ describe('game storage', () => {
 
     const persisted = JSON.parse(raw as string) as {
       version: number;
-      slots: Record<string, { state?: { currentDialogueId?: unknown } }>;
+      slots: Record<string, { state?: { currentDialogueId?: unknown; player?: unknown } }>;
     };
 
     expect(persisted.version).toBe(2);
     expect(persisted.slots['1']?.state?.currentDialogueId).toBe(state.currentDialogue?.id ?? null);
+    expect(persisted.slots['1']?.state?.player).toEqual(state.player);
 
     const slots = listSaveSlots();
     expect(slots[0].meta?.turnNumber).toBe(state.turnNumber);
@@ -46,6 +47,7 @@ describe('game storage', () => {
     expect(loaded?.currentScene).toBe('game');
     expect(loaded?.turnNumber).toBe(state.turnNumber);
     expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    expect(loaded?.player).toEqual(state.player);
 
     expect(deleteSaveSlot(1)).toBe(true);
     expect(loadGameFromSlot(1)).toBeNull();
