@@ -1,5 +1,7 @@
 import { Faction, SecondaryEncounter, TradeRouteState, WorldState } from './types';
 import { normalizeSeed, rngIntInclusive, rngPickOne, rngWeightedChoice } from './rng';
+import { getEncounterCandidateWeightForPool } from './encounterPools';
+import { encounterTemplateIdFromCandidate } from './encounterIds';
 
 export interface SimulateWorldTurnArgs {
   world: WorldState;
@@ -88,11 +90,7 @@ export type EncounterMemory = {
   seenThisChapter: Record<string, boolean>;
 };
 
-export const encounterTemplateIdFromCandidate = (c: EncounterCandidate): string => {
-  const pair = [c.a, c.b].slice().sort().join('|');
-  const location = c.routeId ? `route:${c.routeId}` : c.regionId ? `region:${c.regionId}` : 'none';
-  return `${c.kind}:${pair}:${location}`;
-};
+
 
 const cooldownTurnsByKind: Record<EncounterCandidate['kind'], number> = {
   embargo: 2,
@@ -108,27 +106,14 @@ const getEncounterCooldownRemaining = (turnNumber: number, lastSeenTurn: number 
   return Math.max(0, availableOnTurn - turnNumber);
 };
 
-const ENCOUNTER_POOL_KIND_ALLOWLIST: Record<string, Set<EncounterCandidate['kind']> | null> = {
-  // Current game content: allow all encounter kinds.
-  'encounters:chapter-1': null,
 
-  // Utility pools used for tests and future content.
-  'encounters:none': new Set<EncounterCandidate['kind']>(),
-  'encounters:summits-only': new Set<EncounterCandidate['kind']>(['summit']),
-};
-
-const isCandidateAllowedByEncounterPool = (candidate: EncounterCandidate, poolId: string | undefined): boolean => {
-  if (!poolId) return true;
-  const allow = ENCOUNTER_POOL_KIND_ALLOWLIST[poolId];
-  if (allow == null) return true;
-  return allow.has(candidate.kind);
-};
 
 export const pickEncounterCandidate = (args: {
   candidates: EncounterCandidate[];
   turnNumber: number;
   rngSeed: number;
   memory: EncounterMemory;
+  getWeight?: (c: EncounterCandidate) => number;
 }): { candidate: EncounterCandidate; rngSeed: number; templateId: string; usedFallbackPool: boolean } | null => {
   if (!args.candidates.length) return null;
 
@@ -145,7 +130,14 @@ export const pickEncounterCandidate = (args: {
   const pool = eligible.length ? eligible : args.candidates;
   const usedFallbackPool = eligible.length === 0;
 
-  const pick = rngPickOne(args.rngSeed, pool);
+  let weights = pool.map(c => (args.getWeight ? args.getWeight(c) : 1));
+  if (weights.every(w => w <= 0)) {
+    weights = pool.map(() => 1);
+  }
+
+  const allEqual = weights.every(w => w === weights[0]);
+  const pick = allEqual ? rngPickOne(args.rngSeed, pool) : rngWeightedChoice(args.rngSeed, pool, weights);
+
   const templateId = encounterTemplateIdFromCandidate(pick.value);
 
   return { candidate: pick.value, rngSeed: pick.seed, templateId, usedFallbackPool };
@@ -479,7 +471,14 @@ export const simulateWorldTurn = (args: SimulateWorldTurnArgs): SimulateWorldTur
       seenThisChapter: {},
     };
 
-    const poolFiltered = encounterCandidates.filter(c => isCandidateAllowedByEncounterPool(c, args.encounterPoolId));
+    const poolWeights = new Map<string, number>();
+    const poolFiltered = encounterCandidates.filter(c => {
+      const w = getEncounterCandidateWeightForPool(c, args.encounterPoolId);
+      const templateId = encounterTemplateIdFromCandidate(c);
+      poolWeights.set(templateId, w);
+      return w > 0;
+    });
+
     const candidates = args.encounterPoolId ? poolFiltered : encounterCandidates;
 
     if (args.encounterPoolId && encounterCandidates.length && candidates.length === 0) {
@@ -497,6 +496,7 @@ export const simulateWorldTurn = (args: SimulateWorldTurnArgs): SimulateWorldTur
       turnNumber: args.turnNumber,
       rngSeed: seed,
       memory,
+      getWeight: c => poolWeights.get(encounterTemplateIdFromCandidate(c)) ?? 1,
     });
 
     if (pick) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CHAPTERS } from './chapters';
+import { ENCOUNTER_POOLS } from './encounterPools';
 import { dialogueTree } from './data';
 
 describe('chapters integrity', () => {
@@ -15,6 +16,12 @@ describe('chapters integrity', () => {
       if (chapter.exitToChapterId !== null) {
         expect(CHAPTERS[chapter.exitToChapterId]).toBeTruthy();
       }
+    }
+  });
+
+  it('references valid encounter pool ids', () => {
+    for (const chapter of Object.values(CHAPTERS)) {
+      expect(ENCOUNTER_POOLS[chapter.encounterPoolId]).toBeTruthy();
     }
   });
 });
