@@ -96,50 +96,54 @@ function resolutionEffectsFor(
   let aDelta = 0;
   let bDelta = 0;
 
+  // Balancing notes:
+  // - Encounters can occur frequently (every turn), so reputation impact needs to be small.
+  // - De-escalation generally boosts both sides slightly.
+  // - Backing a side gives a small swing (+/-2).
   if (kind === 'embargo') {
     if (resolution === 'embargo-lift') {
-      aDelta = -4;
-      bDelta = 4;
-    } else if (resolution === 'embargo-compromise') {
-      aDelta = 2;
+      aDelta = -2;
       bDelta = 2;
+    } else if (resolution === 'embargo-compromise') {
+      aDelta = 1;
+      bDelta = 1;
     } else if (resolution === 'embargo-extend') {
-      aDelta = 4;
-      bDelta = -4;
+      aDelta = 2;
+      bDelta = -2;
     }
   } else if (kind === 'raid') {
     if (resolution === 'raid-patrol') {
-      aDelta = -3;
-      bDelta = 3;
-    } else if (resolution === 'raid-compensate') {
       aDelta = -2;
-      bDelta = 4;
+      bDelta = 2;
+    } else if (resolution === 'raid-compensate') {
+      aDelta = -1;
+      bDelta = 2;
     } else if (resolution === 'raid-retaliate') {
-      aDelta = -5;
-      bDelta = 5;
+      aDelta = -2;
+      bDelta = 2;
     }
   } else if (kind === 'skirmish') {
     if (resolution === 'skirmish-ceasefire') {
-      aDelta = 3;
-      bDelta = 3;
+      aDelta = 1;
+      bDelta = 1;
     } else if (resolution === 'skirmish-back-a') {
-      aDelta = 5;
-      bDelta = -5;
+      aDelta = 2;
+      bDelta = -2;
     } else if (resolution === 'skirmish-back-b') {
-      aDelta = -5;
-      bDelta = 5;
+      aDelta = -2;
+      bDelta = 2;
     }
   } else {
     // summit
     if (resolution === 'summit-accord') {
-      aDelta = 3;
-      bDelta = 3;
+      aDelta = 2;
+      bDelta = 2;
     } else if (resolution === 'summit-slight-a') {
-      aDelta = -5;
-      bDelta = 5;
+      aDelta = -2;
+      bDelta = 2;
     } else if (resolution === 'summit-slight-b') {
-      aDelta = 5;
-      bDelta = -5;
+      aDelta = 2;
+      bDelta = -2;
     }
   }
 
