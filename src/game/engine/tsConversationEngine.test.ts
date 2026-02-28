@@ -100,4 +100,64 @@ describe('tsConversationEngine', () => {
     expect(next).not.toBe(withProof);
     expect(next.currentDialogue?.id).toBe('ending-embers-fall');
   });
+
+  it('does not re-apply reputation deltas when revisiting the same choice', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atFollowup = {
+      ...initial,
+      currentDialogue: dialogueTree['thessaly-followup'],
+      rngSeed: 123456789,
+    };
+
+    const passChoice = atFollowup.currentDialogue!.choices.find(c => c.id === 'followup-pass');
+    if (!passChoice) throw new Error('Expected followup-pass choice');
+
+    const next = tsConversationEngine.applyChoice(atFollowup, passChoice);
+    const verdantAfter = next.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0;
+
+    // Simulate returning to the same node later.
+    const back = {
+      ...next,
+      currentDialogue: dialogueTree['thessaly-followup'],
+    };
+
+    const nextAgain = tsConversationEngine.applyChoice(back, passChoice);
+    const verdantAfterAgain = nextAgain.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0;
+
+    expect(verdantAfterAgain).toBe(verdantAfter);
+
+    const hints = tsConversationEngine.getChoiceUiHints(back);
+    const idx = back.currentDialogue!.choices.findIndex(c => c.id === 'followup-pass');
+    expect(hints?.[idx]?.effects).toEqual([]);
+  });
+
+  it('locks one-time action choices (revealsInfo "You ...") after they are taken once', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atLedger = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+      rngSeed: 123456789,
+    };
+
+    const stealChoice = atLedger.currentDialogue!.choices.find(c => c.id === 'ledger-steal');
+    if (!stealChoice) throw new Error('Expected ledger-steal choice');
+
+    const after = tsConversationEngine.applyChoice(atLedger, stealChoice);
+
+    // Simulate returning to the ledger request node.
+    const back = {
+      ...after,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+    };
+
+    const hints = tsConversationEngine.getChoiceUiHints(back);
+    const idx = back.currentDialogue!.choices.findIndex(c => c.id === 'ledger-steal');
+
+    expect(hints?.[idx]?.locked).toBe(true);
+
+    const blocked = tsConversationEngine.applyChoice(back, back.currentDialogue!.choices[idx]);
+    expect(blocked).toBe(back);
+  });
 });

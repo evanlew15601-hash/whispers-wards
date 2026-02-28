@@ -61,6 +61,7 @@ const baseState: GameState = {
   currentDialogue: hubDialogue,
   events: [],
   knownSecrets: [],
+  usedChoiceKeys: [],
   turnNumber: 12,
   log: [],
   rngSeed: 0,

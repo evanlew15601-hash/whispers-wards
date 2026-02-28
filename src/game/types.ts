@@ -105,6 +105,12 @@ export interface GameState {
   currentDialogue: DialogueNode | null;
   events: GameEvent[];
   knownSecrets: string[];
+  /**
+   * Tracks which dialogue choices have already had their one-time consequences applied.
+   *
+   * Used to prevent repeatable reputation farming / duplicate "one-off" actions.
+   */
+  usedChoiceKeys: string[];
   turnNumber: number;
   log: string[];
   rngSeed: number;
