@@ -6,6 +6,9 @@ export interface SimulateWorldTurnArgs {
   factions: Faction[];
   turnNumber: number;
   rngSeed: number;
+
+  /** Used for chapter-based encounter gating. Unknown/omitted pool ids allow all candidates. */
+  encounterPoolId?: string;
 }
 
 export interface SimulateWorldTurnResult {
@@ -103,6 +106,22 @@ const getEncounterCooldownRemaining = (turnNumber: number, lastSeenTurn: number 
   if (lastSeenTurn == null) return 0;
   const availableOnTurn = lastSeenTurn + cooldownTurns + 1;
   return Math.max(0, availableOnTurn - turnNumber);
+};
+
+const ENCOUNTER_POOL_KIND_ALLOWLIST: Record<string, Set<EncounterCandidate['kind']> | null> = {
+  // Current game content: allow all encounter kinds.
+  'encounters:chapter-1': null,
+
+  // Utility pools used for tests and future content.
+  'encounters:none': new Set<EncounterCandidate['kind']>(),
+  'encounters:summits-only': new Set<EncounterCandidate['kind']>(['summit']),
+};
+
+const isCandidateAllowedByEncounterPool = (candidate: EncounterCandidate, poolId: string | undefined): boolean => {
+  if (!poolId) return true;
+  const allow = ENCOUNTER_POOL_KIND_ALLOWLIST[poolId];
+  if (allow == null) return true;
+  return allow.has(candidate.kind);
 };
 
 export const pickEncounterCandidate = (args: {
@@ -460,8 +479,21 @@ export const simulateWorldTurn = (args: SimulateWorldTurnArgs): SimulateWorldTur
       seenThisChapter: {},
     };
 
+    const poolFiltered = encounterCandidates.filter(c => isCandidateAllowedByEncounterPool(c, args.encounterPoolId));
+    const candidates = args.encounterPoolId ? poolFiltered : encounterCandidates;
+
+    if (args.encounterPoolId && encounterCandidates.length && candidates.length === 0) {
+      logEntries.push(`No eligible encounters for pool ${args.encounterPoolId}.`);
+      return {
+        world: nextWorld,
+        pendingEncounter: null,
+        logEntries,
+        rngSeed: seed,
+      };
+    }
+
     const pick = pickEncounterCandidate({
-      candidates: encounterCandidates,
+      candidates,
       turnNumber: args.turnNumber,
       rngSeed: seed,
       memory,

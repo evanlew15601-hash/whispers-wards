@@ -7,7 +7,7 @@ import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, res
 import { simulateWorldTurn } from '../simulation';
 import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 import { applyEffects, type GameEffect } from '../effects';
-import { evaluateChapterTransition } from '../chapters';
+import { evaluateChapterTransition, getChapter } from '../chapters';
 import { advanceProjectsOneTurn } from '../projects';
 import { DEFAULT_PLAYER_PROFILE } from '../player';
 
@@ -189,11 +189,14 @@ const endTurn = (prev: GameState): GameState => {
     expiryLog = expired.logEntries;
   }
 
+  const chapter = getChapter(prev.chapterId);
+
   const sim = simulateWorldTurn({
     world: worldBeforeSim,
     factions: prev.factions,
     turnNumber: nextTurnNumber,
     rngSeed: prev.rngSeed,
+    encounterPoolId: chapter.encounterPoolId,
   });
 
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
