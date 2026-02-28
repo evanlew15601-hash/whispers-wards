@@ -6,7 +6,7 @@ import { applyExpiredEncounterConsequence } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
-import { isChoiceLocked } from '../choiceLocks';
+import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -194,6 +194,12 @@ function applyChoiceUsingWasm(
   graph: CompiledGraph,
 ): GameState | null {
   if (!prev.currentDialogue) return null;
+
+  // WASM engine applies reputation deltas inside the wasm core. For already-decided
+  // rep-affecting choices, fall back to the TS engine which suppresses effects.
+  if (isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log)) {
+    return null;
+  }
 
   if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds)) {
     return prev;

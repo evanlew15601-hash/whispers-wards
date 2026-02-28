@@ -5,7 +5,7 @@ import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { isChoiceLocked } from '../choiceLocks';
+import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 import { DEFAULT_PLAYER_PROFILE } from '../player';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
@@ -39,17 +39,34 @@ const startNewGame = (): GameState => {
 
 const addChoiceId = (prevIds: string[], id: string) => (prevIds.includes(id) ? prevIds : [...prevIds, id]);
 
+const suppressReputationEffects = (choice: DialogueChoice): DialogueChoice => {
+  return {
+    ...choice,
+    effects: choice.effects.map(e => ({ ...e, reputationChange: 0 })),
+  };
+};
+
 const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
-  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds)) {
+  const alreadyDecided = isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log);
+
+  // Only block genuinely unavailable choices. If the player already made this decision in
+  // the past, keep it selectable and suppress its reputation effects.
+  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds) && !alreadyDecided) {
     return prev;
   }
+
+  const effectiveChoice = alreadyDecided ? suppressReputationEffects(choice) : choice;
+
+  const secretLearned = Boolean(
+    choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo)
+  );
 
   const encounterPick = prev.pendingEncounter ? parseEncounterResolutionChoiceId(choice.id) : null;
   if (prev.pendingEncounter && encounterPick && encounterPick.encounterId === prev.pendingEncounter.id) {
     // Even though encounter choices are dynamically generated, we still want to apply
     // any standard choice side-effects (rep, secrets, event triggers).
     const newFactions = prev.factions.map(f => {
-      const effect = choice.effects.find(e => e.factionId === f.id);
+      const effect = effectiveChoice.effects.find(e => e.factionId === f.id);
       if (!effect) return f;
 
       return {
@@ -58,7 +75,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       };
     });
 
-    const newSecrets = choice.revealsInfo ? [...prev.knownSecrets, choice.revealsInfo] : prev.knownSecrets;
+    const newSecrets = secretLearned ? [...prev.knownSecrets, choice.revealsInfo!] : prev.knownSecrets;
 
     const newEvents = prev.events.map(event => {
       if (event.triggered || !event.triggerCondition) return event;
@@ -96,7 +113,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
         ...prev.log,
         `> ${choice.text}`,
         ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-        ...(choice.revealsInfo ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+        ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
         ...resolved.logEntries,
       ],
       world: resolved.world,
@@ -104,7 +121,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
   }
 
   const newFactions = prev.factions.map(f => {
-    const effect = choice.effects.find(e => e.factionId === f.id);
+    const effect = effectiveChoice.effects.find(e => e.factionId === f.id);
     if (!effect) return f;
 
     return {
@@ -113,7 +130,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     };
   });
 
-  const newSecrets = choice.revealsInfo ? [...prev.knownSecrets, choice.revealsInfo] : prev.knownSecrets;
+  const newSecrets = secretLearned ? [...prev.knownSecrets, choice.revealsInfo!] : prev.knownSecrets;
 
   // Check events
   const newEvents = prev.events.map(event => {
@@ -136,7 +153,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     ...prev.log,
     `> ${choice.text}`,
     ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-    ...(choice.revealsInfo ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+    ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
   ];
 
   const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : null;

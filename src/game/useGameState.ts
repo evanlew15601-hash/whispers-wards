@@ -15,6 +15,42 @@ import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 import { buildEncounterDialogueNode } from './encounters';
 
+const uniqueRepChoiceIdByText = (() => {
+  const seen = new Map<string, string | null>();
+
+  for (const node of Object.values(dialogueTree)) {
+    for (const c of node.choices) {
+      if (!c.effects.some(e => e.reputationChange !== 0)) continue;
+
+      const existing = seen.get(c.text);
+      if (existing === undefined) seen.set(c.text, c.id);
+      else if (existing !== c.id) seen.set(c.text, null);
+    }
+  }
+
+  const out = new Map<string, string>();
+  for (const [text, id] of seen.entries()) {
+    if (id) out.set(text, id);
+  }
+
+  return out;
+})();
+
+const inferSelectedChoiceIdsFromLog = (selectedChoiceIds: string[], log: string[] | undefined) => {
+  if (!log?.length) return selectedChoiceIds;
+
+  const out = new Set(selectedChoiceIds);
+  for (const entry of log) {
+    if (!entry.startsWith('> ')) continue;
+
+    const text = entry.slice(2);
+    const id = uniqueRepChoiceIdByText.get(text) ?? null;
+    if (id) out.add(id);
+  }
+
+  return [...out];
+};
+
 export function useGameState() {
   const engineRef = useRef(tsConversationEngine);
 
@@ -113,6 +149,12 @@ export function useGameState() {
           ? (loadedAny.currentDialogue as { id?: string }).id ?? null
           : null;
 
+    const hydratedLog = loadedAny.log ?? base.log;
+
+    const selectedChoiceIdsFromSave = Array.isArray((loadedAny as any).selectedChoiceIds)
+      ? ((loadedAny as any).selectedChoiceIds as string[])
+      : base.selectedChoiceIds;
+
     const hydrated: GameState = {
       ...base,
       ...loadedAny,
@@ -120,8 +162,8 @@ export function useGameState() {
       factions: loadedAny.factions ?? base.factions,
       events: loadedAny.events ?? base.events,
       knownSecrets: loadedAny.knownSecrets ?? base.knownSecrets,
-      selectedChoiceIds: (loadedAny as any).selectedChoiceIds ?? base.selectedChoiceIds,
-      log: loadedAny.log ?? base.log,
+      selectedChoiceIds: inferSelectedChoiceIdsFromLog(selectedChoiceIdsFromSave, hydratedLog),
+      log: hydratedLog,
       turnNumber: typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber,
       rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
       world: loadedAny.world ?? base.world,

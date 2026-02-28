@@ -251,7 +251,7 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextWasm.currentDialogue?.id).toBe(nextTs.currentDialogue?.id);
   });
 
-  it('keeps choice history after resolving an encounter (summit-adjourn remains locked)', () => {
+  it('keeps choice history after resolving an encounter (summit-adjourn effects are not re-applied)', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 
     const start = tsConversationEngine.startNewGame();
@@ -294,7 +294,16 @@ describe('uqmWasmConversationEngine', () => {
       currentDialogue: dialogueTree['summit-start'],
     };
 
-    const lockedFlags = wasmEngine.getChoiceLockedFlags?.(revisitSummit);
-    expect(lockedFlags?.[adjournIdx]).toBe(true);
+    expect(revisitSummit.selectedChoiceIds).toContain('summit-adjourn');
+
+    const repeatAdjourn = revisitSummit.currentDialogue!.choices.find(c => c.id === 'summit-adjourn');
+    if (!repeatAdjourn) throw new Error('Expected summit-adjourn choice on revisit');
+
+    const repsBefore = Object.fromEntries(revisitSummit.factions.map(f => [f.id, f.reputation] as const));
+
+    const afterRepeat = wasmEngine.applyChoice(revisitSummit, repeatAdjourn);
+
+    const repsAfter = Object.fromEntries(afterRepeat.factions.map(f => [f.id, f.reputation] as const));
+    expect(repsAfter).toEqual(repsBefore);
   });
 });

@@ -103,7 +103,7 @@ describe('tsConversationEngine', () => {
     expect(next.currentDialogue?.id).toBe('ending-embers-fall');
   });
 
-  it('locks rep-affecting choices if their revealed secret is already known (legacy saves)', () => {
+  it('suppresses reputation effects when repeating rep-affecting choices in legacy saves', () => {
     const initial = tsConversationEngine.startNewGame();
 
     const legacyState = {
@@ -117,15 +117,20 @@ describe('tsConversationEngine', () => {
     const stealIdx = legacyState.currentDialogue!.choices.findIndex(c => c.id === 'ledger-steal');
     expect(stealIdx).toBeGreaterThanOrEqual(0);
 
-    const lockedFlags = tsConversationEngine.getChoiceLockedFlags(legacyState);
-    expect(lockedFlags?.[stealIdx]).toBe(true);
-
     const stealChoice = legacyState.currentDialogue!.choices[stealIdx];
+
+    const repsBefore = Object.fromEntries(legacyState.factions.map(f => [f.id, f.reputation] as const));
+
     const next = tsConversationEngine.applyChoice(legacyState, stealChoice);
-    expect(next).toBe(legacyState);
+    expect(next).not.toBe(legacyState);
+
+    const repsAfter = Object.fromEntries(next.factions.map(f => [f.id, f.reputation] as const));
+    expect(repsAfter).toEqual(repsBefore);
+
+    expect(next.selectedChoiceIds).toContain('ledger-steal');
   });
 
-  it('prevents repeating reputation-affecting choices (e.g. stealing Renzo\'s ledger pages)', () => {
+  it('suppresses reputation effects when repeating rep-affecting choices (e.g. stealing Renzo\'s ledger pages)', () => {
     const initial = tsConversationEngine.startNewGame();
 
     const atLedger = {
@@ -148,14 +153,16 @@ describe('tsConversationEngine', () => {
       currentDialogue: dialogueTree['renzo-ledger-request'],
     };
 
-    const lockedFlags = tsConversationEngine.getChoiceLockedFlags(revisit);
-    expect(lockedFlags?.[stealIdx]).toBe(true);
+    const repsBefore = Object.fromEntries(revisit.factions.map(f => [f.id, f.reputation] as const));
 
-    const shouldNotChange = tsConversationEngine.applyChoice(revisit, stealChoice);
-    expect(shouldNotChange).toBe(revisit);
+    const afterRepeat = tsConversationEngine.applyChoice(revisit, stealChoice);
+    expect(afterRepeat).not.toBe(revisit);
+
+    const repsAfter = Object.fromEntries(afterRepeat.factions.map(f => [f.id, f.reputation] as const));
+    expect(repsAfter).toEqual(repsBefore);
   });
 
-  it('keeps choice history after resolving an encounter (summit-adjourn remains locked)', () => {
+  it('keeps choice history after resolving an encounter (summit-adjourn effects are not re-applied)', () => {
     const initial = tsConversationEngine.startNewGame();
 
     const atSummit = {
@@ -198,7 +205,16 @@ describe('tsConversationEngine', () => {
       currentDialogue: dialogueTree['summit-start'],
     };
 
-    const lockedFlags = tsConversationEngine.getChoiceLockedFlags(revisitSummit);
-    expect(lockedFlags?.[adjournIdx]).toBe(true);
+    expect(revisitSummit.selectedChoiceIds).toContain('summit-adjourn');
+
+    const repeatAdjourn = revisitSummit.currentDialogue!.choices.find(c => c.id === 'summit-adjourn');
+    if (!repeatAdjourn) throw new Error('Expected summit-adjourn choice on revisit');
+
+    const repsBefore = Object.fromEntries(revisitSummit.factions.map(f => [f.id, f.reputation] as const));
+
+    const afterRepeat = tsConversationEngine.applyChoice(revisitSummit, repeatAdjourn);
+
+    const repsAfter = Object.fromEntries(afterRepeat.factions.map(f => [f.id, f.reputation] as const));
+    expect(repsAfter).toEqual(repsBefore);
   });
 });
