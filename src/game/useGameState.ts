@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { GameState, DialogueChoice, PlayerProfile } from './types';
 import { dialogueTree } from './data';
+import { normalizePlayerProfile } from './player';
 import {
   SaveSlotInfo,
   listSaveSlots,
@@ -57,7 +58,7 @@ export function useGameState() {
     const started = engineRef.current.startNewGame();
     setState({
       ...started,
-      player,
+      player: normalizePlayerProfile(player),
       currentScene: 'game',
     });
   }, []);
@@ -115,7 +116,7 @@ export function useGameState() {
     const hydrated: GameState = {
       ...base,
       ...loadedAny,
-      player: loadedAny.player ?? base.player,
+      player: normalizePlayerProfile(loadedAny.player ?? base.player),
       factions: loadedAny.factions ?? base.factions,
       events: loadedAny.events ?? base.events,
       knownSecrets: loadedAny.knownSecrets ?? base.knownSecrets,

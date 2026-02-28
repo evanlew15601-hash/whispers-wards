@@ -6,6 +6,7 @@ import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
 import { isChoiceLocked } from '../choiceLocks';
+import { DEFAULT_PLAYER_PROFILE } from '../player';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
 
@@ -13,11 +14,7 @@ const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(ma
 
 const createInitialState = (): GameState => ({
   currentScene: 'title',
-  player: {
-    name: 'Envoy',
-    pronouns: 'they/them',
-    portraitId: 'envoy-default',
-  },
+  player: { ...DEFAULT_PLAYER_PROFILE },
   factions: initialFactions.map(f => ({ ...f })),
   currentDialogue: null,
   events: initialEvents.map(e => ({ ...e })),

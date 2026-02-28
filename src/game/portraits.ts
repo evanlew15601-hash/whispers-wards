@@ -1,9 +1,6 @@
 import heroImage from '@/assets/hero-throne.jpg';
-
-export type PortraitId =
-  | 'envoy-default'
-  | 'envoy-alternate'
-  | 'envoy-shadow';
+import type { PortraitId } from './portraitIds';
+export { isPortraitId } from './portraitIds';
 
 export type Pronouns = 'they/them' | 'she/her' | 'he/him';
 
@@ -60,10 +57,6 @@ export const playerPortraits: PortraitAsset[] = [
     },
   },
 ];
-
-export function isPortraitId(id: string): id is PortraitId {
-  return playerPortraits.some(p => p.id === id);
-}
 
 export function getPortraitById(id: string): PortraitAsset | null {
   return playerPortraits.find(p => p.id === id) ?? null;

@@ -125,13 +125,9 @@ const secondaryEncounterSchema = z
 
 export const persistedStateV2Schema = z
   .object({
-    player: z
-      .object({
-        name: z.string(),
-        pronouns: z.enum(['they/them', 'she/her', 'he/him']),
-        portraitId: z.string(),
-      })
-      .optional(),
+    // Player is normalized at load time; we keep storage validation permissive so
+    // a malformed `player` field doesn't invalidate an otherwise valid save.
+    player: z.unknown().optional(),
     factions: z.array(factionSchema).optional(),
     events: z.array(gameEventSchema).optional(),
     knownSecrets: z.array(z.string()).optional(),
