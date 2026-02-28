@@ -34,6 +34,8 @@ describe('useGameState', () => {
       knownSecrets: ['qa-secret'],
       turnNumber: 7,
       log: ['qa log'],
+      // intentionally partial player data (should be normalized)
+      player: { name: '  ', pronouns: 'they/them' },
       // rngSeed/world/pendingEncounter intentionally omitted
     };
 
@@ -64,6 +66,13 @@ describe('useGameState', () => {
     });
 
     expect(result.current.state.currentScene).toBe('game');
+    expect(result.current.state.player).toBeTruthy();
+    expect(typeof result.current.state.player.name).toBe('string');
+    expect(result.current.state.player.name.length).toBeGreaterThan(0);
+    expect(result.current.state.player.name).toBe('Envoy');
+    expect(['they/them', 'she/her', 'he/him']).toContain(result.current.state.player.pronouns);
+    expect(typeof result.current.state.player.portraitId).toBe('string');
+    expect(result.current.state.player.portraitId.length).toBeGreaterThan(0);
     expect(typeof result.current.state.rngSeed).toBe('number');
     expect(result.current.state.world).toBeTruthy();
     expect(Object.keys(result.current.state.world.regions).length).toBeGreaterThan(0);
@@ -163,6 +172,11 @@ describe('useGameState', () => {
 
     await act(async () => {
       result.current.startGame();
+      result.current.confirmNewGame({
+        name: 'Envoy',
+        pronouns: 'they/them',
+        portraitId: 'envoy-default',
+      });
     });
 
     await act(async () => {
@@ -180,6 +194,11 @@ describe('useGameState', () => {
 
     await act(async () => {
       result.current.startGame();
+      result.current.confirmNewGame({
+        name: 'Envoy',
+        pronouns: 'they/them',
+        portraitId: 'envoy-default',
+      });
     });
 
     await act(async () => {

@@ -52,6 +52,8 @@ const GameScreen = ({
   choiceLockedFlags,
   choiceUiHints,
 }: GameScreenProps) => {
+  useAmbience('game');
+
   const conversationEnded = !state.currentDialogue;
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
@@ -111,6 +113,7 @@ const GameScreen = ({
         </h1>
         <div className="flex items-center gap-3">
           <span className="font-display text-xs text-muted-foreground">Turn {state.turnNumber}</span>
+          <span className="font-display text-xs text-muted-foreground">Envoy: {state.player.name}</span>
           <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
             Engine: {engineLabel}
           </span>
@@ -168,6 +171,8 @@ const GameScreen = ({
                 onChoice={makeChoice}
                 knownSecrets={state.knownSecrets}
                 factions={state.factions}
+                playerName={state.player.name}
+                playerPortraitId={state.player.portraitId}
                 lockedChoices={choiceLockedFlags}
                 choiceUiHints={choiceUiHints}
               />
@@ -177,12 +182,14 @@ const GameScreen = ({
 
         <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
           <InfoPanel
+            currentDialogue={state.currentDialogue}
             knownSecrets={state.knownSecrets}
             turnNumber={state.turnNumber}
             log={state.log}
             world={state.world}
             factions={state.factions}
             pendingEncounter={state.pendingEncounter}
+            player={state.player}
             canAddressEncounter={canAddressEncounter}
             onAddressEncounter={enterPendingEncounter}
           />

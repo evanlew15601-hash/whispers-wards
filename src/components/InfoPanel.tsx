@@ -1,25 +1,30 @@
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Faction, WorldState, SecondaryEncounter } from '@/game/types';
+import { DialogueNode, Faction, PlayerProfile, WorldState, SecondaryEncounter } from '@/game/types';
+import { getPortraitById } from '@/game/portraits';
+import { getLeadHintsForCurrentDialogue } from '@/game/leads';
 import WorldMap from '@/components/WorldMap';
-import { Eye, Swords } from 'lucide-react';
+import { Compass, Eye, Swords } from 'lucide-react';
 
 interface InfoPanelProps {
+  currentDialogue: DialogueNode | null;
   knownSecrets: string[];
   turnNumber: number;
   log: string[];
   world: WorldState;
   factions: Faction[];
   pendingEncounter: SecondaryEncounter | null;
+  player?: PlayerProfile;
   canAddressEncounter?: boolean;
   onAddressEncounter?: () => void;
 }
 
 const InfoPanel = (
-  { knownSecrets, turnNumber, log, world, factions, pendingEncounter, canAddressEncounter = false, onAddressEncounter }: InfoPanelProps,
+  { currentDialogue, knownSecrets, turnNumber, log, world, factions, pendingEncounter, player, canAddressEncounter = false, onAddressEncounter }: InfoPanelProps,
 ) => {
   const encounterTurnsLeft = pendingEncounter ? pendingEncounter.expiresOnTurn - turnNumber : null;
+  const leadHints = getLeadHintsForCurrentDialogue(currentDialogue, knownSecrets);
 
   return (
     <Tabs defaultValue="chronicle" className="flex flex-col gap-4">
@@ -33,6 +38,37 @@ const InfoPanel = (
         </span>
       </div>
 
+      {player && (
+        <div className="parchment-border rounded-sm bg-card p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 overflow-hidden rounded-sm border border-border bg-secondary/40">
+              {getPortraitById(player.portraitId)?.src ? (
+                <img
+                  src={getPortraitById(player.portraitId)!.src}
+                  alt={player.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                  <span className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                    {player.name.slice(0, 1)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <div className="font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
+                Envoy
+              </div>
+              <div className="truncate text-sm text-card-foreground">
+                {player.name} <span className="text-muted-foreground">({player.pronouns})</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <TabsList className="w-full">
         <TabsTrigger value="chronicle" className="flex-1 font-display text-xs tracking-[0.2em] uppercase">
           Chronicle
@@ -43,6 +79,32 @@ const InfoPanel = (
       </TabsList>
 
       <TabsContent value="chronicle" className="mt-0 flex flex-col gap-6">
+        {/* Leads */}
+        {leadHints.length > 0 && (
+          <div className="parchment-border rounded-sm bg-card p-4">
+            <h3 className="mb-2 flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
+              <Compass className="h-4 w-4" aria-hidden="true" />
+              Leads
+            </h3>
+            <p className="font-body text-xs text-muted-foreground">
+              Some arguments will land better with documentation. These are plausible threads—not instructions.
+            </p>
+            <div className="mt-3 flex flex-col gap-2">
+              {leadHints.map((hint, i) => (
+                <motion.p
+                  key={hint}
+                  className="font-body text-xs italic text-card-foreground/80"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.08 }}
+                >
+                  • {hint}
+                </motion.p>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Secrets */}
         {knownSecrets.length > 0 && (
           <div className="parchment-border rounded-sm bg-card p-4">

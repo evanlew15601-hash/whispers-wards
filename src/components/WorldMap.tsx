@@ -92,15 +92,21 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
     }
   };
 
-  const viewBox = { w: 320, h: 220 };
+  const viewBox = { w: 280, h: 190 };
   const center = { x: viewBox.w / 2, y: viewBox.h / 2 };
 
   const seededPositions: Record<string, { x: number; y: number }> = {
-    crownlands: { x: 168, y: 122 },
-    greenmarch: { x: 152, y: 64 },
-    ironhold: { x: 86, y: 124 },
-    verdantwilds: { x: 222, y: 82 },
-    embercoast: { x: 242, y: 170 },
+    // Tight cluster that matches the implied geography:
+    // - Crownlands: political center
+    // - Greenmarch: northern hinge pass
+    // - Ironhold: western fortresses
+    // - Verdantwilds: northeast forests
+    // - Embercoast: southeast trade coast
+    crownlands: { x: 150, y: 105 },
+    greenmarch: { x: 145, y: 60 },
+    ironhold: { x: 95, y: 112 },
+    verdantwilds: { x: 205, y: 86 },
+    embercoast: { x: 210, y: 145 },
   };
 
   const positions = new Map<string, { x: number; y: number }>();
@@ -109,7 +115,7 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
     .map(r => r.id)
     .filter(id => typeof seededPositions[id] === 'undefined');
 
-  const radius = 78;
+  const radius = 68;
   fallbackRegionIds.forEach((id, i) => {
     const t = fallbackRegionIds.length <= 1 ? 0 : i / fallbackRegionIds.length;
     const angle = Math.PI * 2 * t - Math.PI / 2;
@@ -127,7 +133,7 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
     const pos = positions.get(regionId);
     if (!pos) return null;
 
-    const base = 28;
+    const base = 24;
     const noise = hashToUnit(regionId) * 0.18;
     const r = base * (0.9 + noise);
 

@@ -6,6 +6,7 @@ import { applyExpiredEncounterConsequence } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
+import { isChoiceLocked } from '../choiceLocks';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -40,6 +41,8 @@ function compileGraph(secretBitCapacity: number, choiceStrideBytes: number): Com
   for (const nodeId of nodeIds) {
     for (const c of dialogueTree[nodeId].choices) {
       if (c.revealsInfo) secrets.add(c.revealsInfo);
+      if (c.requiresAllSecrets) for (const s of c.requiresAllSecrets) secrets.add(s);
+      if (c.requiresAnySecrets) for (const s of c.requiresAnySecrets) secrets.add(s);
     }
   }
 
@@ -128,6 +131,16 @@ function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph) {
         mem.setUint32(base + 18, revealHi >>> 0, true);
       }
 
+      const allMask = secretsMask64FromStrings(choice.requiresAllSecrets, graph.secretToBit);
+      const anyMask = secretsMask64FromStrings(choice.requiresAnySecrets, graph.secretToBit);
+
+      if (graph.choiceStrideBytes >= 38) {
+        mem.setUint32(base + 22, allMask.lo, true);
+        mem.setUint32(base + 26, allMask.hi, true);
+        mem.setUint32(base + 30, anyMask.lo, true);
+        mem.setUint32(base + 34, anyMask.hi, true);
+      }
+
       choiceCursor++;
     }
   }
@@ -139,11 +152,13 @@ function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph) {
   }
 }
 
-function secretsMask64FromKnown(knownSecrets: string[], secretToBit: Map<string, number>): { lo: number; hi: number } {
+function secretsMask64FromStrings(secrets: readonly string[] | undefined, secretToBit: Map<string, number>): { lo: number; hi: number } {
   let lo = 0;
   let hi = 0;
 
-  for (const s of knownSecrets) {
+  if (!secrets) return { lo: 0, hi: 0 };
+
+  for (const s of secrets) {
     const bit = secretToBit.get(s);
     if (bit === undefined) continue;
 
@@ -152,6 +167,10 @@ function secretsMask64FromKnown(knownSecrets: string[], secretToBit: Map<string,
   }
 
   return { lo: lo >>> 0, hi: hi >>> 0 };
+}
+
+function secretsMask64FromKnown(knownSecrets: string[], secretToBit: Map<string, number>): { lo: number; hi: number } {
+  return secretsMask64FromStrings(knownSecrets, secretToBit);
 }
 
 function secretsFromMask(graph: CompiledGraph, lo: number, hi: number): Set<string> {
@@ -175,6 +194,10 @@ function applyChoiceUsingWasm(
   graph: CompiledGraph,
 ): GameState | null {
   if (!prev.currentDialogue) return null;
+
+  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets)) {
+    return prev;
+  }
 
   const nodeIdx = graph.nodeIdToIndex.get(prev.currentDialogue.id);
   if (nodeIdx === undefined) return null;
@@ -348,7 +371,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
     typeof uqm.exports.uqm_conv_get_secrets_hi === 'function';
 
   const secretBitCapacity = supports64 ? 64 : 32;
-  const choiceStrideBytes = 22;
+  const choiceStrideBytes = 38;
 
   const graph = compileGraph(secretBitCapacity, choiceStrideBytes);
   writeGraphToWasm(uqm, graph);
@@ -388,17 +411,24 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         const lo = exp.uqm_conv_get_locked_choices_lo() >>> 0;
         const hi = exp.uqm_conv_get_locked_choices_hi() >>> 0;
 
-        return state.currentDialogue.choices.map((_, i) => {
-          if (i < 32) return ((lo >>> i) & 1) === 1;
-          if (i < 64) return ((hi >>> (i - 32)) & 1) === 1;
-          // If a node ever exceeds 64 choices (unlikely), fall back to per-choice calls.
-          return exp.uqm_conv_choice_is_locked(i) === 1;
+        return state.currentDialogue.choices.map((choice, i) => {
+          const wasmLocked =
+            i < 32
+              ? ((lo >>> i) & 1) === 1
+              : i < 64
+              ? ((hi >>> (i - 32)) & 1) === 1
+              : exp.uqm_conv_choice_is_locked(i) === 1;
+
+          return wasmLocked || isChoiceLocked(choice, state.factions, state.knownSecrets);
         });
       }
 
       const lockedFlags: boolean[] = new Array(count);
       for (let i = 0; i < count; i++) lockedFlags[i] = exp.uqm_conv_choice_is_locked(i) === 1;
-      return lockedFlags;
+
+      return state.currentDialogue.choices.map((choice, i) =>
+        (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets)
+      );
     },
     getChoiceUiHints(state): ChoiceUiHint[] | null {
       if (!state.currentDialogue) return null;
@@ -444,9 +474,11 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         typeof exp.uqm_conv_choice_get_reveal_hi === 'function';
 
       return state.currentDialogue.choices.map((choice, i) => {
+        const locked = (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets);
+
         if (!canReadMeta) {
           return {
-            locked: lockedFlags[i] ?? false,
+            locked,
             requiredReputation: choice.requiredReputation ?? null,
             effects: choice.effects,
             revealsInfo: choice.revealsInfo ?? null,
@@ -479,7 +511,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         }
 
         return {
-          locked: lockedFlags[i] ?? false,
+          locked,
           requiredReputation: reqFactionId ? { factionId: reqFactionId, min: reqMin } : null,
           effects,
           revealsInfo: revealInfo,

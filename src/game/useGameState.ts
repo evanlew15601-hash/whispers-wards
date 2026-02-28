@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { GameState, DialogueChoice } from './types';
+import { GameState, DialogueChoice, PlayerProfile } from './types';
 import { dialogueTree } from './data';
+import { normalizePlayerProfile } from './player';
 import {
   SaveSlotInfo,
   listSaveSlots,
@@ -45,7 +46,21 @@ export function useGameState() {
   }, []);
 
   const startGame = useCallback(() => {
-    setState(engineRef.current.startNewGame());
+    // Route new games through the character creator.
+    const base = engineRef.current.createInitialState();
+    setState({
+      ...base,
+      currentScene: 'create',
+    });
+  }, []);
+
+  const confirmNewGame = useCallback((player: PlayerProfile) => {
+    const started = engineRef.current.startNewGame();
+    setState({
+      ...started,
+      player: normalizePlayerProfile(player),
+      currentScene: 'game',
+    });
   }, []);
 
   const openLoadScreen = useCallback(() => {
@@ -101,6 +116,7 @@ export function useGameState() {
     const hydrated: GameState = {
       ...base,
       ...loadedAny,
+      player: normalizePlayerProfile(loadedAny.player ?? base.player),
       factions: loadedAny.factions ?? base.factions,
       events: loadedAny.events ?? base.events,
       knownSecrets: loadedAny.knownSecrets ?? base.knownSecrets,
@@ -163,6 +179,7 @@ export function useGameState() {
     choiceLockedFlags,
     choiceUiHints,
     startGame,
+    confirmNewGame,
     openLoadScreen,
     backToTitle,
     saveToSlot,

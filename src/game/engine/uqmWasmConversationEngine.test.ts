@@ -169,6 +169,43 @@ describe('uqmWasmConversationEngine', () => {
     expect(learnedInWasm).toEqual(learnedInTs);
   });
 
+  it('locks proof-gated summit actions until evidence is discovered', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+
+    const atSummit = {
+      ...start,
+      currentDialogue: dialogueTree['summit-start'],
+      rngSeed: 123456789,
+      factions: start.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
+      knownSecrets: [],
+    };
+
+    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose');
+    expect(exposeIdx).toBeGreaterThanOrEqual(0);
+
+    const exposeChoice = atSummit.currentDialogue!.choices[exposeIdx];
+
+    const lockedFlags = wasmEngine.getChoiceLockedFlags?.(atSummit);
+    expect(lockedFlags?.[exposeIdx]).toBe(true);
+
+    const nextLocked = wasmEngine.applyChoice(atSummit, exposeChoice);
+    expect(nextLocked).toBe(atSummit);
+
+    const withProof = {
+      ...atSummit,
+      knownSecrets: ['Renzo\'s ledger pages show coded payments tied to the border killings.'],
+    };
+
+    const unlockedFlags = wasmEngine.getChoiceLockedFlags?.(withProof);
+    expect(unlockedFlags?.[exposeIdx]).toBe(false);
+
+    const next = wasmEngine.applyChoice(withProof, exposeChoice);
+    expect(next).not.toBe(withProof);
+    expect(next.currentDialogue?.id).toBe('ending-embers-fall');
+  });
+
   it('keeps lock behavior aligned (UI/TS helper vs engine execution) for summit choices', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 

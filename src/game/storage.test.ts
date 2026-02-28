@@ -33,11 +33,12 @@ describe('game storage', () => {
 
     const persisted = JSON.parse(raw as string) as {
       version: number;
-      slots: Record<string, { state?: { currentDialogueId?: unknown } }>;
+      slots: Record<string, { state?: { currentDialogueId?: unknown; player?: unknown } }>;
     };
 
     expect(persisted.version).toBe(2);
     expect(persisted.slots['1']?.state?.currentDialogueId).toBe(state.currentDialogue?.id ?? null);
+    expect(persisted.slots['1']?.state?.player).toEqual(state.player);
 
     const slots = listSaveSlots();
     expect(slots[0].meta?.turnNumber).toBe(state.turnNumber);
@@ -46,6 +47,7 @@ describe('game storage', () => {
     expect(loaded?.currentScene).toBe('game');
     expect(loaded?.turnNumber).toBe(state.turnNumber);
     expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    expect(loaded?.player).toEqual(state.player);
 
     expect(deleteSaveSlot(1)).toBe(true);
     expect(loadGameFromSlot(1)).toBeNull();
@@ -104,8 +106,40 @@ describe('game storage', () => {
     expect(slots[0].meta).toBeNull();
   });
 
+  it('accepts a v2 slot with a partial player profile object', async () => {
+    const { STORAGE_KEY_V2, listSaveSlots, loadGameFromSlot } = await importStorage();
+
+    const state = tsConversationEngine.startNewGame();
+
+    localStorage.setItem(
+      STORAGE_KEY_V2,
+      JSON.stringify({
+        version: 2,
+        slots: {
+          '1': {
+            meta: {
+              savedAt: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+              turnNumber: state.turnNumber,
+              factions: state.factions.map(f => ({ id: f.id, name: f.name, reputation: f.reputation })),
+            },
+            state: {
+              currentDialogueId: state.currentDialogue?.id ?? null,
+              player: { name: 'Test Envoy' },
+            },
+          },
+        },
+      }),
+    );
+
+    const slots = listSaveSlots();
+    expect(slots[0].meta?.turnNumber).toBe(state.turnNumber);
+
+    const loaded = loadGameFromSlot(1);
+    expect((loaded as any)?.player).toEqual({ name: 'Test Envoy' });
+  });
+
   it('migrates legacy unversioned key (v1) to STORAGE_KEY_V2', async () => {
-    const { STORAGE_KEY_V2, listSaveSlots } = await importStorage();
+    const { STORAGE_KEY_V2, listSaveSlots, loadGameFromSlot } = await importStorage();
 
     const state = tsConversationEngine.startNewGame();
 
@@ -128,6 +162,9 @@ describe('game storage', () => {
 
     const slots = listSaveSlots();
     expect(slots[0].meta?.turnNumber).toBe(state.turnNumber);
+
+    const loaded = loadGameFromSlot(1);
+    expect(loaded?.player).toEqual(state.player);
 
     const migrated = localStorage.getItem(STORAGE_KEY_V2);
     expect(migrated).toBeTruthy();
@@ -166,6 +203,7 @@ describe('game storage', () => {
 
     const loaded = loadGameFromSlot(1);
     expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    expect(loaded?.player).toEqual(state.player);
 
     const migrated = localStorage.getItem(STORAGE_KEY_V2);
     expect(migrated).toBeTruthy();

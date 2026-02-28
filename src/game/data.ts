@@ -1234,7 +1234,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
     choices: [
       {
         id: 'summit-compact',
-        text: 'Invoke the old accord: declare the Pass neutral hinge-ground and propose a joint wardenship council.',
+        text: 'Propose joint stewardship of the Pass: a council with shared patrol rights, shared wards, and shared tolls.',
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'verdant-court', reputationChange: 10 },
@@ -1267,7 +1267,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'summit-ember',
-        text: 'Accept Ember arbitration and endorse Renzo\'s charter: tariffs, ledgers, and "neutral" accountants.',
+        text: 'Accept Ember arbitration: tariffs, ledgers, and "neutral" accountants to keep the Pass open.',
         effects: [
           { factionId: 'ember-throne', reputationChange: 25 },
           { factionId: 'iron-pact', reputationChange: -15 },
@@ -1278,15 +1278,31 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'summit-expose',
-        text: 'Expose Ember sabotage: the forged borders, the alchemical burns, the mercenary payments. Demand sanctions.',
+        text: 'Accuse the Ember Throne of fueling the conflict and demand sanctions.',
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'verdant-court', reputationChange: 10 },
           { factionId: 'ember-throne', reputationChange: -40 },
         ],
+        requiresAnySecrets: [
+          'The Ember Throne forged maps to manipulate the border dispute.',
+          'Renzo\'s ledger pages show coded payments tied to the border killings.',
+          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+        ],
         nextNodeId: 'ending-embers-fall',
         requiredReputation: { factionId: 'iron-pact', min: 5 },
         revealsInfo: 'You publicly accused the Ember Throne of engineering the conflict, citing maps, burns, and ledgers.',
+      },
+      {
+        id: 'summit-adjourn',
+        text: 'Call for recess. Adjourn until you have documents everyone will accept as proof.',
+        effects: [
+          { factionId: 'iron-pact', reputationChange: -2 },
+          { factionId: 'verdant-court', reputationChange: -2 },
+          { factionId: 'ember-throne', reputationChange: -2 },
+        ],
+        nextNodeId: 'concord-hub',
       },
     ],
   },
