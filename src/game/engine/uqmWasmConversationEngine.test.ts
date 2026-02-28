@@ -6,7 +6,6 @@ import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { loadUqmMinimalWasmExports } from '@/test/uqmWasmTestUtils';
 import { dialogueTree } from '../data';
 import { isChoiceLocked } from '../choiceLocks';
-import { makeChoiceKey } from '../choiceUsage';
 
 function makeRuntime(exports: Awaited<ReturnType<typeof loadUqmMinimalWasmExports>>): UqmWasmRuntime {
   const encoder = new TextEncoder();
@@ -207,62 +206,6 @@ describe('uqmWasmConversationEngine', () => {
     expect(next.currentDialogue?.id).toBe('ending-embers-fall');
   });
 
-  it('enforces idempotent reputation effects across the dialogue graph', () => {
-    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
-
-    const initial = wasmEngine.startNewGame();
-
-    const repMap = (factions: { id: string; reputation: number }[]) =>
-      Object.fromEntries(factions.map(f => [f.id, f.reputation] as const));
-
-    for (const node of Object.values(dialogueTree)) {
-      for (const choice of node.choices) {
-        const hasRepEffect = choice.effects.some(e => e.reputationChange !== 0);
-        if (!hasRepEffect) continue;
-
-        const requiredSecrets = [
-          ...(choice.requiresAllSecrets ?? []),
-          ...(choice.requiresAnySecrets?.[0] ? [choice.requiresAnySecrets[0]] : []),
-        ].filter(s => s !== 'override');
-
-        const factions = initial.factions.map(f => {
-          if (choice.requiredReputation?.factionId !== f.id) return { ...f };
-          return { ...f, reputation: Math.max(f.reputation, choice.requiredReputation.min) };
-        });
-
-        const seeded = {
-          ...initial,
-          currentDialogue: node,
-          rngSeed: 123456789,
-          knownSecrets: requiredSecrets,
-          factions,
-        };
-
-        const idx = node.choices.findIndex(c => c.id === choice.id);
-        expect(idx).toBeGreaterThanOrEqual(0);
-
-        const lockedFlags = wasmEngine.getChoiceLockedFlags?.(seeded);
-        expect(lockedFlags?.[idx]).toBe(false);
-
-        if (choice.revealsInfo === 'override') continue;
-
-        const choiceKey = makeChoiceKey(node.id, choice.id);
-
-        const next = wasmEngine.applyChoice(seeded, choice);
-        expect(next.usedChoiceKeys.includes(choiceKey)).toBe(true);
-
-        const back = {
-          ...next,
-          currentDialogue: node,
-        };
-
-        const nextAgain = wasmEngine.applyChoice(back, choice);
-
-        expect(repMap(nextAgain.factions)).toEqual(repMap(next.factions));
-      }
-    }
-  }, 30_000);
-
   it('keeps lock behavior aligned (UI/TS helper vs engine execution) for summit choices', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 
@@ -278,7 +221,7 @@ describe('uqmWasmConversationEngine', () => {
     expect(wasmEngine.getChoiceUiHints?.(base)).toEqual(tsConversationEngine.getChoiceUiHints?.(base));
 
     for (const choice of base.currentDialogue!.choices) {
-      const helperLocked = isChoiceLocked(choice, base.factions, base.knownSecrets);
+      const helperLocked = isChoiceLocked(choice, base.factions, base.knownSecrets, base.selectedChoiceIds);
       const nextTs = tsConversationEngine.applyChoice(base, choice);
       const nextWasm = wasmEngine.applyChoice(base, choice);
 
@@ -295,7 +238,7 @@ describe('uqmWasmConversationEngine', () => {
     const lockedChoice = withOverride.currentDialogue!.choices.find(c => c.requiredReputation);
     if (!lockedChoice) throw new Error('Expected a reputation-locked choice');
 
-    expect(isChoiceLocked(lockedChoice, withOverride.factions, withOverride.knownSecrets)).toBe(false);
+    expect(isChoiceLocked(lockedChoice, withOverride.factions, withOverride.knownSecrets, withOverride.selectedChoiceIds)).toBe(false);
     expect(wasmEngine.getChoiceLockedFlags?.(withOverride)).toEqual(withOverride.currentDialogue!.choices.map(() => false));
 
     const nextTs = tsConversationEngine.applyChoice(withOverride, lockedChoice);

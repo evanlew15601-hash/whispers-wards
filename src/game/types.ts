@@ -105,20 +105,11 @@ export interface GameState {
   currentDialogue: DialogueNode | null;
   events: GameEvent[];
   knownSecrets: string[];
-  /**
-   * Tracks which dialogue choices have already had their one-time consequences applied.
-   *
-   * Used to prevent repeatable reputation farming / duplicate "one-off" actions.
-   */
-  usedChoiceKeys: string[];
+  /** Choice ids previously selected, used to prevent re-applying non-repeatable reputation effects. */
+  selectedChoiceIds: string[];
   turnNumber: number;
   log: string[];
   rngSeed: number;
   world: WorldState;
   pendingEncounter: SecondaryEncounter | null;
-  /**
-   * When the player opens a pending encounter mid-conversation, we suspend the current dialogue
-   * and resume it after the encounter resolves.
-   */
-  encounterReturnDialogueId: string | null;
 }
