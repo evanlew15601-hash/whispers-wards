@@ -84,15 +84,81 @@ export function parseEncounterResolutionChoiceId(choiceId: string): { encounterI
   return { encounterId, resolution };
 }
 
+function resolutionEffectsFor(
+  kind: SecondaryEncounterKind,
+  relatedFactions: string[],
+  resolution: EncounterResolutionKey,
+): DialogueChoice['effects'] {
+  const a = relatedFactions[0] ?? null;
+  const b = relatedFactions[1] ?? null;
+  if (!a || !b) return [];
+
+  let aDelta = 0;
+  let bDelta = 0;
+
+  if (kind === 'embargo') {
+    if (resolution === 'embargo-lift') {
+      aDelta = -4;
+      bDelta = 4;
+    } else if (resolution === 'embargo-compromise') {
+      aDelta = 2;
+      bDelta = 2;
+    } else if (resolution === 'embargo-extend') {
+      aDelta = 4;
+      bDelta = -4;
+    }
+  } else if (kind === 'raid') {
+    if (resolution === 'raid-patrol') {
+      aDelta = -3;
+      bDelta = 3;
+    } else if (resolution === 'raid-compensate') {
+      aDelta = -2;
+      bDelta = 4;
+    } else if (resolution === 'raid-retaliate') {
+      aDelta = -5;
+      bDelta = 5;
+    }
+  } else if (kind === 'skirmish') {
+    if (resolution === 'skirmish-ceasefire') {
+      aDelta = 3;
+      bDelta = 3;
+    } else if (resolution === 'skirmish-back-a') {
+      aDelta = 5;
+      bDelta = -5;
+    } else if (resolution === 'skirmish-back-b') {
+      aDelta = -5;
+      bDelta = 5;
+    }
+  } else {
+    // summit
+    if (resolution === 'summit-accord') {
+      aDelta = 3;
+      bDelta = 3;
+    } else if (resolution === 'summit-slight-a') {
+      aDelta = -5;
+      bDelta = 5;
+    } else if (resolution === 'summit-slight-b') {
+      aDelta = 5;
+      bDelta = -5;
+    }
+  }
+
+  const effects: DialogueChoice['effects'] = [];
+  if (aDelta) effects.push({ factionId: a, reputationChange: aDelta });
+  if (bDelta) effects.push({ factionId: b, reputationChange: bDelta });
+  return effects;
+}
+
 function resolutionChoicesFor(
   kind: SecondaryEncounterKind,
   encounterId: string,
+  relatedFactions: string[],
   choiceTexts?: [string, string, string],
 ): DialogueChoice[] {
   const mk = (resolution: EncounterResolutionKey, text: string): DialogueChoice => ({
     id: choiceIdFor(encounterId, resolution),
     text,
-    effects: [],
+    effects: resolutionEffectsFor(kind, relatedFactions, resolution),
     nextNodeId: null,
   });
 
@@ -144,7 +210,7 @@ export function buildEncounterDialogueNode(encounter: SecondaryEncounter): Dialo
     id: `encounter:${encounter.id}`,
     speaker: vignette.speaker,
     text: `${vignette.preface}\n\n${encounter.title}\n\n${encounter.description}\n\n${vignette.prompt}`,
-    choices: resolutionChoicesFor(kind, encounter.id, vignette.choiceTexts),
+    choices: resolutionChoicesFor(kind, encounter.id, encounter.relatedFactions, vignette.choiceTexts),
   };
 }
 
