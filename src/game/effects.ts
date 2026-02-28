@@ -12,7 +12,11 @@ export type GameEffect =
   | { kind: 'resource'; resourceId: 'coin' | 'influence' | 'supplies' | 'intel'; delta: number }
   | { kind: 'project:start'; templateId: string }
   | { kind: 'project:pause'; projectId: string }
+  | { kind: 'project:pauseByTemplate'; templateId: string }
+  | { kind: 'project:resume'; projectId: string }
+  | { kind: 'project:resumeByTemplate'; templateId: string }
   | { kind: 'project:cancel'; projectId: string }
+  | { kind: 'project:cancelByTemplate'; templateId: string }
   | { kind: 'project:accelerate'; projectId: string; deltaTurns: number }
   | { kind: 'project:accelerateByTemplate'; templateId: string; deltaTurns: number }
   | { kind: 'log'; message: string };
@@ -174,6 +178,36 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
       continue;
     }
 
+    if (eff.kind === 'project:pauseByTemplate') {
+      const idx = next.projects.findIndex(p => p.templateId === eff.templateId && p.status === 'active');
+      if (idx < 0) continue;
+      const p = next.projects[idx];
+      if (!p) continue;
+      if (next === prev) next = { ...next };
+      next.projects = next.projects.map(x => (x.id === p.id ? { ...x, status: 'paused' } : x));
+      continue;
+    }
+
+    if (eff.kind === 'project:resume') {
+      const idx = next.projects.findIndex(p => p.id === eff.projectId);
+      if (idx < 0) continue;
+      const p = next.projects[idx];
+      if (!p || p.status !== 'paused') continue;
+      if (next === prev) next = { ...next };
+      next.projects = next.projects.map(x => (x.id === eff.projectId ? { ...x, status: 'active' } : x));
+      continue;
+    }
+
+    if (eff.kind === 'project:resumeByTemplate') {
+      const idx = next.projects.findIndex(p => p.templateId === eff.templateId && p.status === 'paused');
+      if (idx < 0) continue;
+      const p = next.projects[idx];
+      if (!p) continue;
+      if (next === prev) next = { ...next };
+      next.projects = next.projects.map(x => (x.id === p.id ? { ...x, status: 'active' } : x));
+      continue;
+    }
+
     if (eff.kind === 'project:cancel') {
       const idx = next.projects.findIndex(p => p.id === eff.projectId);
       if (idx < 0) continue;
@@ -181,6 +215,16 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
       if (!p || p.status === 'cancelled' || p.status === 'completed') continue;
       if (next === prev) next = { ...next };
       next.projects = next.projects.map(x => (x.id === eff.projectId ? { ...x, status: 'cancelled' } : x));
+      continue;
+    }
+
+    if (eff.kind === 'project:cancelByTemplate') {
+      const idx = next.projects.findIndex(p => p.templateId === eff.templateId && p.status !== 'cancelled' && p.status !== 'completed');
+      if (idx < 0) continue;
+      const p = next.projects[idx];
+      if (!p) continue;
+      if (next === prev) next = { ...next };
+      next.projects = next.projects.map(x => (x.id === p.id ? { ...x, status: 'cancelled' } : x));
       continue;
     }
 

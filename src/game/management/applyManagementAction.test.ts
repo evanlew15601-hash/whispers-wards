@@ -81,4 +81,42 @@ describe('applyManagementAction', () => {
     expect(accelerated.projects[0]?.remainingTurns).toBe(1);
     expect(accelerated.resources.coin).toBe(beforeCoin - 2);
   });
+
+  it('can pause, resume, and cancel a project', () => {
+    const base = tsConversationEngine.startNewGame();
+
+    const started = applyManagementAction(base, 'projects:start:scribe-audit');
+    const paused = applyManagementAction(started, 'projects:pause:scribe-audit');
+
+    expect(paused).not.toBe(started);
+    expect(paused.projects[0]?.status).toBe('paused');
+
+    const resumed = applyManagementAction(paused, 'projects:resume:scribe-audit');
+    expect(resumed).not.toBe(paused);
+    expect(resumed.projects[0]?.status).toBe('active');
+
+    const cancelled = applyManagementAction(resumed, 'projects:cancel:scribe-audit');
+    expect(cancelled).not.toBe(resumed);
+    expect(cancelled.projects[0]?.status).toBe('cancelled');
+
+    const cannotResume = applyManagementAction(cancelled, 'projects:resume:scribe-audit');
+    expect(cannotResume).toBe(cancelled);
+  });
+
+  it('can start and complete the frontier relief project', () => {
+    const base = tsConversationEngine.startNewGame();
+
+    const started = applyManagementAction(base, 'projects:start:frontier-relief');
+    expect(started).not.toBe(base);
+    expect(started.projects[0]?.templateId).toBe('frontier-relief');
+    expect(started.projects[0]?.remainingTurns).toBe(3);
+
+    const after1 = tsConversationEngine.endTurn({ ...started, rngSeed: 1 });
+    const after2 = tsConversationEngine.endTurn({ ...after1, rngSeed: 1 });
+    const after3 = tsConversationEngine.endTurn({ ...after2, rngSeed: 1 });
+
+    const pr = after3.projects.find(p => p.templateId === 'frontier-relief');
+    expect(pr?.status).toBe('completed');
+    expect(after3.milestones).toContain('project:frontier-relief:complete');
+  });
 });

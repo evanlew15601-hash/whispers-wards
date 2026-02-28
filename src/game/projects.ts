@@ -21,6 +21,19 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
       { kind: 'log', message: '🔍 Project complete: The scribes deliver a tidy packet of contradictions and signatures.' },
     ],
   },
+  {
+    id: 'frontier-relief',
+    title: 'Frontier Relief Convoys',
+    description: 'Organize escorted relief shipments to stabilize border hamlets and keep patrols fed.',
+    durationTurns: 3,
+    onCompleteEffects: [
+      { kind: 'milestone:add', id: 'project:frontier-relief:complete' },
+      { kind: 'resource', resourceId: 'supplies', delta: 2 },
+      { kind: 'resource', resourceId: 'influence', delta: 1 },
+      { kind: 'tension', a: 'iron-pact', b: 'verdant-court', delta: -4 },
+      { kind: 'log', message: '📦 Project complete: Relief convoys arrive on schedule; tempers cool where hunger would have sharpened them.' },
+    ],
+  },
 ];
 
 export const getProjectTemplateById = (templateId: string): ProjectTemplate | null => {

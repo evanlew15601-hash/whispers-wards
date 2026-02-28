@@ -1,6 +1,8 @@
 import type { GameEffect } from '../effects';
 import type { GameState } from '../types';
 
+import { getChapter } from '../chapters';
+
 export type ManagementActionCategory = 'diplomacy' | 'routes' | 'projects';
 
 export type ManagementActionRequirement =
@@ -16,12 +18,16 @@ export type ManagementAction = {
   title: string;
   description: string;
   category: ManagementActionCategory;
+  poolId: string;
   apCost: number;
   cooldownTurns?: number;
   oncePerChapter?: boolean;
   requirements?: ManagementActionRequirement[];
   costs?: ManagementActionCost[];
   effects: GameEffect[];
+
+  // Used by route actions to tie availability and outcomes to a specific route.
+  routeId?: string;
 };
 
 export type ManagementActionAvailability =
@@ -78,6 +84,12 @@ const getCooldownRemaining = (state: GameState, action: ManagementAction): numbe
 export const getManagementActionAvailability = (state: GameState, action: ManagementAction): ManagementActionAvailability => {
   if (state.currentScene !== 'game') return { available: false, reason: 'Not in game' };
 
+  const chapter = getChapter(state.chapterId);
+  const allowedPools = new Set([chapter.managementPoolId, chapter.projectPoolId]);
+  if (!allowedPools.has(action.poolId)) {
+    return { available: false, reason: 'Not available this chapter' };
+  }
+
   if (state.management.apRemaining < action.apCost) {
     return { available: false, reason: 'Not enough AP' };
   }
@@ -124,6 +136,26 @@ export const getManagementActionAvailability = (state: GameState, action: Manage
       const hasActive = state.projects.some(p => p.templateId === accelerate.templateId && p.status === 'active');
       if (!hasActive) return { available: false, reason: 'No active project to accelerate' };
     }
+
+    const pause = action.effects.find(e => e.kind === 'project:pauseByTemplate');
+    if (pause) {
+      const hasActive = state.projects.some(p => p.templateId === pause.templateId && p.status === 'active');
+      if (!hasActive) return { available: false, reason: 'No active project to pause' };
+    }
+
+    const resume = action.effects.find(e => e.kind === 'project:resumeByTemplate');
+    if (resume) {
+      const hasPaused = state.projects.some(p => p.templateId === resume.templateId && p.status === 'paused');
+      if (!hasPaused) return { available: false, reason: 'No paused project to resume' };
+    }
+
+    const cancel = action.effects.find(e => e.kind === 'project:cancelByTemplate');
+    if (cancel) {
+      const hasAny = state.projects.some(
+        p => p.templateId === cancel.templateId && p.status !== 'cancelled' && p.status !== 'completed'
+      );
+      if (!hasAny) return { available: false, reason: 'No active project to cancel' };
+    }
   }
 
   return { available: true };
@@ -135,10 +167,11 @@ const mkDiplomacy = (args: {
   description: string;
   a: string;
   b: string;
-  apCost?: number;
-  influenceCost?: number;
   tensionDelta: number;
+  influenceCost?: number;
+  apCost?: number;
   cooldownTurns?: number;
+  poolId?: string;
 }): ManagementAction => {
   const apCost = args.apCost ?? 1;
   const influenceCost = args.influenceCost ?? 1;
@@ -148,6 +181,7 @@ const mkDiplomacy = (args: {
     title: args.title,
     description: args.description,
     category: 'diplomacy',
+    poolId: args.poolId ?? 'management:chapter-1',
     apCost,
     cooldownTurns: args.cooldownTurns ?? 1,
     costs: influenceCost > 0 ? [{ resourceId: 'influence', amount: influenceCost }] : undefined,
@@ -166,10 +200,11 @@ const mkEscortRoute = (args: {
   routeId: string;
   a: string;
   b: string;
-  apCost?: number;
-  suppliesCost?: number;
   tensionDelta: number;
+  suppliesCost?: number;
+  apCost?: number;
   cooldownTurns?: number;
+  poolId?: string;
 }): ManagementAction => {
   const apCost = args.apCost ?? 1;
   const suppliesCost = args.suppliesCost ?? 1;
@@ -179,8 +214,10 @@ const mkEscortRoute = (args: {
     title: args.title,
     description: args.description,
     category: 'routes',
+    poolId: args.poolId ?? 'management:chapter-1',
     apCost,
     cooldownTurns: args.cooldownTurns ?? 1,
+    routeId: args.routeId,
     costs: suppliesCost > 0 ? [{ resourceId: 'supplies', amount: suppliesCost }] : undefined,
     effects: [
       { kind: 'tradeRoute:setStatus', routeId: args.routeId, status: 'open' },
@@ -198,6 +235,7 @@ const mkProjectStart = (args: {
   coinCost?: number;
   influenceCost?: number;
   oncePerChapter?: boolean;
+  poolId?: string;
 }): ManagementAction => {
   const apCost = args.apCost ?? 2;
   const coinCost = args.coinCost ?? 3;
@@ -212,6 +250,7 @@ const mkProjectStart = (args: {
     title: args.title,
     description: args.description,
     category: 'projects',
+    poolId: args.poolId ?? 'projects:chapter-1',
     apCost,
     oncePerChapter: args.oncePerChapter ?? true,
     costs: costs.length ? costs : undefined,
@@ -231,6 +270,7 @@ const mkProjectAccelerate = (args: {
   coinCost?: number;
   deltaTurns: number;
   cooldownTurns?: number;
+  poolId?: string;
 }): ManagementAction => {
   const apCost = args.apCost ?? 1;
   const coinCost = args.coinCost ?? 1;
@@ -243,6 +283,7 @@ const mkProjectAccelerate = (args: {
     title: args.title,
     description: args.description,
     category: 'projects',
+    poolId: args.poolId ?? 'projects:chapter-1',
     apCost,
     cooldownTurns: args.cooldownTurns ?? 1,
     costs: costs.length ? costs : undefined,
@@ -273,6 +314,104 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     deltaTurns: 1,
     cooldownTurns: 0,
   }),
+  {
+    id: 'projects:pause:scribe-audit',
+    title: 'Pause: Scribes’ audit',
+    description: 'Pause the audit to redirect staff to urgent matters. Progress is preserved.',
+    category: 'projects',
+    poolId: 'projects:chapter-1',
+    apCost: 1,
+    cooldownTurns: 0,
+    effects: [
+      { kind: 'project:pauseByTemplate', templateId: 'scribe-audit' },
+      { kind: 'log', message: '⏸ Project paused: Scribes’ Audit of the Ledgers' },
+    ],
+  },
+  {
+    id: 'projects:resume:scribe-audit',
+    title: 'Resume: Scribes’ audit',
+    description: 'Resume the audit with its previous progress intact.',
+    category: 'projects',
+    poolId: 'projects:chapter-1',
+    apCost: 1,
+    cooldownTurns: 0,
+    effects: [
+      { kind: 'project:resumeByTemplate', templateId: 'scribe-audit' },
+      { kind: 'log', message: '▶️ Project resumed: Scribes’ Audit of the Ledgers' },
+    ],
+  },
+  {
+    id: 'projects:cancel:scribe-audit',
+    title: 'Cancel: Scribes’ audit',
+    description: 'Cancel the audit. Any partially gathered leads are discarded.',
+    category: 'projects',
+    poolId: 'projects:chapter-1',
+    apCost: 1,
+    cooldownTurns: 0,
+    effects: [
+      { kind: 'project:cancelByTemplate', templateId: 'scribe-audit' },
+      { kind: 'log', message: '✖️ Project cancelled: Scribes’ Audit of the Ledgers' },
+    ],
+  },
+
+  mkProjectStart({
+    id: 'projects:start:frontier-relief',
+    title: 'Frontier relief',
+    description: 'Organize escorted relief shipments to stabilize border hamlets and keep patrols fed.',
+    templateId: 'frontier-relief',
+    apCost: 2,
+    coinCost: 4,
+    influenceCost: 1,
+  }),
+  mkProjectAccelerate({
+    id: 'projects:accelerate:frontier-relief',
+    title: 'Frontier relief',
+    description: 'Hire extra teamsters and secure fresh tack to shorten the convoy schedule by one turn.',
+    templateId: 'frontier-relief',
+    apCost: 1,
+    coinCost: 2,
+    deltaTurns: 1,
+    cooldownTurns: 0,
+  }),
+  {
+    id: 'projects:pause:frontier-relief',
+    title: 'Pause: Frontier relief',
+    description: 'Pause convoy planning to redirect staff and escorts. Progress is preserved.',
+    category: 'projects',
+    poolId: 'projects:chapter-1',
+    apCost: 1,
+    cooldownTurns: 0,
+    effects: [
+      { kind: 'project:pauseByTemplate', templateId: 'frontier-relief' },
+      { kind: 'log', message: '⏸ Project paused: Frontier Relief Convoys' },
+    ],
+  },
+  {
+    id: 'projects:resume:frontier-relief',
+    title: 'Resume: Frontier relief',
+    description: 'Resume the convoys with their previous progress intact.',
+    category: 'projects',
+    poolId: 'projects:chapter-1',
+    apCost: 1,
+    cooldownTurns: 0,
+    effects: [
+      { kind: 'project:resumeByTemplate', templateId: 'frontier-relief' },
+      { kind: 'log', message: '▶️ Project resumed: Frontier Relief Convoys' },
+    ],
+  },
+  {
+    id: 'projects:cancel:frontier-relief',
+    title: 'Cancel: Frontier relief',
+    description: 'Cancel the convoys. Any partial contracts are forfeited.',
+    category: 'projects',
+    poolId: 'projects:chapter-1',
+    apCost: 1,
+    cooldownTurns: 0,
+    effects: [
+      { kind: 'project:cancelByTemplate', templateId: 'frontier-relief' },
+      { kind: 'log', message: '✖️ Project cancelled: Frontier Relief Convoys' },
+    ],
+  },
 
   mkDiplomacy({
     id: 'diplomacy:quiet-talks:iron-verdant',
