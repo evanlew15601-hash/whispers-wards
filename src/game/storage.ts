@@ -108,6 +108,12 @@ const worldStateSchema = z
       lastOfferTurn: z.record(z.number()),
       lastEmbargoTurn: z.record(z.number()),
     }),
+    encounterMemory: z
+      .object({
+        lastSeenTurnByTemplateId: z.record(z.number()),
+        seenThisChapter: z.record(z.boolean()),
+      })
+      .optional(),
   })
   .passthrough();
 
@@ -487,6 +493,7 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
       chapterTurn: state.chapterTurn,
       milestones: state.milestones,
       resources: state.resources,
+      projects: state.projects,
       management: state.management,
       log: state.log,
       rngSeed: state.rngSeed,

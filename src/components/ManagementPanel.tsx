@@ -39,6 +39,32 @@ const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
       </div>
 
       <div className="parchment-border rounded-sm bg-card p-4">
+        <div className="mb-3 font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Projects</div>
+        {state.projects.length ? (
+          <div className="flex flex-col gap-2">
+            {state.projects.map(p => (
+              <div key={p.id} className="rounded-sm border border-border bg-secondary/20 px-3 py-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-display text-xs tracking-[0.18em] text-card-foreground uppercase">
+                      {p.title}
+                    </div>
+                    <div className="mt-1 text-[11px] text-muted-foreground">{p.description}</div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="font-display text-[10px] tracking-[0.22em] text-muted-foreground uppercase">{p.status}</div>
+                    <div className="text-xs text-card-foreground">{p.remainingTurns}T</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">No projects underway.</div>
+        )}
+      </div>
+
+      <div className="parchment-border rounded-sm bg-card p-4">
         <div className="mb-3 font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Actions</div>
         <div className="flex flex-col gap-2">
           {MANAGEMENT_ACTIONS.map((action, i) => {
@@ -69,7 +95,7 @@ const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
                       {costLabel ? ` · ${costLabel}` : ''}
                       {action.cooldownTurns ? ` · cooldown ${action.cooldownTurns}` : ''}
                     </div>
-                    {disabled && (
+                    {!availability.available && (
                       <div className="mt-1 text-[11px] text-destructive">
                         {availability.reason}
                       </div>

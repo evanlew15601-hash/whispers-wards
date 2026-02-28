@@ -8,6 +8,7 @@ import { simulateWorldTurn } from '../simulation';
 import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 import { applyEffects, type GameEffect } from '../effects';
 import { evaluateChapterTransition } from '../chapters';
+import { advanceProjectsOneTurn } from '../projects';
 import { DEFAULT_PLAYER_PROFILE } from '../player';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
@@ -31,6 +32,7 @@ const createInitialState = (): GameState => ({
     supplies: 2,
     intel: 0,
   },
+  projects: [],
   management: {
     apMax: 3,
     apRemaining: 3,
@@ -197,6 +199,21 @@ const endTurn = (prev: GameState): GameState => {
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
   const nextEncounter = existingEncounter ?? sim.pendingEncounter;
 
+  const baseCoinIncome = 1;
+  const baseInfluenceIncome = 1;
+  const baseSuppliesIncome = 1;
+  const baseIntelIncome = 0;
+
+  const openRoutes = Object.values(sim.world.tradeRoutes).filter(r => r.status === 'open').length;
+  const coinIncome = baseCoinIncome + openRoutes;
+
+  const incomeEffects: GameEffect[] = [
+    { kind: 'resource', resourceId: 'coin', delta: coinIncome },
+    { kind: 'resource', resourceId: 'influence', delta: baseInfluenceIncome },
+    { kind: 'resource', resourceId: 'supplies', delta: baseSuppliesIncome },
+    { kind: 'resource', resourceId: 'intel', delta: baseIntelIncome },
+  ];
+
   const nextState: GameState = {
     ...prev,
     stepNumber: prev.stepNumber + 1,
@@ -213,7 +230,30 @@ const endTurn = (prev: GameState): GameState => {
     },
   };
 
-  return evaluateChapterTransition(nextState);
+  let withIncome = applyEffects(nextState, incomeEffects);
+
+  const incomeLog =
+    `💰 Income: +${coinIncome} coin, +${baseInfluenceIncome} influence, +${baseSuppliesIncome} supplies` +
+    (baseIntelIncome ? `, +${baseIntelIncome} intel` : '');
+
+  withIncome = {
+    ...withIncome,
+    log: [...withIncome.log, incomeLog],
+  };
+
+  const projectTick = advanceProjectsOneTurn(withIncome);
+
+  let withProjects: GameState = {
+    ...withIncome,
+    projects: projectTick.projects,
+    log: [...withIncome.log, ...projectTick.logEntries],
+  };
+
+  if (projectTick.completionEffects.length) {
+    withProjects = applyEffects(withProjects, projectTick.completionEffects);
+  }
+
+  return evaluateChapterTransition(withProjects);
 };
 
 export const tsConversationEngine: ConversationEngine = {

@@ -1,7 +1,7 @@
 import type { GameEffect } from '../effects';
 import type { GameState } from '../types';
 
-export type ManagementActionCategory = 'diplomacy' | 'routes';
+export type ManagementActionCategory = 'diplomacy' | 'routes' | 'projects';
 
 export type ManagementActionRequirement =
   | { kind: 'repAtLeast'; factionId: string; min: number }
@@ -104,12 +104,19 @@ export const getManagementActionAvailability = (state: GameState, action: Manage
   }
 
   // Route actions should be hidden/disabled if the route doesn't exist in the current world.
-  if (action.category === 'routes') {
-    const routeEffect = action.effects.find(e => e.kind === 'tradeRoute:setStatus');
-    if (routeEffect?.kind === 'tradeRoute:setStatus') {
-      if (!state.world.tradeRoutes[routeEffect.routeId]) {
-        return { available: false, reason: 'Route unavailable' };
-      }
+  if (action.category === 'routes' && action.routeId) {
+    if (!state.world.tradeRoutes[action.routeId]) {
+      return { available: false, reason: 'Unknown route' };
+    }
+  }
+
+  if (action.category === 'projects') {
+    const start = action.effects.find(e => e.kind === 'project:start');
+    if (
+      start &&
+      state.projects.some(p => p.templateId === start.templateId && p.status !== 'cancelled' && p.status !== 'completed')
+    ) {
+      return { available: false, reason: 'Project already underway' };
     }
   }
 
@@ -176,7 +183,50 @@ const mkEscortRoute = (args: {
   };
 };
 
+const mkProjectStart = (args: {
+  id: string;
+  title: string;
+  description: string;
+  templateId: string;
+  apCost?: number;
+  coinCost?: number;
+  influenceCost?: number;
+  oncePerChapter?: boolean;
+}): ManagementAction => {
+  const apCost = args.apCost ?? 2;
+  const coinCost = args.coinCost ?? 3;
+  const influenceCost = args.influenceCost ?? 1;
+
+  const costs: Array<{ resourceId: keyof GameState['resources']; amount: number }> = [];
+  if (coinCost > 0) costs.push({ resourceId: 'coin', amount: coinCost });
+  if (influenceCost > 0) costs.push({ resourceId: 'influence', amount: influenceCost });
+
+  return {
+    id: args.id,
+    title: args.title,
+    description: args.description,
+    category: 'projects',
+    apCost,
+    oncePerChapter: args.oncePerChapter ?? true,
+    costs: costs.length ? costs : undefined,
+    effects: [
+      { kind: 'project:start', templateId: args.templateId },
+      { kind: 'log', message: `📌 Project started: ${args.title}` },
+    ],
+  };
+};
+
 export const MANAGEMENT_ACTIONS: ManagementAction[] = [
+  mkProjectStart({
+    id: 'projects:start:scribe-audit',
+    title: 'Scribes’ audit',
+    description: 'Commission a neutral audit of ledgers and manifests to surface hidden patronage.',
+    templateId: 'scribe-audit',
+    apCost: 2,
+    coinCost: 3,
+    influenceCost: 1,
+  }),
+
   mkDiplomacy({
     id: 'diplomacy:quiet-talks:iron-verdant',
     title: 'Quiet talks (Iron Pact ↔ Verdant Court)',

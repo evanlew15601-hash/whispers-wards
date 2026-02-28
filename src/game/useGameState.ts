@@ -179,6 +179,7 @@ export function useGameState() {
         (loadedAny as any).resources && typeof (loadedAny as any).resources === 'object'
           ? ({ ...base.resources, ...(loadedAny as any).resources } as GameState['resources'])
           : base.resources,
+      projects: Array.isArray((loadedAny as any).projects) ? ((loadedAny as any).projects as GameState['projects']) : base.projects,
       management:
         (loadedAny as any).management && typeof (loadedAny as any).management === 'object'
           ? {
@@ -187,7 +188,21 @@ export function useGameState() {
             }
           : base.management,
       rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
-      world: loadedAny.world ?? base.world,
+      world:
+        loadedAny.world && typeof loadedAny.world === 'object'
+          ? {
+              ...base.world,
+              ...(loadedAny.world as any),
+              aiMemory: {
+                ...base.world.aiMemory,
+                ...((loadedAny.world as any).aiMemory ?? {}),
+              },
+              encounterMemory: {
+                ...(base.world.encounterMemory ?? { lastSeenTurnByTemplateId: {}, seenThisChapter: {} }),
+                ...((loadedAny.world as any).encounterMemory ?? {}),
+              },
+            }
+          : base.world,
       pendingEncounter,
       currentDialogue: loadedDialogueId
         ? loadedDialogueId.startsWith('encounter:') && pendingEncounter

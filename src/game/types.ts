@@ -83,6 +83,11 @@ export interface WorldState {
     lastOfferTurn: Record<string, number>;
     lastEmbargoTurn: Record<string, number>;
   };
+  /** Optional for backward compatibility with older saves. */
+  encounterMemory?: {
+    lastSeenTurnByTemplateId: Record<string, number>;
+    seenThisChapter: Record<string, boolean>;
+  };
 }
 
 export type SecondaryEncounterKind = 'embargo' | 'raid' | 'skirmish' | 'summit';
@@ -105,6 +110,16 @@ export interface PlayerProfile {
   name: string;
   pronouns: 'they/them' | 'she/her' | 'he/him';
   portraitId: string;
+}
+
+export interface ProjectInstance {
+  id: string;
+  templateId: string;
+  title: string;
+  description: string;
+  status: 'active' | 'paused' | 'completed' | 'cancelled';
+  startedTurn: number;
+  remainingTurns: number;
 }
 
 export interface GameState {
@@ -131,6 +146,8 @@ export interface GameState {
   milestones: string[];
 
   resources: Record<'coin' | 'influence' | 'supplies' | 'intel', number>;
+
+  projects: ProjectInstance[];
 
   management: {
     apMax: number;

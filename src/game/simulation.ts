@@ -31,6 +31,12 @@ const cloneWorld = (world: WorldState): WorldState => ({
     lastOfferTurn: { ...world.aiMemory.lastOfferTurn },
     lastEmbargoTurn: { ...world.aiMemory.lastEmbargoTurn },
   },
+  encounterMemory: world.encounterMemory
+    ? {
+        lastSeenTurnByTemplateId: { ...world.encounterMemory.lastSeenTurnByTemplateId },
+        seenThisChapter: { ...world.encounterMemory.seenThisChapter },
+      }
+    : undefined,
 });
 
 const sortedRecordValues = <T extends { id: string }>(record: Record<string, T>): T[] => {
@@ -73,6 +79,58 @@ export interface EncounterCandidate {
   routeId?: string;
   regionId?: string;
 }
+
+export type EncounterMemory = {
+  lastSeenTurnByTemplateId: Record<string, number>;
+  seenThisChapter: Record<string, boolean>;
+};
+
+export const encounterTemplateIdFromCandidate = (c: EncounterCandidate): string => {
+  const pair = [c.a, c.b].slice().sort().join('|');
+  const location = c.routeId ? `route:${c.routeId}` : c.regionId ? `region:${c.regionId}` : 'none';
+  return `${c.kind}:${pair}:${location}`;
+};
+
+const cooldownTurnsByKind: Record<EncounterCandidate['kind'], number> = {
+  embargo: 2,
+  raid: 2,
+  skirmish: 2,
+  summit: 3,
+};
+
+const getEncounterCooldownRemaining = (turnNumber: number, lastSeenTurn: number | undefined, cooldownTurns: number) => {
+  if (!cooldownTurns) return 0;
+  if (lastSeenTurn == null) return 0;
+  const availableOnTurn = lastSeenTurn + cooldownTurns + 1;
+  return Math.max(0, availableOnTurn - turnNumber);
+};
+
+export const pickEncounterCandidate = (args: {
+  candidates: EncounterCandidate[];
+  turnNumber: number;
+  rngSeed: number;
+  memory: EncounterMemory;
+}): { candidate: EncounterCandidate; rngSeed: number; templateId: string; usedFallbackPool: boolean } | null => {
+  if (!args.candidates.length) return null;
+
+  const eligible = args.candidates.filter(c => {
+    const templateId = encounterTemplateIdFromCandidate(c);
+    if (args.memory.seenThisChapter[templateId]) return false;
+
+    const cooldown = cooldownTurnsByKind[c.kind] ?? 0;
+    const lastSeen = args.memory.lastSeenTurnByTemplateId[templateId];
+    const remaining = getEncounterCooldownRemaining(args.turnNumber, lastSeen, cooldown);
+    return remaining === 0;
+  });
+
+  const pool = eligible.length ? eligible : args.candidates;
+  const usedFallbackPool = eligible.length === 0;
+
+  const pick = rngPickOne(args.rngSeed, pool);
+  const templateId = encounterTemplateIdFromCandidate(pick.value);
+
+  return { candidate: pick.value, rngSeed: pick.seed, templateId, usedFallbackPool };
+};
 
 const actionWeightsForFaction = (
   faction: Faction,
@@ -186,6 +244,10 @@ export const createInitialWorldState = (factions: Faction[]): WorldState => {
     },
     tensions,
     aiMemory,
+    encounterMemory: {
+      lastSeenTurnByTemplateId: {},
+      seenThisChapter: {},
+    },
   };
 };
 
@@ -391,16 +453,46 @@ export const simulateWorldTurn = (args: SimulateWorldTurnArgs): SimulateWorldTur
   }
 
   let pendingEncounter: SecondaryEncounter | null = null;
+
   if (encounterCandidates.length > 0) {
-    const pick = rngPickOne(seed, encounterCandidates);
-    seed = pick.seed;
-    pendingEncounter = createEncounterFromCandidate(
-      pick.value,
-      args.turnNumber,
-      seed,
-      factionNameById,
-      nextWorld
-    );
+    const memory: EncounterMemory = nextWorld.encounterMemory ?? {
+      lastSeenTurnByTemplateId: {},
+      seenThisChapter: {},
+    };
+
+    const pick = pickEncounterCandidate({
+      candidates: encounterCandidates,
+      turnNumber: args.turnNumber,
+      rngSeed: seed,
+      memory,
+    });
+
+    if (pick) {
+      seed = pick.rngSeed;
+
+      pendingEncounter = createEncounterFromCandidate(
+        pick.candidate,
+        args.turnNumber,
+        seed,
+        factionNameById,
+        nextWorld
+      );
+
+      nextWorld.encounterMemory = {
+        lastSeenTurnByTemplateId: {
+          ...memory.lastSeenTurnByTemplateId,
+          [pick.templateId]: args.turnNumber,
+        },
+        seenThisChapter: {
+          ...memory.seenThisChapter,
+          [pick.templateId]: true,
+        },
+      };
+
+      if (pick.usedFallbackPool) {
+        logEntries.push('A familiar crisis resurfaces; the hall braces for repetition.');
+      }
+    }
   }
 
   return {

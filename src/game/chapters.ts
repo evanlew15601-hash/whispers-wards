@@ -76,6 +76,15 @@ export const evaluateChapterTransition = (prev: GameState): GameState => {
       ...prev.management,
       usedThisChapter: {},
     },
+    world: {
+      ...prev.world,
+      encounterMemory: prev.world.encounterMemory
+        ? {
+            ...prev.world.encounterMemory,
+            seenThisChapter: {},
+          }
+        : prev.world.encounterMemory,
+    },
   };
 
   if (nextDef.entryEffects?.length) {

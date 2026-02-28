@@ -43,6 +43,12 @@ describe('tsConversationEngine', () => {
     expect(afterTurn.management.apRemaining).toBe(afterTurn.management.apMax);
     expect(afterTurn.management.actionsTakenThisTurn).toEqual([]);
     expect(afterTurn.log.some(l => l.startsWith('🌍 '))).toBe(true);
+
+    const openRoutes = Object.values(afterTurn.world.tradeRoutes).filter(r => r.status === 'open').length;
+    expect(afterTurn.resources.coin).toBe(drained.resources.coin + 1 + openRoutes);
+    expect(afterTurn.resources.influence).toBe(drained.resources.influence + 1);
+    expect(afterTurn.resources.supplies).toBe(drained.resources.supplies + 1);
+    expect(afterTurn.log.some(l => l.startsWith('💰 Income: '))).toBe(true);
   });
 
   it('applyChoice triggers threshold events and logs secrets; world sim output is logged on endTurn', () => {

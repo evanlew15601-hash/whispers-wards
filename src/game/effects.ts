@@ -1,5 +1,7 @@
 import type { GameState, WorldState } from './types';
 
+import { getProjectTemplateById } from './projects';
+
 export type GameEffect =
   | { kind: 'rep'; factionId: string; delta: number }
   | { kind: 'secret:add'; secret: string }
@@ -26,6 +28,12 @@ const cloneWorld = (world: WorldState): WorldState => ({
     lastOfferTurn: { ...world.aiMemory.lastOfferTurn },
     lastEmbargoTurn: { ...world.aiMemory.lastEmbargoTurn },
   },
+  encounterMemory: world.encounterMemory
+    ? {
+        lastSeenTurnByTemplateId: { ...world.encounterMemory.lastSeenTurnByTemplateId },
+        seenThisChapter: { ...world.encounterMemory.seenThisChapter },
+      }
+    : undefined,
 });
 
 const ensureTensionMatrix = (world: WorldState, a: string, b: string) => {
@@ -89,6 +97,7 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
 
   let next = prev;
   let world: WorldState | null = null;
+  let projectStartIdx = 0;
 
   for (const eff of effects) {
     if (eff.kind === 'rep') {
@@ -128,6 +137,65 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
       continue;
     }
 
+    if (eff.kind === 'project:start') {
+      const template = getProjectTemplateById(eff.templateId);
+      if (!template) continue;
+
+      const already = next.projects.some(p => p.templateId === eff.templateId && p.status !== 'cancelled' && p.status !== 'completed');
+      if (already) continue;
+
+      if (next === prev) next = { ...next };
+      const id = `proj:${eff.templateId}:${next.turnNumber}:${next.stepNumber}:${projectStartIdx++}`;
+
+      next.projects = [
+        ...next.projects,
+        {
+          id,
+          templateId: eff.templateId,
+          title: template.title,
+          description: template.description,
+          status: 'active',
+          startedTurn: next.turnNumber,
+          remainingTurns: template.durationTurns,
+        },
+      ];
+      continue;
+    }
+
+    if (eff.kind === 'project:pause') {
+      const idx = next.projects.findIndex(p => p.id === eff.projectId);
+      if (idx < 0) continue;
+      const p = next.projects[idx];
+      if (!p || p.status !== 'active') continue;
+      if (next === prev) next = { ...next };
+      next.projects = next.projects.map(x => (x.id === eff.projectId ? { ...x, status: 'paused' } : x));
+      continue;
+    }
+
+    if (eff.kind === 'project:cancel') {
+      const idx = next.projects.findIndex(p => p.id === eff.projectId);
+      if (idx < 0) continue;
+      const p = next.projects[idx];
+      if (!p || p.status === 'cancelled' || p.status === 'completed') continue;
+      if (next === prev) next = { ...next };
+      next.projects = next.projects.map(x => (x.id === eff.projectId ? { ...x, status: 'cancelled' } : x));
+      continue;
+    }
+
+    if (eff.kind === 'project:accelerate') {
+      const idx = next.projects.findIndex(p => p.id === eff.projectId);
+      if (idx < 0) continue;
+      const p = next.projects[idx];
+      if (!p || p.status !== 'active') continue;
+
+      const remainingTurns = Math.max(0, p.remainingTurns - eff.deltaTurns);
+
+      if (remainingTurns === p.remainingTurns) continue;
+      if (next === prev) next = { ...next };
+      next.projects = next.projects.map(x => (x.id === eff.projectId ? { ...x, remainingTurns } : x));
+      continue;
+    }
+
     // World effects.
     if (!world) world = cloneWorld(next.world);
 
@@ -159,10 +227,7 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
       continue;
     }
 
-    // Project effects are stubs for now; projects are introduced in a later phase.
-    if (eff.kind.startsWith('project:')) {
-      continue;
-    }
+    
   }
 
   if (world) {
