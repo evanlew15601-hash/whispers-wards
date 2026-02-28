@@ -15,6 +15,7 @@ interface GameScreenProps {
   state: GameState;
   engineLabel: string;
   makeChoice: (choice: DialogueChoice) => void;
+  endTurn: () => void;
   resetGame: () => void;
   saveSlots: SaveSlotInfo[];
   saveToSlot: (slotId: number) => void;
@@ -42,6 +43,7 @@ const GameScreen = ({
   state,
   engineLabel,
   makeChoice,
+  endTurn,
   resetGame,
   saveSlots,
   saveToSlot,
@@ -113,6 +115,13 @@ const GameScreen = ({
         </h1>
         <div className="flex items-center gap-3">
           <span className="font-display text-xs text-muted-foreground">Turn {state.turnNumber}</span>
+          <Button
+            onClick={endTurn}
+            variant="outline"
+            className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+          >
+            End Turn
+          </Button>
           <span className="font-display text-xs text-muted-foreground">Envoy: {state.player.name}</span>
           <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
             Engine: {engineLabel}

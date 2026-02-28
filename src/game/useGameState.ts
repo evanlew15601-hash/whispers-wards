@@ -155,6 +155,8 @@ export function useGameState() {
       ? ((loadedAny as any).selectedChoiceIds as string[])
       : base.selectedChoiceIds;
 
+    const loadedTurnNumber = typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber;
+
     const hydrated: GameState = {
       ...base,
       ...loadedAny,
@@ -164,7 +166,25 @@ export function useGameState() {
       knownSecrets: loadedAny.knownSecrets ?? base.knownSecrets,
       selectedChoiceIds: inferSelectedChoiceIdsFromLog(selectedChoiceIdsFromSave, hydratedLog),
       log: hydratedLog,
-      turnNumber: typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber,
+      stepNumber:
+        typeof (loadedAny as any).stepNumber === 'number'
+          ? ((loadedAny as any).stepNumber as number)
+          : loadedTurnNumber,
+      turnNumber: loadedTurnNumber,
+      chapterId: typeof (loadedAny as any).chapterId === 'string' ? ((loadedAny as any).chapterId as string) : base.chapterId,
+      chapterTurn: typeof (loadedAny as any).chapterTurn === 'number' ? ((loadedAny as any).chapterTurn as number) : base.chapterTurn,
+      milestones: Array.isArray((loadedAny as any).milestones) ? ((loadedAny as any).milestones as string[]) : base.milestones,
+      resources:
+        (loadedAny as any).resources && typeof (loadedAny as any).resources === 'object'
+          ? ({ ...base.resources, ...(loadedAny as any).resources } as GameState['resources'])
+          : base.resources,
+      management:
+        (loadedAny as any).management && typeof (loadedAny as any).management === 'object'
+          ? {
+              ...base.management,
+              ...(loadedAny as any).management,
+            }
+          : base.management,
       rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
       world: loadedAny.world ?? base.world,
       pendingEncounter,
@@ -199,6 +219,10 @@ export function useGameState() {
     setState(prev => engineRef.current.applyChoice(prev, choice));
   }, []);
 
+  const endTurn = useCallback(() => {
+    setState(prev => engineRef.current.endTurn(prev));
+  }, []);
+
   const resetGame = useCallback(() => {
     setState(engineRef.current.createInitialState());
   }, []);
@@ -230,6 +254,7 @@ export function useGameState() {
     deleteSlot,
     listSlots,
     makeChoice,
+    endTurn,
     resetGame,
     enterPendingEncounter,
   };

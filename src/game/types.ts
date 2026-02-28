@@ -116,7 +116,28 @@ export interface GameState {
   knownSecrets: string[];
   /** Choice ids previously selected, used to prevent re-applying non-repeatable reputation effects. */
   selectedChoiceIds: string[];
+
+  /**
+   * Increments for every player interaction (dialogue choices, end-turn, management actions).
+   * Useful for deterministic ordering and debugging.
+   */
+  stepNumber: number;
+
+  /** Advances only when the player ends the turn (world simulation tick). */
   turnNumber: number;
+
+  chapterId: string;
+  chapterTurn: number;
+  milestones: string[];
+
+  resources: Record<'coin' | 'influence' | 'supplies' | 'intel', number>;
+
+  management: {
+    apMax: number;
+    apRemaining: number;
+    actionsTakenThisTurn: string[];
+  };
+
   log: string[];
   rngSeed: number;
   world: WorldState;

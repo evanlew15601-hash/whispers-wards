@@ -20,6 +20,9 @@ export interface ConversationEngine {
   /** Apply a player choice and return the next state (pure). */
   applyChoice(prev: GameState, choice: DialogueChoice): GameState;
 
+  /** Advance the world by one turn (simulation tick), resetting per-turn budgets like action points. */
+  endTurn(prev: GameState): GameState;
+
   /**
    * Optional: compute which choices are currently locked.
    *

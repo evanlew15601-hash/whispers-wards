@@ -20,15 +20,15 @@ describe('game storage', () => {
     expect(slots.every(s => s.meta === null)).toBe(true);
   });
 
-  it('saves, loads, and deletes a slot (v2)', async () => {
-    const { STORAGE_KEY_V2, deleteSaveSlot, listSaveSlots, loadGameFromSlot, saveGameToSlot } =
+  it('saves, loads, and deletes a slot (v3)', async () => {
+    const { STORAGE_KEY_V3, deleteSaveSlot, listSaveSlots, loadGameFromSlot, saveGameToSlot } =
       await importStorage();
 
     const state = tsConversationEngine.startNewGame();
 
     expect(saveGameToSlot(1, state)).toBe(true);
 
-    const raw = localStorage.getItem(STORAGE_KEY_V2);
+    const raw = localStorage.getItem(STORAGE_KEY_V3);
     expect(raw).toBeTruthy();
 
     const persisted = JSON.parse(raw as string) as {
@@ -36,7 +36,7 @@ describe('game storage', () => {
       slots: Record<string, { state?: { currentDialogueId?: unknown; player?: unknown } }>;
     };
 
-    expect(persisted.version).toBe(2);
+    expect(persisted.version).toBe(3);
     expect(persisted.slots['1']?.state?.currentDialogueId).toBe(state.currentDialogue?.id ?? null);
     expect(persisted.slots['1']?.state?.player).toEqual(state.player);
 
@@ -76,23 +76,23 @@ describe('game storage', () => {
     expect(listSaveSlots().every(s => s.meta === null)).toBe(true);
   });
 
-  it('handles corrupted JSON in STORAGE_KEY_V2 without throwing', async () => {
-    const { STORAGE_KEY_V2, listSaveSlots, SAVE_SLOT_COUNT } = await importStorage();
+  it('handles corrupted JSON in STORAGE_KEY_V3 without throwing', async () => {
+    const { STORAGE_KEY_V3, listSaveSlots, SAVE_SLOT_COUNT } = await importStorage();
 
-    localStorage.setItem(STORAGE_KEY_V2, '{not json');
+    localStorage.setItem(STORAGE_KEY_V3, '{invalid json');
 
     const slots = listSaveSlots();
     expect(slots).toHaveLength(SAVE_SLOT_COUNT);
     expect(slots.every(s => s.meta === null)).toBe(true);
   });
 
-  it('treats a schema-invalid slot as empty (v2)', async () => {
-    const { STORAGE_KEY_V2, listSaveSlots } = await importStorage();
+  it('treats a schema-invalid slot as empty (v3)', async () => {
+    const { STORAGE_KEY_V3, listSaveSlots } = await importStorage();
 
     localStorage.setItem(
-      STORAGE_KEY_V2,
+      STORAGE_KEY_V3,
       JSON.stringify({
-        version: 2,
+        version: 3,
         slots: {
           '1': {
             meta: 'not meta',
@@ -138,8 +138,8 @@ describe('game storage', () => {
     expect((loaded as any)?.player).toEqual({ name: 'Test Envoy' });
   });
 
-  it('migrates legacy unversioned key (v1) to STORAGE_KEY_V2', async () => {
-    const { STORAGE_KEY_V2, listSaveSlots, loadGameFromSlot } = await importStorage();
+  it('migrates legacy unversioned key (v1) to STORAGE_KEY_V3', async () => {
+    const { STORAGE_KEY_V3, listSaveSlots, loadGameFromSlot } = await importStorage();
 
     const state = tsConversationEngine.startNewGame();
 
@@ -166,19 +166,19 @@ describe('game storage', () => {
     const loaded = loadGameFromSlot(1);
     expect(loaded?.player).toEqual(state.player);
 
-    const migrated = localStorage.getItem(STORAGE_KEY_V2);
+    const migrated = localStorage.getItem(STORAGE_KEY_V3);
     expect(migrated).toBeTruthy();
 
     const parsed = JSON.parse(migrated as string) as {
       version: number;
       slots: Record<string, { state?: { currentDialogueId?: unknown } }>;
     };
-    expect(parsed.version).toBe(2);
+    expect(parsed.version).toBe(3);
     expect(parsed.slots['1']?.state?.currentDialogueId).toBe(state.currentDialogue?.id ?? null);
   });
 
-  it('migrates v1 key to v2 by extracting currentDialogue?.id', async () => {
-    const { STORAGE_KEY_V1, STORAGE_KEY_V2, loadGameFromSlot } = await importStorage();
+  it('migrates v1 key to v3 by extracting currentDialogue?.id', async () => {
+    const { STORAGE_KEY_V1, STORAGE_KEY_V3, loadGameFromSlot } = await importStorage();
 
     const state = tsConversationEngine.startNewGame();
 
@@ -199,20 +199,20 @@ describe('game storage', () => {
       }),
     );
 
-    expect(localStorage.getItem(STORAGE_KEY_V2)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEY_V3)).toBeNull();
 
     const loaded = loadGameFromSlot(1);
     expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
     expect(loaded?.player).toEqual(state.player);
 
-    const migrated = localStorage.getItem(STORAGE_KEY_V2);
+    const migrated = localStorage.getItem(STORAGE_KEY_V3);
     expect(migrated).toBeTruthy();
 
     const parsed = JSON.parse(migrated as string) as {
       version: number;
       slots: Record<string, { state?: { currentDialogueId?: unknown } }>;
     };
-    expect(parsed.version).toBe(2);
+    expect(parsed.version).toBe(3);
     expect(parsed.slots['1']?.state?.currentDialogueId).toBe(state.currentDialogue?.id ?? null);
   });
 

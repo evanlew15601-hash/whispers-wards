@@ -12,11 +12,12 @@ const STORAGE_KEY_PREFIX = 'crown-concord:save-slots';
  * - v2 stores only `currentDialogueId` (and other state fields) and hydrates the actual dialogue
  *   node from the current dialogueTree at load time.
  *
- * We read v2 first. If missing, we attempt a best-effort migration from v1/unversioned into v2.
+ * We read v3 first. If missing, we attempt a best-effort migration from v2, then v1/unversioned.
  * Any schema validation failures are treated as an empty store/slot (never throw).
  */
-export const STORAGE_VERSION = 2;
-export const STORAGE_KEY_V2 = `${STORAGE_KEY_PREFIX}:v${STORAGE_VERSION}`;
+export const STORAGE_VERSION = 3;
+export const STORAGE_KEY_V3 = `${STORAGE_KEY_PREFIX}:v${STORAGE_VERSION}`;
+export const STORAGE_KEY_V2 = `${STORAGE_KEY_PREFIX}:v2`;
 export const STORAGE_KEY_V1 = `${STORAGE_KEY_PREFIX}:v1`;
 
 export interface SaveSlotMeta {
@@ -152,10 +153,43 @@ export const persistedStoreV2Schema = z.object({
   slots: z.record(z.unknown()),
 });
 
+export const persistedStateV3Schema = persistedStateV2Schema
+  .extend({
+    stepNumber: z.number().optional(),
+    chapterId: z.string().optional(),
+    chapterTurn: z.number().optional(),
+    milestones: z.array(z.string()).optional(),
+    resources: z.record(z.number()).optional(),
+    management: z
+      .object({
+        apMax: z.number().optional(),
+        apRemaining: z.number().optional(),
+        actionsTakenThisTurn: z.array(z.string()).optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
+
+export const persistedSlotV3Schema = z.object({
+  meta: saveSlotMetaSchema,
+  state: persistedStateV3Schema,
+});
+
+export const persistedStoreV3Schema = z.object({
+  version: z.literal(3),
+  slots: z.record(z.unknown()),
+});
+
 type PersistedSlotV2 = z.infer<typeof persistedSlotV2Schema>;
 interface PersistedStoreV2 {
   version: 2;
   slots: Record<string, PersistedSlotV2 | undefined>;
+}
+
+type PersistedSlotV3 = z.infer<typeof persistedSlotV3Schema>;
+interface PersistedStoreV3 {
+  version: 3;
+  slots: Record<string, PersistedSlotV3 | undefined>;
 }
 
 interface PersistedSlotV1 {
@@ -240,6 +274,31 @@ const createEmptyStoreV2 = (): PersistedStoreV2 => ({
   version: 2,
   slots: {},
 });
+
+const createEmptyStoreV3 = (): PersistedStoreV3 => ({
+  version: 3,
+  slots: {},
+});
+
+const parseStoreV3 = (raw: string): PersistedStoreV3 | null => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+
+  const storeParsed = persistedStoreV3Schema.safeParse(parsed);
+  if (!storeParsed.success) return null;
+
+  const slots: PersistedStoreV3['slots'] = {};
+  for (const [key, value] of Object.entries(storeParsed.data.slots)) {
+    const slotParsed = persistedSlotV3Schema.safeParse(value);
+    if (slotParsed.success) slots[key] = slotParsed.data;
+  }
+
+  return { version: 3, slots };
+};
 
 const parseStoreV2 = (raw: string): PersistedStoreV2 | null => {
   let parsed: unknown;
@@ -326,11 +385,22 @@ const migrateStoreV1ToV2 = (store: PersistedStoreV1): PersistedStoreV2 => {
   return migrated;
 };
 
-const readStoreV2 = (): PersistedStoreV2 => {
+const readStoreV3 = (): PersistedStoreV3 => {
+  const existingV3 = safeGetItem(STORAGE_KEY_V3);
+  if (existingV3) {
+    const store = parseStoreV3(existingV3);
+    if (store) return store;
+  }
+
+  // v3 missing/invalid: attempt best-effort migration from v2.
   const existingV2 = safeGetItem(STORAGE_KEY_V2);
   if (existingV2) {
-    const store = parseStoreV2(existingV2);
-    if (store) return store;
+    const storeV2 = parseStoreV2(existingV2);
+    if (storeV2) {
+      const migrated: PersistedStoreV3 = { version: 3, slots: storeV2.slots as any };
+      writeStoreV3(migrated);
+      return migrated;
+    }
   }
 
   // v2 missing/invalid: attempt best-effort migration from v1/unversioned.
@@ -338,8 +408,9 @@ const readStoreV2 = (): PersistedStoreV2 => {
   if (existingV1) {
     const storeV1 = parseStoreV1(existingV1);
     if (storeV1) {
-      const migrated = migrateStoreV1ToV2(storeV1);
-      writeStoreV2(migrated);
+      const migratedV2 = migrateStoreV1ToV2(storeV1);
+      const migrated: PersistedStoreV3 = { version: 3, slots: migratedV2.slots as any };
+      writeStoreV3(migrated);
       return migrated;
     }
   }
@@ -348,17 +419,18 @@ const readStoreV2 = (): PersistedStoreV2 => {
   if (legacy) {
     const storeV1 = parseStoreV1(legacy);
     if (storeV1) {
-      const migrated = migrateStoreV1ToV2(storeV1);
-      writeStoreV2(migrated);
+      const migratedV2 = migrateStoreV1ToV2(storeV1);
+      const migrated: PersistedStoreV3 = { version: 3, slots: migratedV2.slots as any };
+      writeStoreV3(migrated);
       return migrated;
     }
   }
 
-  return createEmptyStoreV2();
+  return createEmptyStoreV3();
 };
 
-const writeStoreV2 = (store: PersistedStoreV2): boolean => {
-  return safeSetItem(STORAGE_KEY_V2, JSON.stringify(store));
+const writeStoreV3 = (store: PersistedStoreV3): boolean => {
+  return safeSetItem(STORAGE_KEY_V3, JSON.stringify(store));
 };
 
 const createMeta = (state: GameState): SaveSlotMeta => ({
@@ -378,7 +450,7 @@ const normalizeSlotId = (slotId: number) => {
 };
 
 export const listSaveSlots = (): SaveSlotInfo[] => {
-  const store = readStoreV2();
+  const store = readStoreV3();
 
   return Array.from({ length: SAVE_SLOT_COUNT }, (_, i) => {
     const id = i + 1;
@@ -398,7 +470,7 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
   // If storage is blocked entirely, report failure rather than silently dropping saves.
   if (!probeLocalStorage()) return false;
 
-  const store = readStoreV2();
+  const store = readStoreV3();
   store.slots[String(id)] = {
     meta: createMeta(state),
     state: {
@@ -407,7 +479,13 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
       events: state.events as any,
       knownSecrets: state.knownSecrets,
       selectedChoiceIds: state.selectedChoiceIds,
+      stepNumber: state.stepNumber,
       turnNumber: state.turnNumber,
+      chapterId: state.chapterId,
+      chapterTurn: state.chapterTurn,
+      milestones: state.milestones,
+      resources: state.resources,
+      management: state.management,
       log: state.log,
       rngSeed: state.rngSeed,
       world: state.world as any,
@@ -417,14 +495,14 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
     },
   };
 
-  return writeStoreV2(store);
+  return writeStoreV3(store);
 };
 
 export const loadGameFromSlot = (slotId: number): LoadableGameState | null => {
   const id = normalizeSlotId(slotId);
   if (!id) return null;
 
-  const store = readStoreV2();
+  const store = readStoreV3();
   const slot = store.slots[String(id)];
   if (!slot) return null;
 
@@ -442,9 +520,9 @@ export const deleteSaveSlot = (slotId: number): boolean => {
 
   if (!probeLocalStorage()) return false;
 
-  const store = readStoreV2();
+  const store = readStoreV3();
   if (!store.slots[String(id)]) return true;
 
   delete store.slots[String(id)];
-  return writeStoreV2(store);
+  return writeStoreV3(store);
 };

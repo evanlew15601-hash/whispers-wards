@@ -20,7 +20,22 @@ const createInitialState = (): GameState => ({
   events: initialEvents.map(e => ({ ...e })),
   knownSecrets: [],
   selectedChoiceIds: [],
+  stepNumber: 0,
   turnNumber: 1,
+  chapterId: 'chapter-1',
+  chapterTurn: 1,
+  milestones: [],
+  resources: {
+    coin: 0,
+    influence: 0,
+    supplies: 0,
+    intel: 0,
+  },
+  management: {
+    apMax: 3,
+    apRemaining: 3,
+    actionsTakenThisTurn: [],
+  },
   log: [],
   rngSeed: createInitialRngSeed(),
   world: createInitialWorldState(initialFactions),
@@ -106,6 +121,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       events: newEvents,
       knownSecrets: [...new Set(newSecrets)],
       selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
+      stepNumber: prev.stepNumber + 1,
       // Return to the main hall hub so the campaign continues.
       currentDialogue: dialogueTree['concord-hub'] ?? prev.currentDialogue,
       pendingEncounter: null,
@@ -158,6 +174,21 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : null;
 
+  return {
+    ...prev,
+    factions: newFactions,
+    currentDialogue: nextDialogue,
+    events: newEvents,
+    knownSecrets: [...new Set(newSecrets)],
+    selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
+    stepNumber: prev.stepNumber + 1,
+    log: newLog,
+  };
+};
+
+const endTurn = (prev: GameState): GameState => {
+  if (prev.currentScene !== 'game') return prev;
+
   const nextTurnNumber = prev.turnNumber + 1;
 
   // `expiresOnTurn` is inclusive: the encounter expires only after turn N resolves
@@ -182,10 +213,9 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     expiryLog = expired.logEntries;
   }
 
-  // Turn-based world simulation runs after each player choice.
   const sim = simulateWorldTurn({
     world: worldBeforeSim,
-    factions: newFactions,
+    factions: prev.factions,
     turnNumber: nextTurnNumber,
     rngSeed: prev.rngSeed,
   });
@@ -195,16 +225,18 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   return {
     ...prev,
-    factions: newFactions,
-    currentDialogue: nextDialogue,
-    events: newEvents,
-    knownSecrets: [...new Set(newSecrets)],
-    selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
+    stepNumber: prev.stepNumber + 1,
     turnNumber: nextTurnNumber,
-    log: [...newLog, ...worldLog, ...expiryLog],
+    chapterTurn: prev.chapterTurn + 1,
+    log: [...prev.log, '⏭ End Turn', ...expiryLog, ...worldLog],
     world: sim.world,
     rngSeed: sim.rngSeed,
     pendingEncounter: nextEncounter,
+    management: {
+      ...prev.management,
+      apRemaining: prev.management.apMax,
+      actionsTakenThisTurn: [],
+    },
   };
 };
 
@@ -212,6 +244,7 @@ export const tsConversationEngine: ConversationEngine = {
   createInitialState,
   startNewGame,
   applyChoice,
+  endTurn,
   getChoiceLockedFlags(state) {
     if (!state.currentDialogue) return null;
     return state.currentDialogue.choices.map(choice =>

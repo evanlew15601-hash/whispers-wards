@@ -34,7 +34,13 @@ const state: GameState = {
   events: [],
   knownSecrets: [],
   selectedChoiceIds: [],
+  stepNumber: 0,
   turnNumber: 12,
+  chapterId: 'chapter-1',
+  chapterTurn: 1,
+  milestones: [],
+  resources: { coin: 0, influence: 0, supplies: 0, intel: 0 },
+  management: { apMax: 3, apRemaining: 3, actionsTakenThisTurn: [] },
   log: [],
   rngSeed: 0,
   world: {
@@ -68,6 +74,7 @@ const renderScreen = () =>
       choiceLockedFlags={null}
       choiceUiHints={null}
       makeChoice={vi.fn()}
+      endTurn={vi.fn()}
       resetGame={vi.fn()}
       saveSlots={saveSlots}
       saveToSlot={vi.fn()}
