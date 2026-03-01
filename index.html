@@ -20,7 +20,7 @@
     <style>
       #boot-fallback {
         min-height: 100vh;
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
         padding: 2rem;
@@ -28,6 +28,10 @@
         color: #f0e6d6;
         font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
         text-align: center;
+      }
+
+      #boot-fallback.boot-fallback--visible {
+        display: flex;
       }
 
       #boot-fallback code {
@@ -39,6 +43,16 @@
   </head>
 
   <body>
+    <script>
+      window.__CC_BOOTED = false;
+      window.setTimeout(function () {
+        if (window.__CC_BOOTED) return;
+        var el = document.getElementById('boot-fallback');
+        if (!el) return;
+        el.classList.add('boot-fallback--visible');
+      }, 2500);
+    </script>
+
     <div id="root">
       <div id="boot-fallback">
         <div>
