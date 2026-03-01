@@ -9,6 +9,7 @@ import FactionPanel from '@/components/FactionPanel';
 import InfoPanel from '@/components/InfoPanel';
 import GameMenu from '@/components/GameMenu';
 import { Button } from '@/components/ui/button';
+import { BUILD_ID } from '@/lib/buildInfo';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -128,6 +129,9 @@ const GameScreen = ({
           <span className="font-display text-xs text-muted-foreground">Envoy: {state.player.name}</span>
           <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
             Engine: {engineLabel}
+          </span>
+          <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/60 uppercase">
+            Build: {BUILD_ID}
           </span>
 
           <GameMenu

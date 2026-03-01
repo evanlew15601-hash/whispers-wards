@@ -5,6 +5,7 @@ import { loadUqmWasmRuntime } from '@/game/engine/uqmWasmRuntime';
 import { Button } from '@/components/ui/button';
 import { useAmbience } from '@/audio/useAmbience';
 import type { SaveSlotInfo } from '@/game/storage';
+import { BUILD_ID } from '@/lib/buildInfo';
 
 interface TitleScreenProps {
   onStart: () => void;
