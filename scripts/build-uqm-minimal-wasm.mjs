@@ -56,7 +56,7 @@ function validateWasm(bytes) {
     const memory = exp.memory ?? exp.wasmMemory ?? exp._memory;
     if (!(memory instanceof WebAssembly.Memory)) return false;
 
-    const ok = (names) => names.some((n) => n in exp && typeof exp[n] === 'function');
+    const ok = names => names.some(n => n in exp && typeof exp[n] === 'function');
 
     if (!ok(['uqm_alloc', '_uqm_alloc'])) return false;
     if (!ok(['uqm_version_ptr', 'uqm_version', '_uqm_version_ptr', '_uqm_version'])) return false;
@@ -96,18 +96,32 @@ function validateWasm(bytes) {
 async function main() {
   const skip = String(process.env.SKIP_UQM_WASM ?? '').toLowerCase();
 
-try {
+  fs.mkdirSync(outDir, { recursive: true });
 
-// Skip if output is newer than sources (but still validate it).
-try {
-  const outStat = fs.statSync(outWasm);
-  const newestSrc = newestMtimeMs([srcC, srcWat, __filename]);
-  if (outStat.mtimeMs >= newestSrc) {
-    try {
-      const bytes = fs.readFileSync(outWasm);
-      if (validateWasm(bytes)) {
-        console.log(`[uqm-wasm] up-to-date: ${path.relative(root, outWasm)}`);
-        process.exit(0);
+  const writeAvailability = available => {
+    fs.writeFileSync(outAvailability, `${JSON.stringify({ available }, null, 2)}\n`);
+  };
+
+  if (skip === '1' || skip === 'true' || skip === 'yes') {
+    console.log('[uqm-wasm] SKIP_UQM_WASM set; skipping wasm build');
+    writeAvailability(false);
+    return;
+  }
+
+  // Skip if output is newer than sources (but still validate it).
+  try {
+    const outStat = fs.statSync(outWasm);
+    const newestSrc = newestMtimeMs([srcC, srcWat, __filename]);
+    if (outStat.mtimeMs >= newestSrc) {
+      try {
+        const bytes = fs.readFileSync(outWasm);
+        if (validateWasm(bytes)) {
+          writeAvailability(true);
+          console.log(`[uqm-wasm] up-to-date: ${path.relative(root, outWasm)}`);
+          process.exit(0);
+        }
+      } catch {
+        // fall through and rebuild
       }
     }
   } catch {
@@ -224,9 +238,32 @@ try {
   console.log(`[uqm-wasm] wrote ${path.relative(root, outWasm)}`);
 }
 
-console.log(`[uqm-wasm] wrote ${path.relative(root, outWasm)}`);
+main().catch(err => {
+  const lifecycle = process.env.npm_lifecycle_event;
+  const strict = lifecycle === 'pretest' || lifecycle === 'test' || process.env.CI === 'true';
 
-} catch (err) {
-  console.warn(`[uqm-wasm] WASM build failed (non-fatal): ${err?.message ?? err}`);
-  console.warn('[uqm-wasm] The app will use the TypeScript conversation engine fallback.');
-}
+  try {
+    fs.mkdirSync(outDir, { recursive: true });
+
+    let available = false;
+    try {
+      const bytes = fs.readFileSync(outWasm);
+      available = validateWasm(bytes);
+    } catch {
+      available = false;
+    }
+
+    fs.writeFileSync(outAvailability, `${JSON.stringify({ available }, null, 2)}\n`);
+  } catch {
+    // ignore
+  }
+
+  if (strict) {
+    console.error(err);
+    process.exit(1);
+  }
+
+  console.warn('[uqm-wasm] optional wasm build failed; continuing without wasm conversation core');
+  console.warn(err instanceof Error ? err.message : String(err));
+  process.exit(0);
+});
