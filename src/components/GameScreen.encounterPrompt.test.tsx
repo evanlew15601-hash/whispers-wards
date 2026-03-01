@@ -102,12 +102,9 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
       deleteSlot={vi.fn()}
       exitToTitle={vi.fn()}
       enterPendingEncounter={enterPendingEncounter}
+      returnToHub={vi.fn()}
     />,
   );
-
-describe('GameScreen encounter prompt', () => {
-  it('renders an Address encounter button in the hub when a pending encounter exists, and calls handler', () => {
-    const enterPendingEncounter = vi.fn();
 
     renderScreen(
       {
@@ -124,17 +121,22 @@ describe('GameScreen encounter prompt', () => {
     expect(enterPendingEncounter).toHaveBeenCalledTimes(1);
   });
 
-  it('does not render the Address encounter button outside hub+pendingEncounter', () => {
+  it('renders the Address encounter button outside the hub if a pending encounter exists', () => {
+    renderScreen({
+      ...baseState,
+      currentDialogue: otherDialogue,
+      pendingEncounter,
+    });
+
+    expect(screen.getByRole('button', { name: /address encounter/i })).toBeInTheDocument();
+  });
+
+  it('does not render the Address encounter button without a pending encounter or within encounter dialogues', () => {
     const cases: GameState[] = [
       {
         ...baseState,
         currentDialogue: hubDialogue,
         pendingEncounter: null,
-      },
-      {
-        ...baseState,
-        currentDialogue: otherDialogue,
-        pendingEncounter,
       },
       {
         ...baseState,

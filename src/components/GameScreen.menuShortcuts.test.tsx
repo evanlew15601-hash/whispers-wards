@@ -84,6 +84,7 @@ const renderScreen = () =>
       deleteSlot={vi.fn()}
       exitToTitle={vi.fn()}
       enterPendingEncounter={vi.fn()}
+      returnToHub={vi.fn()}
     />,
   );
 

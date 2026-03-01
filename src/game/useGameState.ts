@@ -15,6 +15,7 @@ import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 import { buildEncounterDialogueNode } from './encounters';
 import { applyManagementAction } from './management/applyManagementAction';
+import { getChapter } from './chapters';
 
 const uniqueRepChoiceIdByText = (() => {
   const seen = new Map<string, string | null>();
@@ -253,6 +254,19 @@ export function useGameState() {
       return {
         ...prev,
         currentDialogue: buildEncounterDialogueNode(prev.pendingEncounter),
+      };
+    });
+  }, []);
+
+  const returnToHub = useCallback(() => {
+    setState(prev => {
+      if (prev.currentScene !== 'game') return prev;
+      const chapter = getChapter(prev.chapterId);
+      const hub = dialogueTree[chapter.hubNodeId] ?? null;
+      if (!hub) return prev;
+      return {
+        ...prev,
+        currentDialogue: hub,
       };
     });
   }, []);

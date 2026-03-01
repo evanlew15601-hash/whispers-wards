@@ -26,21 +26,13 @@ interface GameScreenProps {
   deleteSlot: (slotId: number) => void;
   exitToTitle: () => void;
   enterPendingEncounter: () => void;
-  choiceLockedFlags: boolean[] | null;
-  choiceUiHints: ChoiceUiHint[] | null;
-}
+  choiceLockedFlags: boolea  choiceLock  choiceUiHints: ChoiceUiHi  choiceUiHin}
 
-type GameMenuTab = 'save' | 'load' | 'campaign' | 'about';
+type GameMenuTab = 'save' |type GameMenuTab = 'save' | 'loa
+const isUserTyping = () => co  const el = document.activ  const el = document.activeElem  if (!el) return false;
 
-const isUserTyping = () => {
-  const el = document.activeElement as HTMLElement | null;
-  if (!el) return false;
-
-  const tag = el.tagName.toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
-
-  return el.isContentEditable;
-};
+  const tag = el.tagName.to  const tag =  if (tag === 'input' || ta  if (tag === 'input' || tag === 'textarea' || tag 
+  return el.isContentEditab  re};
 
 const GameScreen = ({
   state,
@@ -60,14 +52,8 @@ const GameScreen = ({
 }: GameScreenProps) => {
   useAmbience('game');
 
-  const conversationEnded = !state.currentDialogue;
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
-
-  const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
-  const canAddressEncounter = state.currentDialogue?.id === 'concord-hub';
-  const shouldShowEncounterPrompt = Boolean(state.pendingEncounter && canAddressEncounter && !isEncounterDialogue);
-
+  const conversationEnded =  const conversationEnded  const [menuOpen, setMenuO  const [menuOpen, setMe  const [menuTab, setMenuTa  const [menuTab, setMenuTab] = useS
+  const isEncounterDialogue  const isEncounterDialogue = state.currentDialogue?.id.startsWi  const canAddressEncounter  const canAddressEncounter = state.currentDialogue?.id ===   const shouldS  const shouldShowEncounterPrompt = Boolea
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
@@ -214,6 +200,13 @@ const GameScreen = ({
             onAddressEncounter={enterPendingEncounter}
           />
         </motion.aside>
+      </div>
+    </div>
+  );
+};
+
+export default GameScreen;
+motion.aside>
       </div>
     </div>
   );

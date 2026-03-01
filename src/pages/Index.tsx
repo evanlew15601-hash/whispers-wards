@@ -23,6 +23,7 @@ const Index = () => {
     takeManagementAction,
     resetGame,
     enterPendingEncounter,
+    returnToHub,
   } = useGameState();
 
   const slots = listSlots();
@@ -74,6 +75,7 @@ const Index = () => {
       deleteSlot={deleteSlot}
       exitToTitle={backToTitle}
       enterPendingEncounter={enterPendingEncounter}
+      returnToHub={returnToHub}
       choiceLockedFlags={choiceLockedFlags}
       choiceUiHints={choiceUiHints}
     />
