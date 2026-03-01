@@ -2,8 +2,6 @@ import type { ConversationEngine, ChoiceUiHint } from './conversationEngine';
 import type { DialogueChoice, GameState } from '../types';
 
 import { dialogueTree } from '../data';
-import { applyExpiredEncounterConsequence } from '../encounters';
-import { simulateWorldTurn } from '../simulation';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
@@ -323,41 +321,6 @@ function applyChoiceUsingWasm(
     ...newlyLearned.map(s => `🔍 Secret learned: ${s}`),
   ];
 
-  const nextTurnNumber = prev.turnNumber + 1;
-
-  // `expiresOnTurn` is inclusive: the encounter expires only after turn N resolves
-  // (i.e. it is still retained when `expiresOnTurn === nextTurnNumber`).
-  const existingEncounter =
-    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn >= nextTurnNumber ? prev.pendingEncounter : null;
-
-  const expiredEncounter =
-    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn < nextTurnNumber ? prev.pendingEncounter : null;
-
-  // If an encounter just expired this turn, apply a deterministic consequence *before*
-  // running the world's simulation so that the consequence can influence the sim.
-  let worldBeforeSim = prev.world;
-  let expiryLog: string[] = [];
-  if (expiredEncounter) {
-    const expired = applyExpiredEncounterConsequence({
-      world: worldBeforeSim,
-      encounter: expiredEncounter,
-      turnNumber: nextTurnNumber,
-    });
-    worldBeforeSim = expired.world;
-    expiryLog = expired.logEntries;
-  }
-
-  // Turn-based world simulation runs after each player choice.
-  const sim = simulateWorldTurn({
-    world: worldBeforeSim,
-    factions: newFactions,
-    turnNumber: nextTurnNumber,
-    rngSeed: prev.rngSeed,
-  });
-
-  const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
-  const nextEncounter = existingEncounter ?? sim.pendingEncounter;
-
   return {
     ...prev,
     factions: newFactions,
@@ -365,11 +328,8 @@ function applyChoiceUsingWasm(
     events: newEvents,
     knownSecrets: [...new Set(newSecrets)],
     selectedChoiceIds: prev.selectedChoiceIds.includes(choice.id) ? prev.selectedChoiceIds : [...prev.selectedChoiceIds, choice.id],
-    turnNumber: nextTurnNumber,
-    log: [...newLog, ...worldLog, ...expiryLog],
-    world: sim.world,
-    rngSeed: sim.rngSeed,
-    pendingEncounter: nextEncounter,
+    stepNumber: prev.stepNumber + 1,
+    log: newLog,
   };
 }
 
@@ -377,7 +337,7 @@ function applyChoiceUsingWasm(
  * Create a ConversationEngine backed by the minimal UQM-derived WASM conversation core.
  *
  * This keeps the broader game-state transition logic identical to `tsConversationEngine`
- * (events, logging, world simulation), but delegates *conversation graph transitions*
+ * (events, logging, endTurn simulation), but delegates *conversation graph transitions*
  * (next node, reputation deltas, choice locks) to WASM.
  */
 export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): ConversationEngine {
@@ -400,6 +360,9 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       if (next) return next;
       // Safe fallback (should be rare)
       return tsConversationEngine.applyChoice(prev, choice);
+    },
+    endTurn(prev) {
+      return tsConversationEngine.endTurn(prev);
     },
     getChoiceLockedFlags(state) {
       if (!state.currentDialogue) return null;

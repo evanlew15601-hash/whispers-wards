@@ -33,6 +33,24 @@ describe('pendingEncounter expiry semantics', () => {
 
     const start = tsConversationEngine.startNewGame();
 
+    // applyChoice should not run the simulation or apply expiry.
+    const expiringNow: SecondaryEncounter = {
+      id: 'enc-expiring-now',
+      kind: 'raid',
+      routeId: 'passcourier',
+      title: 'expiring-now',
+      description: 'expiring-now',
+      relatedFactions: ['iron-pact', 'verdant-court'],
+      expiresOnTurn: start.turnNumber,
+    };
+
+    const withExpiring = { ...start, pendingEncounter: expiringNow, rngSeed: 1 };
+    const firstChoice = withExpiring.currentDialogue!.choices[0];
+
+    const afterChoice = tsConversationEngine.applyChoice(withExpiring, firstChoice);
+    expect(afterChoice.pendingEncounter).toEqual(expiringNow);
+    expect(simulateWorldTurn).not.toHaveBeenCalled();
+
     const existing: SecondaryEncounter = {
       id: 'enc-existing',
       kind: 'raid',
@@ -40,22 +58,17 @@ describe('pendingEncounter expiry semantics', () => {
       title: 'existing',
       description: 'existing',
       relatedFactions: ['iron-pact', 'verdant-court'],
-      // Boundary: applyChoice increments turnNumber by 1.
+      // Boundary: endTurn increments turnNumber by 1.
       expiresOnTurn: start.turnNumber + 1,
     };
 
-    const choice = {
-      id: 'qa',
-      text: 'qa',
-      effects: [],
-      nextNodeId: null,
-    };
-
-    const next = tsConversationEngine.applyChoice({ ...start, pendingEncounter: existing, rngSeed: 1 }, choice);
+    const next = tsConversationEngine.endTurn({ ...start, pendingEncounter: existing, rngSeed: 1 });
+    expect(simulateWorldTurn).toHaveBeenCalledTimes(1);
     expect(next.pendingEncounter).toEqual(existing);
 
-    // Next step should expire the existing encounter (since expiresOnTurn < nextTurnNumber).
-    const next2 = tsConversationEngine.applyChoice({ ...next, pendingEncounter: existing, rngSeed: 1 }, choice);
+    // Next turn should expire the existing encounter (since expiresOnTurn < nextTurnNumber).
+    const next2 = tsConversationEngine.endTurn({ ...next, pendingEncounter: existing, rngSeed: 1 });
+    expect(simulateWorldTurn).toHaveBeenCalledTimes(2);
     expect(next2.pendingEncounter).toEqual(simPending);
 
     // Expiry should add a log entry and deterministic world consequences.

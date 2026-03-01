@@ -14,21 +14,47 @@ describe('tsConversationEngine', () => {
     expect(state.log[0]).toBe(TS_OPENING_LOG_LINE);
   });
 
-  it('applyChoice advances dialogue and increments turn', () => {
+  it('applyChoice advances dialogue without advancing the turn; endTurn advances the simulation', () => {
     const initial = tsConversationEngine.startNewGame();
 
     // Make deterministic for simulation output.
     const seeded = { ...initial, rngSeed: 123456789 };
 
     const choice = seeded.currentDialogue!.choices[0];
-    const next = tsConversationEngine.applyChoice(seeded, choice);
+    const afterChoice = tsConversationEngine.applyChoice(seeded, choice);
 
-    expect(next.turnNumber).toBe(seeded.turnNumber + 1);
-    expect(next.currentDialogue?.id).toBe('aldric-diplomatic');
-    expect(next.log.some(l => l.startsWith('> '))).toBe(true);
+    expect(afterChoice.turnNumber).toBe(seeded.turnNumber);
+    expect(afterChoice.stepNumber).toBe(seeded.stepNumber + 1);
+    expect(afterChoice.currentDialogue?.id).toBe('aldric-diplomatic');
+    expect(afterChoice.log.some(l => l.startsWith('> '))).toBe(true);
+
+    const drained = {
+      ...afterChoice,
+      management: {
+        ...afterChoice.management,
+        apRemaining: 0,
+        actionsTakenThisTurn: ['test-action'],
+      },
+    };
+
+    const afterTurn = tsConversationEngine.endTurn(drained);
+    expect(afterTurn.turnNumber).toBe(seeded.turnNumber + 1);
+    expect(afterTurn.stepNumber).toBe(seeded.stepNumber + 2);
+    expect(afterTurn.management.apRemaining).toBe(afterTurn.management.apMax);
+    expect(afterTurn.management.actionsTakenThisTurn).toEqual([]);
+    expect(afterTurn.log.some(l => l.startsWith('🌍 '))).toBe(true);
+
+    const routes = Object.values(afterTurn.world.tradeRoutes);
+    const openRoutes = routes.filter(r => r.status === 'open').length;
+    const blockedRoutes = routes.filter(r => r.status !== 'open').length;
+    const coinIncome = Math.max(0, 1 + openRoutes - blockedRoutes);
+    expect(afterTurn.resources.coin).toBe(drained.resources.coin + coinIncome);
+    expect(afterTurn.resources.influence).toBe(drained.resources.influence + 1);
+    expect(afterTurn.resources.supplies).toBe(drained.resources.supplies + 1);
+    expect(afterTurn.log.some(l => l.startsWith('💰 Income: '))).toBe(true);
   });
 
-  it('applyChoice triggers threshold events and logs secrets/world sim output', () => {
+  it('applyChoice triggers threshold events and logs secrets; world sim output is logged on endTurn', () => {
     const initial = tsConversationEngine.startNewGame();
 
     const seeded = { ...initial, rngSeed: 123456789 };
@@ -41,14 +67,17 @@ describe('tsConversationEngine', () => {
       revealsInfo: 'qa-secret',
     };
 
-    const next = tsConversationEngine.applyChoice(seeded, choice);
+    const afterChoice = tsConversationEngine.applyChoice(seeded, choice);
 
-    const ironAlliance = next.events.find(e => e.id === 'iron-pact-alliance');
+    const ironAlliance = afterChoice.events.find(e => e.id === 'iron-pact-alliance');
     expect(ironAlliance?.triggered).toBe(true);
 
-    expect(next.log.some(l => l.startsWith('⚡ Event: '))).toBe(true);
-    expect(next.log.some(l => l.startsWith('🔍 Secret learned: '))).toBe(true);
-    expect(next.log.some(l => l.startsWith('🌍 '))).toBe(true);
+    expect(afterChoice.log.some(l => l.startsWith('⚡ Event: '))).toBe(true);
+    expect(afterChoice.log.some(l => l.startsWith('🔍 Secret learned: '))).toBe(true);
+    expect(afterChoice.log.some(l => l.startsWith('🌍 '))).toBe(false);
+
+    const afterTurn = tsConversationEngine.endTurn(afterChoice);
+    expect(afterTurn.log.some(l => l.startsWith('🌍 '))).toBe(true);
   });
 
   it('dedupes knownSecrets while preserving insertion order', () => {
