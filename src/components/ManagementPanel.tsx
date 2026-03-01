@@ -21,7 +21,13 @@ const ManagementPanel = ({ state, onTakeAction, actionsEnabled = true }: Managem
 
   const chapter = getChapter(state.chapterId);
   const allowedPools = new Set([chapter.managementPoolId, chapter.projectPoolId]);
-  const availableActions = MANAGEMENT_ACTIONS.filter(a => allowedPools.has(a.poolId));
+
+  // Project actions (accelerate/pause/resume/cancel) are rendered in the Projects panel.
+  // Keep the general Actions list focused on non-project actions + project starts.
+  const availableActions = MANAGEMENT_ACTIONS.filter(a => allowedPools.has(a.poolId)).filter(a => {
+    if (a.category !== 'projects') return true;
+    return a.effects.some(e => e.kind === 'project:start');
+  });
 
   return (
     <div className="flex flex-col gap-4">
