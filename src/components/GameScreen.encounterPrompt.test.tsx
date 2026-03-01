@@ -4,7 +4,7 @@ import type { GameState, DialogueNode, SecondaryEncounter } from '@/game/types';
 import type { SaveSlotInfo } from '@/game/storage';
 
 // DialoguePanel does async text-wrapping work which can cause act() warnings.
-// Stub it out: these tests only care about the encounter controls in the Info panel.
+// Stub it out: these tests only care about hub/focus encounter controls.
 vi.mock('@/components/DialoguePanel', () => ({
   default: () => <div data-testid="dialogue-panel" />,
 }));
@@ -128,7 +128,7 @@ describe('GameScreen pending encounter controls', () => {
     convo.unmount();
   });
 
-  it('enables Address in the Info panel while in the hub', () => {
+  it('enables Address in the hub agenda while in the hub', () => {
     const enterPendingEncounter = vi.fn();
 
     renderScreen(

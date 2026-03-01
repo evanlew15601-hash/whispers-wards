@@ -61,6 +61,30 @@ export function useGameState() {
   const [state, setState] = useState<GameState>(() => engineRef.current.createInitialState());
   const [saveSlots, setSaveSlots] = useState<SaveSlotInfo[]>(() => listSaveSlots());
 
+  const suppressEncounterToastRef = useRef(false);
+  const lastEncounterToastIdRef = useRef<string | null>(null);
+  const didInitEncounterToastRef = useRef(false);
+
+  useEffect(() => {
+    if (!didInitEncounterToastRef.current) {
+      didInitEncounterToastRef.current = true;
+      lastEncounterToastIdRef.current = state.pendingEncounter?.id ?? null;
+      return;
+    }
+
+    if (suppressEncounterToastRef.current) {
+      suppressEncounterToastRef.current = false;
+      lastEncounterToastIdRef.current = state.pendingEncounter?.id ?? null;
+      return;
+    }
+
+    const pendingId = state.pendingEncounter?.id ?? null;
+    if (pendingId && pendingId !== lastEncounterToastIdRef.current && state.currentScene === 'game') {
+      toast.info(`New encounter pending: ${state.pendingEncounter?.title ?? 'Encounter'}`);
+    }
+    lastEncounterToastIdRef.current = pendingId;
+  }, [state.pendingEncounter?.id, state.pendingEncounter?.title, state.currentScene]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -214,6 +238,7 @@ export function useGameState() {
       currentScene: 'game',
     };
 
+    suppressEncounterToastRef.current = true;
     setState(hydrated);
     refreshSlots();
     toast.success(`Loaded Slot ${slotId}`);

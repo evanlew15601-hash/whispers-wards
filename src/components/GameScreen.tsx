@@ -10,6 +10,7 @@ import InfoPanel from '@/components/InfoPanel';
 import GameMenu from '@/components/GameMenu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { BUILD_ID } from '@/lib/buildInfo';
 import { getChapter } from '@/game/chapters';
 
@@ -72,12 +73,18 @@ const GameScreen = ({
   const isInHub = state.currentDialogue?.id === chapter.hubNodeId;
   const focusMode = !conversationEnded && !isInHub;
 
-  const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
-  const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue && isInHub);
+  const canAddressEncounter = Boolean(state.pendingEncounter && isInHub);
 
   const encounterTurnsLeft = state.pendingEncounter ? state.pendingEncounter.expiresOnTurn - state.turnNumber : null;
   const encounterBadgeVariant: 'default' | 'secondary' | 'destructive' =
     encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'destructive' : focusMode ? 'secondary' : 'default';
+
+  const concordButtonVariant: 'secondary' | 'destructive' =
+    encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'destructive' : 'secondary';
+
+  const scrollToManagement = () => {
+    document.getElementById('cc-management-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -163,19 +170,24 @@ const GameScreen = ({
           ) : !conversationEnded ? (
             <Button
               onClick={returnToHub}
-              variant="secondary"
+              variant={concordButtonVariant}
               className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
             >
               Concord Hall
             </Button>
           ) : null}
-          <span className="font-display text-xs text-muted-foreground">Envoy: {state.player.name}</span>
-          <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
-            Engine: {engineLabel}
-          </span>
-          <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/60 uppercase">
-            Build: {BUILD_ID}
-          </span>
+
+          {!focusMode && (
+            <>
+              <span className="font-display text-xs text-muted-foreground">Envoy: {state.player.name}</span>
+              <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
+                Engine: {engineLabel}
+              </span>
+              <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/60 uppercase">
+                Build: {BUILD_ID}
+              </span>
+            </>
+          )}
 
           <GameMenu
             slots={saveSlots}
@@ -196,7 +208,7 @@ const GameScreen = ({
       <div className={focusMode ? "mx-auto flex max-w-3xl flex-col gap-6 p-6" : "mx-auto flex max-w-7xl flex-col gap-6 p-6 lg:flex-row"}>
         {!focusMode && (
           <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-            <div className="flex flex-col gap-6">
+            <div id="cc-management-panel" className="flex flex-col gap-6">
               <ManagementPanel state={state} onTakeAction={takeManagementAction} actionsEnabled={isInHub} />
               <FactionPanel factions={state.factions} />
             </div>
@@ -225,17 +237,95 @@ const GameScreen = ({
               </div>
             </motion.div>
           ) : (
-            <DialoguePanel
-              node={state.currentDialogue!}
-              onChoice={makeChoice}
-              knownSecrets={state.knownSecrets}
-              factions={state.factions}
-              selectedChoiceIds={state.selectedChoiceIds}
-              playerName={state.player.name}
-              playerPortraitId={state.player.portraitId}
-              lockedChoices={choiceLockedFlags}
-              choiceUiHints={choiceUiHints}
-            />
+            <>
+              {isInHub && (state.pendingEncounter || state.management.apRemaining > 0) && (
+                <motion.div
+                  className="mb-4"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <Card className="parchment-border rounded-sm bg-card/40 shadow-none">
+                    <div className="flex flex-col gap-3 p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
+                            Agenda
+                          </div>
+
+                          {state.pendingEncounter ? (
+                            <>
+                              <div className="mt-1 font-display text-xs tracking-[0.2em] text-primary uppercase">
+                                Pending encounter
+                              </div>
+                              <div className="mt-1 text-sm text-card-foreground">
+                                {state.pendingEncounter.title}
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                {state.pendingEncounter.description}
+                              </div>
+                              <div
+                                className={`mt-2 text-[11px] ${
+                                  encounterTurnsLeft !== null && encounterTurnsLeft <= 1
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground'
+                                }`}
+                              >
+                                {encounterTurnsLeft !== null && encounterTurnsLeft >= 0
+                                  ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${state.pendingEncounter.expiresOnTurn})`
+                                  : `Expires on turn ${state.pendingEncounter.expiresOnTurn}`}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="mt-1 font-display text-xs tracking-[0.2em] text-primary uppercase">
+                                Actions available
+                              </div>
+                              <div className="mt-1 text-sm text-card-foreground">
+                                You have {state.management.apRemaining} AP remaining.
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                Spend AP in Management to advance projects and directives.
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-2">
+                          {state.pendingEncounter ? (
+                            <Button
+                              size="sm"
+                              variant={encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'destructive' : 'default'}
+                              onClick={enterPendingEncounter}
+                              disabled={!canAddressEncounter}
+                              title={!canAddressEncounter ? 'Already addressing this encounter' : undefined}
+                            >
+                              Address
+                            </Button>
+                          ) : state.management.apRemaining > 0 ? (
+                            <Button size="sm" variant="secondary" onClick={scrollToManagement}>
+                              Management
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+
+              <DialoguePanel
+                node={state.currentDialogue!}
+                onChoice={makeChoice}
+                knownSecrets={state.knownSecrets}
+                factions={state.factions}
+                selectedChoiceIds={state.selectedChoiceIds}
+                playerName={state.player.name}
+                playerPortraitId={state.player.portraitId}
+                lockedChoices={choiceLockedFlags}
+                choiceUiHints={choiceUiHints}
+              />
+            </>
           )}
         </main>
 
@@ -250,8 +340,6 @@ const GameScreen = ({
               factions={state.factions}
               pendingEncounter={state.pendingEncounter}
               player={state.player}
-              canAddressEncounter={canAddressEncounter}
-              onAddressEncounter={enterPendingEncounter}
             />
           </motion.aside>
         )}
