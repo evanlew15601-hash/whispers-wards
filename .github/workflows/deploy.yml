@@ -32,7 +32,11 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          BASE_PATH: ${{ github.event.repository.name == format('{0}.github.io', github.repository_owner) && '/' || format('/{0}/', github.event.repository.name) }}
+          # Build with a relative base (vite.config.ts defaults to "./" in production).
+          # This makes the output work on:
+          # - GitHub Pages project sites (/<repo>/)
+          # - user/org sites (/)
+          # - custom domains (/)
           SKIP_UQM_WASM: 1
 
       - name: Publish to gh-pages branch
