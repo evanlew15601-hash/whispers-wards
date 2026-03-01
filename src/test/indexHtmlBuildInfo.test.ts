@@ -13,4 +13,9 @@ describe('index.html metadata', () => {
     const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
     expect(html).toMatch(new RegExp(`<meta\\s+name=["']cc-build["']\\s+content=["']${BUILD_ID}["']\\s*\\/?\\s*>`));
   });
+
+  it('does not reference vendored howler script', () => {
+    const html = fs.readFileSync(path.join(process.cwd(), 'index.html'), 'utf8');
+    expect(html).not.toContain('/vendor/howler/howler.core.min.js');
+  });
 });
