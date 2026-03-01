@@ -98,7 +98,6 @@ async function main() {
     console.log('[uqm-wasm] SKIP_UQM_WASM set; skipping wasm build');
     return;
   }
-  }
 
   fs.mkdirSync(outDir, { recursive: true });
 
