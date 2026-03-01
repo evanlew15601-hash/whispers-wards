@@ -26,7 +26,15 @@ const ManagementPanel = ({ state, onTakeAction, actionsEnabled = true }: Managem
   // Keep the general Actions list focused on non-project actions + project starts.
   const availableActions = MANAGEMENT_ACTIONS.filter(a => allowedPools.has(a.poolId)).filter(a => {
     if (a.category !== 'projects') return true;
-    return a.effects.some(e => e.kind === 'project:start');
+
+    const start = a.effects.find(e => e.kind === 'project:start');
+    if (!start) return false;
+
+    // Hide project start actions when the project is already underway.
+    const alreadyUnderway = state.projects.some(
+      p => p.templateId === start.templateId && p.status !== 'cancelled' && p.status !== 'completed'
+    );
+    return !alreadyUnderway;
   });
 
   return (
