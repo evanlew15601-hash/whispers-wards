@@ -224,6 +224,14 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error(err);
-  process.exit(1);
+  const lifecycle = process.env.npm_lifecycle_event;
+  const strict = lifecycle === 'pretest' || lifecycle === 'test' || process.env.CI === 'true';
+
+  if (strict) {
+    console.error(err);
+    process.exit(1);
+  }
+
+  console.warn('[uqm-wasm] optional wasm build failed; continuing without wasm conversation core');
+  process.exit(0);
 });
