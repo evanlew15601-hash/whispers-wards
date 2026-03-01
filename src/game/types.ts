@@ -15,7 +15,7 @@ export interface DialogueChoice {
     factionId: string;
     reputationChange: number;
   }[];
-  nextNodeId: string | null; // null = end conversation
+  nextNodeId: string | null; // null = end scene (defaults to returning to the chapter hub)
 
   /**
    * Marks a mutually-exclusive decision group.

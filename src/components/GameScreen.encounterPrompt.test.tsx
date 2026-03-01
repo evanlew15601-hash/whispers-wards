@@ -4,7 +4,7 @@ import type { GameState, DialogueNode, SecondaryEncounter } from '@/game/types';
 import type { SaveSlotInfo } from '@/game/storage';
 
 // DialoguePanel does async text-wrapping work which can cause act() warnings.
-// Stub it out: these tests only care about the presence/behavior of the encounter prompt.
+// Stub it out: these tests only care about the encounter controls in the Info panel.
 vi.mock('@/components/DialoguePanel', () => ({
   default: () => <div data-testid="dialogue-panel" />,
 }));
@@ -106,6 +106,10 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
     />,
   );
 
+describe('GameScreen pending encounter controls', () => {
+  it('enables Address in the Info panel while in the hub', () => {
+    const enterPendingEncounter = vi.fn();
+
     renderScreen(
       {
         ...baseState,
@@ -115,42 +119,45 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
       enterPendingEncounter,
     );
 
-    const button = screen.getByRole('button', { name: /address encounter/i });
-    fireEvent.click(button);
+    const button = screen.getByRole('button', { name: /^address$/i });
+    expect(button).toBeEnabled();
 
+    fireEvent.click(button);
     expect(enterPendingEncounter).toHaveBeenCalledTimes(1);
   });
 
-  it('renders the Address encounter button outside the hub if a pending encounter exists', () => {
-    renderScreen({
-      ...baseState,
-      currentDialogue: otherDialogue,
-      pendingEncounter,
-    });
+  it('shows Address disabled outside the hub', () => {
+    const enterPendingEncounter = vi.fn();
 
-    expect(screen.getByRole('button', { name: /address encounter/i })).toBeInTheDocument();
-  });
-
-  it('does not render the Address encounter button without a pending encounter or within encounter dialogues', () => {
-    const cases: GameState[] = [
+    renderScreen(
       {
         ...baseState,
-        currentDialogue: hubDialogue,
-        pendingEncounter: null,
+        currentDialogue: otherDialogue,
+        pendingEncounter,
       },
+      enterPendingEncounter,
+    );
+
+    const button = screen.getByRole('button', { name: /^address$/i });
+    expect(button).toBeDisabled();
+
+    fireEvent.click(button);
+    expect(enterPendingEncounter).not.toHaveBeenCalled();
+  });
+
+  it('shows Address disabled while already in an encounter dialogue', () => {
+    const enterPendingEncounter = vi.fn();
+
+    renderScreen(
       {
         ...baseState,
         currentDialogue: encounterDialogue,
         pendingEncounter,
       },
-    ];
+      enterPendingEncounter,
+    );
 
-    for (const testState of cases) {
-      const { unmount } = renderScreen(testState);
-
-      expect(screen.queryByRole('button', { name: /address encounter/i })).not.toBeInTheDocument();
-
-      unmount();
-    }
+    const button = screen.getByRole('button', { name: /^address$/i });
+    expect(button).toBeDisabled();
   });
 });

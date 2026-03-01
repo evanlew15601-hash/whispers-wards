@@ -10,6 +10,7 @@ import InfoPanel from '@/components/InfoPanel';
 import GameMenu from '@/components/GameMenu';
 import { Button } from '@/components/ui/button';
 import { BUILD_ID } from '@/lib/buildInfo';
+import { getChapter } from '@/game/chapters';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -66,9 +67,11 @@ const GameScreen = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
 
+  const chapter = getChapter(state.chapterId);
+  const isInHub = state.currentDialogue?.id === chapter.hubNodeId;
+
   const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
-  const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue);
-  const shouldShowEncounterPrompt = canAddressEncounter;
+  const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue && isInHub);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -155,7 +158,7 @@ const GameScreen = ({
       <div className="mx-auto flex max-w-7xl flex-col gap-6 p-6 lg:flex-row">
         <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
           <div className="flex flex-col gap-6">
-            <ManagementPanel state={state} onTakeAction={takeManagementAction} />
+            <ManagementPanel state={state} onTakeAction={takeManagementAction} actionsEnabled={isInHub} />
             <FactionPanel factions={state.factions} />
           </div>
         </motion.aside>
@@ -182,31 +185,19 @@ const GameScreen = ({
               </div>
             </motion.div>
           ) : (
-            <>
-              {shouldShowEncounterPrompt && (
-                <div className="parchment-border mb-4 flex items-center justify-between gap-4 rounded-sm bg-card p-4">
-                  <div>
-                    <div className="font-display text-xs tracking-[0.2em] text-primary uppercase">Pending encounter</div>
-                    <div className="mt-1 text-sm text-card-foreground">An encounter awaits your attention.</div>
-                  </div>
-                  <Button onClick={enterPendingEncounter} className="font-display tracking-[0.18em] uppercase">
-                    Address encounter
-                  </Button>
-                </div>
-              )}
-
-              <DialoguePanel
-                node={state.currentDialogue!}
-                onChoice={makeChoice}
-                knownSecrets={state.knownSecrets}
-                factions={state.factions}
-                selectedChoiceIds={state.selectedChoiceIds}
-                playerName={state.player.name}
-                playerPortraitId={state.player.portraitId}
-                lockedChoices={choiceLockedFlags}
-                choiceUiHints={choiceUiHints}
-              />
-            </>
+            <DialoguePanel
+              node={state.currentDialogue!}
+              onChoice={makeChoice}
+              knownSecrets={state.knownSecrets}
+              factions={state.factions}
+              selectedChoiceIds={state.selectedChoiceIds}
+              playerName={state.player.name}
+              playerPortraitId={state.player.portraitId}
+              lockedChoices={choiceLockedFlags}
+              choiceUiHints={choiceUiHints}
+              showReturnToHub={!isInHub}
+              onReturnToHub={returnToHub}
+            />
           )}
         </main>
 
