@@ -9,6 +9,7 @@ import FactionPanel from '@/components/FactionPanel';
 import InfoPanel from '@/components/InfoPanel';
 import GameMenu from '@/components/GameMenu';
 import { Button } from '@/components/ui/button';
+import { BUILD_ID } from '@/lib/buildInfo';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -25,6 +26,7 @@ interface GameScreenProps {
   deleteSlot: (slotId: number) => void;
   exitToTitle: () => void;
   enterPendingEncounter: () => void;
+  returnToHub: () => void;
   choiceLockedFlags: boolean[] | null;
   choiceUiHints: ChoiceUiHint[] | null;
 }
@@ -54,6 +56,7 @@ const GameScreen = ({
   deleteSlot,
   exitToTitle,
   enterPendingEncounter,
+  returnToHub,
   choiceLockedFlags,
   choiceUiHints,
 }: GameScreenProps) => {
@@ -64,8 +67,8 @@ const GameScreen = ({
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
 
   const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
-  const canAddressEncounter = state.currentDialogue?.id === 'concord-hub';
-  const shouldShowEncounterPrompt = Boolean(state.pendingEncounter && canAddressEncounter && !isEncounterDialogue);
+  const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue);
+  const shouldShowEncounterPrompt = canAddressEncounter;
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -129,6 +132,9 @@ const GameScreen = ({
           <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
             Engine: {engineLabel}
           </span>
+          <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/60 uppercase">
+            Build: {BUILD_ID}
+          </span>
 
           <GameMenu
             slots={saveSlots}
@@ -159,13 +165,21 @@ const GameScreen = ({
             <motion.div className="flex flex-col items-center justify-center gap-6 py-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <p className="font-display text-lg text-muted-foreground text-center">The conversation has reached its conclusion.</p>
               <p className="font-body text-sm italic text-muted-foreground/60 text-center max-w-md">Your choices have shaped the realm's future. The factions remember.</p>
-              <Button
-                onClick={resetGame}
-                variant="outline"
-                className="h-auto rounded-sm border-primary/30 px-6 py-2 font-display text-sm tracking-[0.2em] text-primary transition-colors hover:border-primary/60 hover:text-gold-glow"
-              >
-                Begin Again
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  onClick={returnToHub}
+                  className="h-auto rounded-sm px-6 py-2 font-display text-sm tracking-[0.2em] uppercase"
+                >
+                  Return to Concord Hall
+                </Button>
+                <Button
+                  onClick={resetGame}
+                  variant="outline"
+                  className="h-auto rounded-sm border-primary/30 px-6 py-2 font-display text-sm tracking-[0.2em] text-primary transition-colors hover:border-primary/60 hover:text-gold-glow"
+                >
+                  Begin Again
+                </Button>
+              </div>
             </motion.div>
           ) : (
             <>

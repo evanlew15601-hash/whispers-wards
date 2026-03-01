@@ -5,6 +5,7 @@ import { loadUqmWasmRuntime } from '@/game/engine/uqmWasmRuntime';
 import { Button } from '@/components/ui/button';
 import { useAmbience } from '@/audio/useAmbience';
 import type { SaveSlotInfo } from '@/game/storage';
+import { BUILD_ID } from '@/lib/buildInfo';
 
 interface TitleScreenProps {
   onStart: () => void;
@@ -77,6 +78,10 @@ const TitleScreen = ({ onStart, onLoad, slots = [], onContinue }: TitleScreenPro
         >
           ⚜
         </motion.div>
+
+        <div className="font-display text-[10px] tracking-[0.25em] text-muted-foreground/80 uppercase">
+          Build {BUILD_ID}
+        </div>
 
         <motion.h1
           className="font-display text-5xl font-bold tracking-widest gold-text-gradient sm:text-7xl md:text-8xl"

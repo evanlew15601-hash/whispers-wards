@@ -9,13 +9,20 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const baseUrl = import.meta.env.BASE_URL;
+// Vite sets BASE_URL to:
+// - "/" on root deploys
+// - "/<repo>/" on GitHub Pages project sites
+// - "./" when using a relative base
+const basename = baseUrl.startsWith('/') ? baseUrl.replace(/\/$/, '') : '';
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AudioProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter basename={basename}>
           <Routes>
             <Route path="/" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

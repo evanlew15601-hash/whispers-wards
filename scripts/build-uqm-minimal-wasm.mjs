@@ -12,6 +12,7 @@ const srcC = path.join(root, 'third_party', 'uqm', 'minimal_wasm', 'uqm_min.c');
 const srcWat = path.join(root, 'third_party', 'uqm', 'minimal_wasm', 'uqm_min.wat');
 const outDir = path.join(root, 'public', 'wasm');
 const outWasm = path.join(outDir, 'uqm_minimal.wasm');
+const outAvailability = path.join(outDir, 'uqm_minimal.available.json');
 
 function tryRun(cmd, args) {
   const res = spawnSync(cmd, args, {
@@ -55,7 +56,7 @@ function validateWasm(bytes) {
     const memory = exp.memory ?? exp.wasmMemory ?? exp._memory;
     if (!(memory instanceof WebAssembly.Memory)) return false;
 
-    const ok = (names) => names.some((n) => n in exp && typeof exp[n] === 'function');
+    const ok = names => names.some(n => n in exp && typeof exp[n] === 'function');
 
     if (!ok(['uqm_alloc', '_uqm_alloc'])) return false;
     if (!ok(['uqm_version_ptr', 'uqm_version', '_uqm_version_ptr', '_uqm_version'])) return false;
@@ -92,138 +93,177 @@ function validateWasm(bytes) {
   }
 }
 
-fs.mkdirSync(outDir, { recursive: true });
+async function main() {
+  const skip = String(process.env.SKIP_UQM_WASM ?? '').toLowerCase();
 
-try {
+  fs.mkdirSync(outDir, { recursive: true });
 
-// Skip if output is newer than sources (but still validate it).
-try {
-  const outStat = fs.statSync(outWasm);
-  const newestSrc = newestMtimeMs([srcC, srcWat, __filename]);
-  if (outStat.mtimeMs >= newestSrc) {
-    try {
-      const bytes = fs.readFileSync(outWasm);
-      if (validateWasm(bytes)) {
-        console.log(`[uqm-wasm] up-to-date: ${path.relative(root, outWasm)}`);
-        process.exit(0);
+  const writeAvailability = available => {
+    fs.writeFileSync(outAvailability, `${JSON.stringify({ available }, null, 2)}\n`);
+  };
+
+  if (skip === '1' || skip === 'true' || skip === 'yes') {
+    console.log('[uqm-wasm] SKIP_UQM_WASM set; skipping wasm build');
+    writeAvailability(false);
+    return;
+  }
+
+  // Skip if output is newer than sources (but still validate it).
+  try {
+    const outStat = fs.statSync(outWasm);
+    const newestSrc = newestMtimeMs([srcC, srcWat, __filename]);
+    if (outStat.mtimeMs >= newestSrc) {
+      try {
+        const bytes = fs.readFileSync(outWasm);
+        if (validateWasm(bytes)) {
+          writeAvailability(true);
+          console.log(`[uqm-wasm] up-to-date: ${path.relative(root, outWasm)}`);
+          process.exit(0);
+        }
+      } catch {
+        // fall through and rebuild
       }
-    } catch {
-      // fall through and rebuild
+    }
+  } catch {
+    // continue
+  }
+
+  let built = false;
+
+  // Prefer native toolchains if present.
+  const clangCandidates = ['clang', 'clang-18', 'clang-17', 'clang-16'];
+  for (const clang of clangCandidates) {
+    if (!commandExists(clang)) continue;
+
+    console.log(`[uqm-wasm] trying toolchain: ${clang} (wasm32-unknown-unknown)`);
+    built = tryRun(clang, [
+      '--target=wasm32-unknown-unknown',
+      '-O3',
+      '-nostdlib',
+      '-Wl,--no-entry',
+      '-Wl,--export=uqm_alloc',
+      '-Wl,--export=uqm_version_ptr',
+      '-Wl,--export=uqm_version_len',
+      '-Wl,--export=uqm_line_fit_chars',
+      '-Wl,--export=uqm_conv_reset',
+      '-Wl,--export=uqm_conv_set_graph',
+      '-Wl,--export=uqm_conv_set_graph_blob',
+      '-Wl,--export=uqm_conv_get_current_node',
+      '-Wl,--export=uqm_conv_get_rep',
+      '-Wl,--export=uqm_conv_get_secrets',
+      '-Wl,--export=uqm_conv_get_secrets_lo',
+      '-Wl,--export=uqm_conv_get_secrets_hi',
+      '-Wl,--export=uqm_conv_reset64',
+      '-Wl,--export=uqm_conv_get_choice_count',
+      '-Wl,--export=uqm_conv_choice_is_locked',
+      '-Wl,--export=uqm_conv_get_locked_choices_lo',
+      '-Wl,--export=uqm_conv_get_locked_choices_hi',
+      '-Wl,--export=uqm_conv_choose',
+      '-Wl,--export=uqm_conv_choose_force',
+      '-Wl,--export=uqm_conv_choice_get_req_faction',
+      '-Wl,--export=uqm_conv_choice_get_req_min',
+      '-Wl,--export=uqm_conv_choice_get_d0',
+      '-Wl,--export=uqm_conv_choice_get_d1',
+      '-Wl,--export=uqm_conv_choice_get_d2',
+      '-Wl,--export=uqm_conv_choice_get_reveal_lo',
+      '-Wl,--export=uqm_conv_choice_get_reveal_hi',
+      '-Wl,--export-memory',
+      '-Wl,--strip-all',
+      '-o',
+      outWasm,
+      srcC,
+    ]);
+
+    if (built) {
+      try {
+        const bytes = fs.readFileSync(outWasm);
+        built = validateWasm(bytes);
+      } catch {
+        built = false;
+      }
+    }
+
+    if (built) break;
+  }
+
+  if (!built && commandExists('emcc')) {
+    console.log('[uqm-wasm] clang wasm build failed; trying toolchain: emcc');
+
+    built = tryRun('emcc', [
+      srcC,
+      '-O3',
+      '-s',
+      'STANDALONE_WASM=1',
+      '-s',
+      'ERROR_ON_UNDEFINED_SYMBOLS=1',
+      '-s',
+      'EXPORTED_FUNCTIONS=["_uqm_alloc","_uqm_version_ptr","_uqm_version_len","_uqm_line_fit_chars","_uqm_conv_reset","_uqm_conv_reset64","_uqm_conv_set_graph","_uqm_conv_set_graph_blob","_uqm_conv_get_current_node","_uqm_conv_get_rep","_uqm_conv_get_secrets","_uqm_conv_get_secrets_lo","_uqm_conv_get_secrets_hi","_uqm_conv_get_choice_count","_uqm_conv_choice_is_locked","_uqm_conv_get_locked_choices_lo","_uqm_conv_get_locked_choices_hi","_uqm_conv_choose","_uqm_conv_choose_force","_uqm_conv_choice_get_req_faction","_uqm_conv_choice_get_req_min","_uqm_conv_choice_get_d0","_uqm_conv_choice_get_d1","_uqm_conv_choice_get_d2","_uqm_conv_choice_get_reveal_lo","_uqm_conv_choice_get_reveal_hi"]',
+      '-Wl,--export-memory',
+      '-o',
+      outWasm,
+    ]);
+
+    if (built) {
+      try {
+        const bytes = fs.readFileSync(outWasm);
+        built = validateWasm(bytes);
+      } catch {
+        built = false;
+      }
     }
   }
-} catch {
-  // continue
+
+  // Guaranteed fallback: compile WAT via wabt (no system compiler required).
+  if (!built) {
+    console.log('[uqm-wasm] no native toolchain available; compiling WAT via wabt');
+
+    const wabtModule = await import('wabt');
+    const wabtFactory = wabtModule.default ?? wabtModule;
+    const wabt = await wabtFactory();
+
+    const watSource = fs.readFileSync(srcWat, 'utf8');
+    const parsed = wabt.parseWat(srcWat, watSource, { features: { mutable_globals: true } });
+    const { buffer } = parsed.toBinary({ log: false, write_debug_names: false });
+
+    const bytes = Buffer.from(buffer);
+    if (!validateWasm(bytes)) {
+      throw new Error('[uqm-wasm] WAT compilation produced an invalid wasm module');
+    }
+
+    fs.writeFileSync(outWasm, bytes);
+    built = true;
+  }
+
+  writeAvailability(true);
+  console.log(`[uqm-wasm] wrote ${path.relative(root, outWasm)}`);
 }
 
-let built = false;
+main().catch(err => {
+  const lifecycle = process.env.npm_lifecycle_event;
+  const strict = lifecycle === 'pretest' || lifecycle === 'test' || process.env.CI === 'true';
 
-// Prefer native toolchains if present.
-const clangCandidates = ['clang', 'clang-18', 'clang-17', 'clang-16'];
-for (const clang of clangCandidates) {
-  if (!commandExists(clang)) continue;
+  try {
+    fs.mkdirSync(outDir, { recursive: true });
 
-  console.log(`[uqm-wasm] trying toolchain: ${clang} (wasm32-unknown-unknown)`);
-  built = tryRun(clang, [
-    '--target=wasm32-unknown-unknown',
-    '-O3',
-    '-nostdlib',
-    '-Wl,--no-entry',
-    '-Wl,--export=uqm_alloc',
-    '-Wl,--export=uqm_version_ptr',
-    '-Wl,--export=uqm_version_len',
-    '-Wl,--export=uqm_line_fit_chars',
-    '-Wl,--export=uqm_conv_reset',
-    '-Wl,--export=uqm_conv_set_graph',
-    '-Wl,--export=uqm_conv_set_graph_blob',
-    '-Wl,--export=uqm_conv_get_current_node',
-    '-Wl,--export=uqm_conv_get_rep',
-    '-Wl,--export=uqm_conv_get_secrets',
-    '-Wl,--export=uqm_conv_get_secrets_lo',
-    '-Wl,--export=uqm_conv_get_secrets_hi',
-    '-Wl,--export=uqm_conv_reset64',
-    '-Wl,--export=uqm_conv_get_choice_count',
-    '-Wl,--export=uqm_conv_choice_is_locked',
-    '-Wl,--export=uqm_conv_get_locked_choices_lo',
-    '-Wl,--export=uqm_conv_get_locked_choices_hi',
-    '-Wl,--export=uqm_conv_choose',
-    '-Wl,--export=uqm_conv_choose_force',
-    '-Wl,--export=uqm_conv_choice_get_req_faction',
-    '-Wl,--export=uqm_conv_choice_get_req_min',
-    '-Wl,--export=uqm_conv_choice_get_d0',
-    '-Wl,--export=uqm_conv_choice_get_d1',
-    '-Wl,--export=uqm_conv_choice_get_d2',
-    '-Wl,--export=uqm_conv_choice_get_reveal_lo',
-    '-Wl,--export=uqm_conv_choice_get_reveal_hi',
-    '-Wl,--export-memory',
-    '-Wl,--strip-all',
-    '-o',
-    outWasm,
-    srcC,
-  ]);
-
-  if (built) {
+    let available = false;
     try {
       const bytes = fs.readFileSync(outWasm);
-      built = validateWasm(bytes);
+      available = validateWasm(bytes);
     } catch {
-      built = false;
+      available = false;
     }
+
+    fs.writeFileSync(outAvailability, `${JSON.stringify({ available }, null, 2)}\n`);
+  } catch {
+    // ignore
   }
 
-  if (built) break;
-}
-
-if (!built && commandExists('emcc')) {
-  console.log('[uqm-wasm] clang wasm build failed; trying toolchain: emcc');
-
-  built = tryRun('emcc', [
-    srcC,
-    '-O3',
-    '-s',
-    'STANDALONE_WASM=1',
-    '-s',
-    'ERROR_ON_UNDEFINED_SYMBOLS=1',
-    '-s',
-    'EXPORTED_FUNCTIONS=["_uqm_alloc","_uqm_version_ptr","_uqm_version_len","_uqm_line_fit_chars","_uqm_conv_reset","_uqm_conv_reset64","_uqm_conv_set_graph","_uqm_conv_set_graph_blob","_uqm_conv_get_current_node","_uqm_conv_get_rep","_uqm_conv_get_secrets","_uqm_conv_get_secrets_lo","_uqm_conv_get_secrets_hi","_uqm_conv_get_choice_count","_uqm_conv_choice_is_locked","_uqm_conv_get_locked_choices_lo","_uqm_conv_get_locked_choices_hi","_uqm_conv_choose","_uqm_conv_choose_force","_uqm_conv_choice_get_req_faction","_uqm_conv_choice_get_req_min","_uqm_conv_choice_get_d0","_uqm_conv_choice_get_d1","_uqm_conv_choice_get_d2","_uqm_conv_choice_get_reveal_lo","_uqm_conv_choice_get_reveal_hi"]',
-    '-Wl,--export-memory',
-    '-o',
-    outWasm,
-  ]);
-
-  if (built) {
-    try {
-      const bytes = fs.readFileSync(outWasm);
-      built = validateWasm(bytes);
-    } catch {
-      built = false;
-    }
-  }
-}
-
-// Guaranteed fallback: compile WAT via wabt (no system compiler required).
-if (!built) {
-  console.log('[uqm-wasm] no native toolchain available; compiling WAT via wabt');
-
-  const wabtModule = await import('wabt');
-  const wabtFactory = wabtModule.default ?? wabtModule;
-  const wabt = await wabtFactory();
-
-  const watSource = fs.readFileSync(srcWat, 'utf8');
-  const parsed = wabt.parseWat(srcWat, watSource, { features: { mutable_globals: true } });
-  const { buffer } = parsed.toBinary({ log: false, write_debug_names: false });
-
-  const bytes = Buffer.from(buffer);
-  if (!validateWasm(bytes)) {
-    throw new Error('[uqm-wasm] WAT compilation produced an invalid wasm module');
+  if (strict) {
+    console.error(err);
+    process.exit(1);
   }
 
-  fs.writeFileSync(outWasm, bytes);
-  built = true;
-}
-
-console.log(`[uqm-wasm] wrote ${path.relative(root, outWasm)}`);
-
-} catch (err) {
-  console.warn(`[uqm-wasm] WASM build failed (non-fatal): ${err?.message ?? err}`);
-  console.warn('[uqm-wasm] The app will use the TypeScript conversation engine fallback.');
-}
+  console.warn('[uqm-wasm] optional wasm build failed; continuing without wasm conversation core');
+  console.warn(err instanceof Error ? err.message : String(err));
+  process.exit(0);
+});

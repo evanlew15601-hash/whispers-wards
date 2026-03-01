@@ -193,12 +193,24 @@ function getExports(instance: WebAssembly.Instance): UqmWasmExports {
 }
 
 async function instantiateUqmWasm(): Promise<UqmWasmRuntime> {
-  const wasmUrl = `${import.meta.env.BASE_URL}wasm/uqm_minimal.wasm`;
+  const baseUrl = import.meta.env.BASE_URL;
+  const availabilityUrl = `${baseUrl}wasm/uqm_minimal.available.json`;
+  const wasmUrl = `${baseUrl}wasm/uqm_minimal.wasm`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_LOAD_TIMEOUT_MS);
 
   try {
+    const availabilityRes = await fetch(availabilityUrl, { signal: controller.signal });
+    if (!availabilityRes.ok) {
+      throw new Error('UQM wasm not available');
+    }
+
+    const availability = (await availabilityRes.json().catch(() => null)) as { available?: boolean } | null;
+    if (!availability?.available) {
+      throw new Error('UQM wasm not available');
+    }
+
     const response = await fetch(wasmUrl, { signal: controller.signal });
     if (!response.ok) {
       throw new Error(`Failed to load UQM wasm: ${response.status} ${response.statusText}`);

@@ -157,7 +157,7 @@ const InfoPanel = (
                   variant={canAddressEncounter ? 'default' : 'secondary'}
                   disabled={!canAddressEncounter}
                   onClick={onAddressEncounter}
-                  title={canAddressEncounter ? 'Address this encounter' : 'Return to the Concord Hall hub to address this encounter'}
+                  title={canAddressEncounter ? 'Address this encounter' : 'Already addressing this encounter'}
                 >
                   Address
                 </Button>
