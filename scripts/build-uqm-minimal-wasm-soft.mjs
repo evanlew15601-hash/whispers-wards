@@ -9,13 +9,16 @@ const root = path.resolve(__dirname, '..');
 
 const res = spawnSync(process.execPath, [path.join('scripts', 'build-uqm-minimal-wasm.mjs')], {
   cwd: root,
-  stdio: 'inherit',
+  stdio: ['ignore', 'pipe', 'pipe'],
   env: process.env,
+  encoding: 'utf8',
 });
 
 if (res.status === 0) {
+  if (res.stdout) process.stdout.write(res.stdout);
+  if (res.stderr) process.stderr.write(res.stderr);
   process.exit(0);
 }
 
-console.warn('[uqm-wasm] non-fatal: wasm build failed; continuing without wasm conversation core');
+console.warn('[uqm-wasm] optional wasm build failed; continuing without wasm conversation core');
 process.exit(0);
