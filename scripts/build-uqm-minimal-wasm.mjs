@@ -93,6 +93,13 @@ function validateWasm(bytes) {
 }
 
 async function main() {
+  const skip = String(process.env.SKIP_UQM_WASM ?? '').toLowerCase();
+  if (skip === '1' || skip === 'true' || skip === 'yes') {
+    console.log('[uqm-wasm] SKIP_UQM_WASM set; skipping wasm build');
+    return;
+  }
+  }
+
   fs.mkdirSync(outDir, { recursive: true });
 
   // Skip if output is newer than sources (but still validate it).
