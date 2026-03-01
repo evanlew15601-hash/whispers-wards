@@ -32,7 +32,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          BASE_PATH: ${{ github.event.repository.name == format('{0}.github.io', github.repository_owner) && '/' || format('/{0}/', github.event.repository.name) }}
+          BASE_PATH: ${{ toLower(github.event.repository.name) == format('{0}.github.io', toLower(github.repository_owner)) && '/' || format('/{0}/', github.event.repository.name) }}
           SKIP_UQM_WASM: 1
 
       - name: Publish to gh-pages branch
@@ -41,3 +41,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dist
           force_orphan: true
+          enable_jekyll: false
