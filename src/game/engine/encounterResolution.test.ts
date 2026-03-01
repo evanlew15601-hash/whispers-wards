@@ -12,6 +12,10 @@ const setTensionPair = (world: WorldState, a: string, b: string, value: number) 
   world.tensions[b][a] = value;
 };
 
+const repById = (state: GameState, factionId: string) => {
+  return state.factions.find(f => f.id === factionId)?.reputation ?? 0;
+};
+
 const createBaseState = (world: WorldState, encounter: SecondaryEncounter): GameState => {
   const base = tsConversationEngine.createInitialState();
   const encounterNode = buildEncounterDialogueNode(encounter);
@@ -53,6 +57,9 @@ describe('encounter resolution (engine integration)', () => {
 
     for (const choice of node.choices) {
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
+      const baseRepA = repById(start, a);
+      const baseRepB = repById(start, b);
+
       const next = tsConversationEngine.applyChoice(start, choice);
 
       expect(next.pendingEncounter).toBeNull();
@@ -68,16 +75,22 @@ describe('encounter resolution (engine integration)', () => {
         expect(route.embargoedBy).toBeUndefined();
         expect(route.untilTurn).toBeUndefined();
         expect(tension).toBe(38);
+        expect(repById(next, a)).toBe(baseRepA - 2);
+        expect(repById(next, b)).toBe(baseRepB + 2);
       } else if (resolution === 'embargo-compromise') {
         expect(route.status).toBe('open');
         expect(route.embargoedBy).toBeUndefined();
         expect(route.untilTurn).toBeUndefined();
         expect(tension).toBe(45);
+        expect(repById(next, a)).toBe(baseRepA + 1);
+        expect(repById(next, b)).toBe(baseRepB + 1);
       } else if (resolution === 'embargo-extend') {
         expect(route.status).toBe('embargoed');
         expect(route.embargoedBy).toBe(a);
         expect(route.untilTurn).toBe(13);
         expect(tension).toBe(58);
+        expect(repById(next, a)).toBe(baseRepA + 2);
+        expect(repById(next, b)).toBe(baseRepB - 2);
       } else {
         throw new Error(`unexpected resolution: ${resolution}`);
       }
@@ -107,6 +120,9 @@ describe('encounter resolution (engine integration)', () => {
 
     for (const choice of node.choices) {
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
+      const baseRepA = repById(start, a);
+      const baseRepB = repById(start, b);
+
       const next = tsConversationEngine.applyChoice(start, choice);
 
       expect(next.pendingEncounter).toBeNull();
@@ -121,14 +137,20 @@ describe('encounter resolution (engine integration)', () => {
         expect(route.status).toBe('open');
         expect(route.untilTurn).toBeUndefined();
         expect(tension).toBe(40);
+        expect(repById(next, a)).toBe(baseRepA + 1);
+        expect(repById(next, b)).toBe(baseRepB + 1);
       } else if (resolution === 'raid-compensate') {
         expect(route.status).toBe('open');
         expect(route.untilTurn).toBeUndefined();
         expect(tension).toBe(46);
+        expect(repById(next, a)).toBe(baseRepA - 1);
+        expect(repById(next, b)).toBe(baseRepB + 2);
       } else if (resolution === 'raid-retaliate') {
         expect(route.status).toBe('raided');
         expect(route.untilTurn).toBe(12);
         expect(tension).toBe(60);
+        expect(repById(next, a)).toBe(baseRepA - 2);
+        expect(repById(next, b)).toBe(baseRepB + 2);
       } else {
         throw new Error(`unexpected resolution: ${resolution}`);
       }
@@ -158,6 +180,9 @@ describe('encounter resolution (engine integration)', () => {
 
     for (const choice of node.choices) {
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
+      const baseRepA = repById(start, a);
+      const baseRepB = repById(start, b);
+
       const next = tsConversationEngine.applyChoice(start, choice);
 
       expect(next.pendingEncounter).toBeNull();
@@ -172,14 +197,20 @@ describe('encounter resolution (engine integration)', () => {
         expect(region.contested).toBe(false);
         expect(region.control).toBe('neutral');
         expect(tension).toBe(42);
+        expect(repById(next, a)).toBe(baseRepA + 1);
+        expect(repById(next, b)).toBe(baseRepB + 1);
       } else if (resolution === 'skirmish-back-a') {
         expect(region.contested).toBe(false);
         expect(region.control).toBe(a);
         expect(tension).toBe(56);
+        expect(repById(next, a)).toBe(baseRepA + 2);
+        expect(repById(next, b)).toBe(baseRepB - 2);
       } else if (resolution === 'skirmish-back-b') {
         expect(region.contested).toBe(false);
         expect(region.control).toBe(b);
         expect(tension).toBe(56);
+        expect(repById(next, a)).toBe(baseRepA - 2);
+        expect(repById(next, b)).toBe(baseRepB + 2);
       } else {
         throw new Error(`unexpected resolution: ${resolution}`);
       }
@@ -206,6 +237,9 @@ describe('encounter resolution (engine integration)', () => {
 
     for (const choice of node.choices) {
       const start = createBaseState(JSON.parse(JSON.stringify(baseWorld)) as WorldState, encounter);
+      const baseRepA = repById(start, a);
+      const baseRepB = repById(start, b);
+
       const next = tsConversationEngine.applyChoice(start, choice);
 
       expect(next.pendingEncounter).toBeNull();
@@ -217,10 +251,16 @@ describe('encounter resolution (engine integration)', () => {
 
       if (resolution === 'summit-accord') {
         expect(tension).toBe(35);
+        expect(repById(next, a)).toBe(baseRepA + 2);
+        expect(repById(next, b)).toBe(baseRepB + 2);
       } else if (resolution === 'summit-slight-a') {
         expect(tension).toBe(60);
+        expect(repById(next, a)).toBe(baseRepA - 2);
+        expect(repById(next, b)).toBe(baseRepB + 2);
       } else if (resolution === 'summit-slight-b') {
         expect(tension).toBe(60);
+        expect(repById(next, a)).toBe(baseRepA + 2);
+        expect(repById(next, b)).toBe(baseRepB - 2);
       } else {
         throw new Error(`unexpected resolution: ${resolution}`);
       }

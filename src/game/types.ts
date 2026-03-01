@@ -16,6 +16,15 @@ export interface DialogueChoice {
     reputationChange: number;
   }[];
   nextNodeId: string | null; // null = end conversation
+
+  /**
+   * Marks a mutually-exclusive decision group.
+   *
+   * If the player has previously selected a different choice in the same group,
+   * this choice becomes locked on revisit.
+   */
+  exclusiveGroup?: string;
+
   requiredReputation?: { factionId: string; min: number };
   requiresAllSecrets?: string[];
   requiresAnySecrets?: string[];
@@ -74,6 +83,11 @@ export interface WorldState {
     lastOfferTurn: Record<string, number>;
     lastEmbargoTurn: Record<string, number>;
   };
+  /** Optional for backward compatibility with older saves. */
+  encounterMemory?: {
+    lastSeenTurnByTemplateId: Record<string, number>;
+    seenThisChapter: Record<string, boolean>;
+  };
 }
 
 export type SecondaryEncounterKind = 'embargo' | 'raid' | 'skirmish' | 'summit';
@@ -98,6 +112,16 @@ export interface PlayerProfile {
   portraitId: string;
 }
 
+export interface ProjectInstance {
+  id: string;
+  templateId: string;
+  title: string;
+  description: string;
+  status: 'active' | 'paused' | 'completed' | 'cancelled';
+  startedTurn: number;
+  remainingTurns: number;
+}
+
 export interface GameState {
   currentScene: 'title' | 'load' | 'create' | 'game';
   player: PlayerProfile;
@@ -107,7 +131,32 @@ export interface GameState {
   knownSecrets: string[];
   /** Choice ids previously selected, used to prevent re-applying non-repeatable reputation effects. */
   selectedChoiceIds: string[];
+
+  /**
+   * Increments for every player interaction (dialogue choices, end-turn, management actions).
+   * Useful for deterministic ordering and debugging.
+   */
+  stepNumber: number;
+
+  /** Advances only when the player ends the turn (world simulation tick). */
   turnNumber: number;
+
+  chapterId: string;
+  chapterTurn: number;
+  milestones: string[];
+
+  resources: Record<'coin' | 'influence' | 'supplies' | 'intel', number>;
+
+  projects: ProjectInstance[];
+
+  management: {
+    apMax: number;
+    apRemaining: number;
+    actionsTakenThisTurn: string[];
+    lastUsedTurnByActionId: Record<string, number>;
+    usedThisChapter: Record<string, boolean>;
+  };
+
   log: string[];
   rngSeed: number;
   world: WorldState;

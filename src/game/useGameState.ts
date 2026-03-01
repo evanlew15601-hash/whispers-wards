@@ -14,6 +14,43 @@ import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 import { buildEncounterDialogueNode } from './encounters';
+import { applyManagementAction } from './management/applyManagementAction';
+
+const uniqueRepChoiceIdByText = (() => {
+  const seen = new Map<string, string | null>();
+
+  for (const node of Object.values(dialogueTree)) {
+    for (const c of node.choices) {
+      if (!c.exclusiveGroup && !c.effects.some(e => e.reputationChange !== 0)) continue;
+
+      const existing = seen.get(c.text);
+      if (existing === undefined) seen.set(c.text, c.id);
+      else if (existing !== c.id) seen.set(c.text, null);
+    }
+  }
+
+  const out = new Map<string, string>();
+  for (const [text, id] of seen.entries()) {
+    if (id) out.set(text, id);
+  }
+
+  return out;
+})();
+
+const inferSelectedChoiceIdsFromLog = (selectedChoiceIds: string[], log: string[] | undefined) => {
+  if (!log?.length) return selectedChoiceIds;
+
+  const out = new Set(selectedChoiceIds);
+  for (const entry of log) {
+    if (!entry.startsWith('> ')) continue;
+
+    const text = entry.slice(2);
+    const id = uniqueRepChoiceIdByText.get(text) ?? null;
+    if (id) out.add(id);
+  }
+
+  return [...out];
+};
 
 export function useGameState() {
   const engineRef = useRef(tsConversationEngine);
@@ -113,6 +150,14 @@ export function useGameState() {
           ? (loadedAny.currentDialogue as { id?: string }).id ?? null
           : null;
 
+    const hydratedLog = loadedAny.log ?? base.log;
+
+    const selectedChoiceIdsFromSave = Array.isArray((loadedAny as any).selectedChoiceIds)
+      ? ((loadedAny as any).selectedChoiceIds as string[])
+      : base.selectedChoiceIds;
+
+    const loadedTurnNumber = typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber;
+
     const hydrated: GameState = {
       ...base,
       ...loadedAny,
@@ -120,11 +165,44 @@ export function useGameState() {
       factions: loadedAny.factions ?? base.factions,
       events: loadedAny.events ?? base.events,
       knownSecrets: loadedAny.knownSecrets ?? base.knownSecrets,
-      selectedChoiceIds: (loadedAny as any).selectedChoiceIds ?? base.selectedChoiceIds,
-      log: loadedAny.log ?? base.log,
-      turnNumber: typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber,
+      selectedChoiceIds: inferSelectedChoiceIdsFromLog(selectedChoiceIdsFromSave, hydratedLog),
+      log: hydratedLog,
+      stepNumber:
+        typeof (loadedAny as any).stepNumber === 'number'
+          ? ((loadedAny as any).stepNumber as number)
+          : loadedTurnNumber,
+      turnNumber: loadedTurnNumber,
+      chapterId: typeof (loadedAny as any).chapterId === 'string' ? ((loadedAny as any).chapterId as string) : base.chapterId,
+      chapterTurn: typeof (loadedAny as any).chapterTurn === 'number' ? ((loadedAny as any).chapterTurn as number) : base.chapterTurn,
+      milestones: Array.isArray((loadedAny as any).milestones) ? ((loadedAny as any).milestones as string[]) : base.milestones,
+      resources:
+        (loadedAny as any).resources && typeof (loadedAny as any).resources === 'object'
+          ? ({ ...base.resources, ...(loadedAny as any).resources } as GameState['resources'])
+          : base.resources,
+      projects: Array.isArray((loadedAny as any).projects) ? ((loadedAny as any).projects as GameState['projects']) : base.projects,
+      management:
+        (loadedAny as any).management && typeof (loadedAny as any).management === 'object'
+          ? {
+              ...base.management,
+              ...(loadedAny as any).management,
+            }
+          : base.management,
       rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
-      world: loadedAny.world ?? base.world,
+      world:
+        loadedAny.world && typeof loadedAny.world === 'object'
+          ? {
+              ...base.world,
+              ...(loadedAny.world as any),
+              aiMemory: {
+                ...base.world.aiMemory,
+                ...((loadedAny.world as any).aiMemory ?? {}),
+              },
+              encounterMemory: {
+                ...(base.world.encounterMemory ?? { lastSeenTurnByTemplateId: {}, seenThisChapter: {} }),
+                ...((loadedAny.world as any).encounterMemory ?? {}),
+              },
+            }
+          : base.world,
       pendingEncounter,
       currentDialogue: loadedDialogueId
         ? loadedDialogueId.startsWith('encounter:') && pendingEncounter
@@ -155,6 +233,14 @@ export function useGameState() {
 
   const makeChoice = useCallback((choice: DialogueChoice) => {
     setState(prev => engineRef.current.applyChoice(prev, choice));
+  }, []);
+
+  const endTurn = useCallback(() => {
+    setState(prev => engineRef.current.endTurn(prev));
+  }, []);
+
+  const takeManagementAction = useCallback((actionId: string) => {
+    setState(prev => applyManagementAction(prev, actionId));
   }, []);
 
   const resetGame = useCallback(() => {
@@ -188,6 +274,8 @@ export function useGameState() {
     deleteSlot,
     listSlots,
     makeChoice,
+    endTurn,
+    takeManagementAction,
     resetGame,
     enterPendingEncounter,
   };

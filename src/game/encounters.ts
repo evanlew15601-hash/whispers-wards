@@ -1,6 +1,7 @@
 import type { DialogueChoice, DialogueNode, SecondaryEncounter, SecondaryEncounterKind, WorldState } from './types';
 
 import { pickEncounterVignette } from './encounterVignettes';
+import { applyWorldEffects, type GameEffect } from './effects';
 
 type EncounterResolutionKey =
   | 'embargo-lift'
@@ -15,41 +16,6 @@ type EncounterResolutionKey =
   | 'summit-accord'
   | 'summit-slight-a'
   | 'summit-slight-b';
-
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-
-const cloneWorld = (world: WorldState): WorldState => ({
-  regions: Object.fromEntries(Object.entries(world.regions).map(([k, v]) => [k, { ...v }])) as WorldState['regions'],
-  tradeRoutes: Object.fromEntries(Object.entries(world.tradeRoutes).map(([k, v]) => [k, { ...v }])) as WorldState['tradeRoutes'],
-  tensions: Object.fromEntries(Object.entries(world.tensions).map(([k, row]) => [k, { ...row }])) as WorldState['tensions'],
-  aiMemory: {
-    lastOfferTurn: { ...world.aiMemory.lastOfferTurn },
-    lastEmbargoTurn: { ...world.aiMemory.lastEmbargoTurn },
-  },
-});
-
-const ensureTensionPair = (world: WorldState, a: string, b: string) => {
-  if (!world.tensions[a]) world.tensions[a] = {};
-  if (!world.tensions[b]) world.tensions[b] = {};
-  if (world.tensions[a][b] == null) world.tensions[a][b] = 0;
-  if (world.tensions[b][a] == null) world.tensions[b][a] = 0;
-};
-
-const getTension = (world: WorldState, a: string, b: string) => {
-  ensureTensionPair(world, a, b);
-  return world.tensions[a][b] ?? 0;
-};
-
-const setTensionPair = (world: WorldState, a: string, b: string, value: number) => {
-  ensureTensionPair(world, a, b);
-  const v = clamp(value, 0, 100);
-  world.tensions[a][b] = v;
-  world.tensions[b][a] = v;
-};
-
-const adjustTensionPair = (world: WorldState, a: string, b: string, delta: number) => {
-  setTensionPair(world, a, b, getTension(world, a, b) + delta);
-};
 
 const choiceIdFor = (encounterId: string, resolution: EncounterResolutionKey) => `encounter:${encounterId}:${resolution}`;
 
@@ -84,15 +50,85 @@ export function parseEncounterResolutionChoiceId(choiceId: string): { encounterI
   return { encounterId, resolution };
 }
 
+function resolutionEffectsFor(
+  kind: SecondaryEncounterKind,
+  relatedFactions: string[],
+  resolution: EncounterResolutionKey,
+): DialogueChoice['effects'] {
+  const a = relatedFactions[0] ?? null;
+  const b = relatedFactions[1] ?? null;
+  if (!a || !b) return [];
+
+  let aDelta = 0;
+  let bDelta = 0;
+
+  // Balancing notes:
+  // - Encounters can occur frequently (every turn), so reputation impact needs to be small.
+  // - De-escalation generally boosts both sides slightly.
+  // - Backing a side gives a small swing (+/-2).
+  if (kind === 'embargo') {
+    if (resolution === 'embargo-lift') {
+      aDelta = -2;
+      bDelta = 2;
+    } else if (resolution === 'embargo-compromise') {
+      aDelta = 1;
+      bDelta = 1;
+    } else if (resolution === 'embargo-extend') {
+      aDelta = 2;
+      bDelta = -2;
+    }
+  } else if (kind === 'raid') {
+    if (resolution === 'raid-patrol') {
+      aDelta = 1;
+      bDelta = 1;
+    } else if (resolution === 'raid-compensate') {
+      aDelta = -1;
+      bDelta = 2;
+    } else if (resolution === 'raid-retaliate') {
+      aDelta = -2;
+      bDelta = 2;
+    }
+  } else if (kind === 'skirmish') {
+    if (resolution === 'skirmish-ceasefire') {
+      aDelta = 1;
+      bDelta = 1;
+    } else if (resolution === 'skirmish-back-a') {
+      aDelta = 2;
+      bDelta = -2;
+    } else if (resolution === 'skirmish-back-b') {
+      aDelta = -2;
+      bDelta = 2;
+    }
+  } else {
+    // summit
+    if (resolution === 'summit-accord') {
+      aDelta = 2;
+      bDelta = 2;
+    } else if (resolution === 'summit-slight-a') {
+      aDelta = -2;
+      bDelta = 2;
+    } else if (resolution === 'summit-slight-b') {
+      aDelta = 2;
+      bDelta = -2;
+    }
+  }
+
+  const effects: DialogueChoice['effects'] = [];
+  if (aDelta) effects.push({ factionId: a, reputationChange: aDelta });
+  if (bDelta) effects.push({ factionId: b, reputationChange: bDelta });
+  return effects;
+}
+
 function resolutionChoicesFor(
   kind: SecondaryEncounterKind,
   encounterId: string,
+  relatedFactions: string[],
   choiceTexts?: [string, string, string],
 ): DialogueChoice[] {
   const mk = (resolution: EncounterResolutionKey, text: string): DialogueChoice => ({
     id: choiceIdFor(encounterId, resolution),
     text,
-    effects: [],
+    effects: resolutionEffectsFor(kind, relatedFactions, resolution),
     nextNodeId: null,
   });
 
@@ -144,7 +180,7 @@ export function buildEncounterDialogueNode(encounter: SecondaryEncounter): Dialo
     id: `encounter:${encounter.id}`,
     speaker: vignette.speaker,
     text: `${vignette.preface}\n\n${encounter.title}\n\n${encounter.description}\n\n${vignette.prompt}`,
-    choices: resolutionChoicesFor(kind, encounter.id, vignette.choiceTexts),
+    choices: resolutionChoicesFor(kind, encounter.id, encounter.relatedFactions, vignette.choiceTexts),
   };
 }
 
@@ -153,8 +189,6 @@ export function applyExpiredEncounterConsequence(args: {
   encounter: SecondaryEncounter;
   turnNumber: number;
 }): { world: WorldState; logEntries: string[] } {
-  const nextWorld = cloneWorld(args.world);
-
   const kind: SecondaryEncounterKind = args.encounter.kind ?? 'summit';
   const a = args.encounter.relatedFactions[0] ?? 'unknown-a';
   const b = args.encounter.relatedFactions[1] ?? 'unknown-b';
@@ -162,38 +196,40 @@ export function applyExpiredEncounterConsequence(args: {
   const routeId = args.encounter.routeId;
   const regionId = args.encounter.regionId;
 
-  const logEntries: string[] = [];
+  const effects: GameEffect[] = [];
 
-  if ((kind === 'embargo' || kind === 'raid') && routeId && nextWorld.tradeRoutes[routeId]) {
-    const route = nextWorld.tradeRoutes[routeId];
-    const untilTurn = Math.max(route.untilTurn ?? -Infinity, args.turnNumber + 1);
+  if ((kind === 'embargo' || kind === 'raid') && routeId) {
+    const route = args.world.tradeRoutes[routeId];
+    if (route) {
+      const untilTurn = Math.max(route.untilTurn ?? -Infinity, args.turnNumber + 1);
 
-    if (kind === 'embargo') {
-      nextWorld.tradeRoutes[routeId] = {
-        ...route,
-        status: 'embargoed',
-        embargoedBy: a,
+      effects.push({
+        kind: 'tradeRoute:setStatus',
+        routeId,
+        status: kind === 'embargo' ? 'embargoed' : 'raided',
+        embargoedBy: kind === 'embargo' ? a : undefined,
         untilTurn,
-      };
-    } else {
-      nextWorld.tradeRoutes[routeId] = {
-        ...route,
-        status: 'raided',
-        embargoedBy: undefined,
-        untilTurn,
-      };
+      });
     }
   }
 
-  if (kind === 'skirmish' && regionId && nextWorld.regions[regionId]) {
-    const region = nextWorld.regions[regionId];
-    nextWorld.regions[regionId] = { ...region, contested: true };
+  if (kind === 'skirmish' && regionId) {
+    const region = args.world.regions[regionId];
+    if (region) {
+      effects.push({
+        kind: 'region:setControl',
+        regionId,
+        control: region.control,
+        contested: true,
+      });
+    }
   }
 
-  adjustTensionPair(nextWorld, a, b, 5);
-  logEntries.push(`⏳ Encounter expired: ${args.encounter.title} (+5 tension)`);
+  effects.push({ kind: 'tension', a, b, delta: 5 });
 
-  return { world: nextWorld, logEntries };
+  const logEntries = [`⏳ Encounter expired: ${args.encounter.title} (+5 tension)`];
+
+  return { world: applyWorldEffects(args.world, effects), logEntries };
 }
 
 export function resolveEncounter(args: {
@@ -202,8 +238,6 @@ export function resolveEncounter(args: {
   turnNumber: number;
   resolution: EncounterResolutionKey;
 }): { world: WorldState; logEntries: string[] } {
-  const nextWorld = cloneWorld(args.world);
-
   const kind: SecondaryEncounterKind = args.encounter.kind ?? 'summit';
   const a = args.encounter.relatedFactions[0] ?? 'unknown-a';
   const b = args.encounter.relatedFactions[1] ?? 'unknown-b';
@@ -211,111 +245,107 @@ export function resolveEncounter(args: {
   const routeId = args.encounter.routeId;
   const regionId = args.encounter.regionId;
 
+  const effects: GameEffect[] = [];
   const logEntries: string[] = [];
 
   if (kind === 'embargo') {
-    const routeName = routeId ? nextWorld.tradeRoutes[routeId]?.name ?? routeId : 'the trade routes';
+    const routeName = routeId ? args.world.tradeRoutes[routeId]?.name ?? routeId : 'the trade routes';
 
     if (args.resolution === 'embargo-lift') {
-      if (routeId && nextWorld.tradeRoutes[routeId]) {
-        const route = nextWorld.tradeRoutes[routeId];
-        nextWorld.tradeRoutes[routeId] = { ...route, status: 'open', embargoedBy: undefined, untilTurn: undefined };
+      if (routeId) {
+        effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'open' });
       }
-      adjustTensionPair(nextWorld, a, b, -12);
+      effects.push({ kind: 'tension', a, b, delta: -12 });
       logEntries.push(`⚔ Embargo lifted on ${routeName} (-12 tension).`);
     } else if (args.resolution === 'embargo-compromise') {
-      if (routeId && nextWorld.tradeRoutes[routeId]) {
-        const route = nextWorld.tradeRoutes[routeId];
-        nextWorld.tradeRoutes[routeId] = { ...route, status: 'open', embargoedBy: undefined, untilTurn: undefined };
+      if (routeId) {
+        effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'open' });
       }
-      adjustTensionPair(nextWorld, a, b, -5);
+      effects.push({ kind: 'tension', a, b, delta: -5 });
       logEntries.push(`⚔ Compromise reached on ${routeName} (-5 tension).`);
     } else if (args.resolution === 'embargo-extend') {
-      if (routeId && nextWorld.tradeRoutes[routeId]) {
-        const route = nextWorld.tradeRoutes[routeId];
-        nextWorld.tradeRoutes[routeId] = {
-          ...route,
+      if (routeId) {
+        effects.push({
+          kind: 'tradeRoute:setStatus',
+          routeId,
           status: 'embargoed',
           embargoedBy: a,
           untilTurn: args.turnNumber + 3,
-        };
+        });
       }
-      adjustTensionPair(nextWorld, a, b, 8);
+      effects.push({ kind: 'tension', a, b, delta: 8 });
       logEntries.push(`⚔ Embargo escalated on ${routeName} (+8 tension).`);
     }
 
-    return { world: nextWorld, logEntries };
+    return { world: applyWorldEffects(args.world, effects), logEntries };
   }
 
   if (kind === 'raid') {
-    const routeName = routeId ? nextWorld.tradeRoutes[routeId]?.name ?? routeId : 'the trade routes';
+    const routeName = routeId ? args.world.tradeRoutes[routeId]?.name ?? routeId : 'the trade routes';
 
     if (args.resolution === 'raid-patrol') {
-      if (routeId && nextWorld.tradeRoutes[routeId]) {
-        const route = nextWorld.tradeRoutes[routeId];
-        nextWorld.tradeRoutes[routeId] = { ...route, status: 'open', embargoedBy: undefined, untilTurn: undefined };
+      if (routeId) {
+        effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'open' });
       }
-      adjustTensionPair(nextWorld, a, b, -10);
+      effects.push({ kind: 'tension', a, b, delta: -10 });
       logEntries.push(`⚔ Patrols secure ${routeName}; commerce resumes (-10 tension).`);
     } else if (args.resolution === 'raid-compensate') {
-      if (routeId && nextWorld.tradeRoutes[routeId]) {
-        const route = nextWorld.tradeRoutes[routeId];
-        nextWorld.tradeRoutes[routeId] = { ...route, status: 'open', embargoedBy: undefined, untilTurn: undefined };
+      if (routeId) {
+        effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'open' });
       }
-      adjustTensionPair(nextWorld, a, b, -4);
+      effects.push({ kind: 'tension', a, b, delta: -4 });
       logEntries.push(`⚔ Compensation pledged for losses on ${routeName} (-4 tension).`);
     } else if (args.resolution === 'raid-retaliate') {
-      if (routeId && nextWorld.tradeRoutes[routeId]) {
-        const route = nextWorld.tradeRoutes[routeId];
-        nextWorld.tradeRoutes[routeId] = { ...route, status: 'raided', embargoedBy: undefined, untilTurn: args.turnNumber + 2 };
+      if (routeId) {
+        effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'raided', untilTurn: args.turnNumber + 2 });
       }
-      adjustTensionPair(nextWorld, a, b, 10);
+      effects.push({ kind: 'tension', a, b, delta: 10 });
       logEntries.push(`⚔ Reprisals ordered after raids on ${routeName} (+10 tension).`);
     }
 
-    return { world: nextWorld, logEntries };
+    return { world: applyWorldEffects(args.world, effects), logEntries };
   }
 
   if (kind === 'skirmish') {
-    const regionName = regionId ? nextWorld.regions[regionId]?.name ?? regionId : 'the borderlands';
+    const regionName = regionId ? args.world.regions[regionId]?.name ?? regionId : 'the borderlands';
 
     if (args.resolution === 'skirmish-ceasefire') {
-      if (regionId && nextWorld.regions[regionId]) {
-        const region = nextWorld.regions[regionId];
-        nextWorld.regions[regionId] = { ...region, contested: false };
+      if (regionId) {
+        const region = args.world.regions[regionId];
+        if (region) {
+          effects.push({ kind: 'region:setControl', regionId, control: region.control, contested: false });
+        }
       }
-      adjustTensionPair(nextWorld, a, b, -8);
+      effects.push({ kind: 'tension', a, b, delta: -8 });
       logEntries.push(`⚔ Ceasefire brokered in ${regionName} (-8 tension).`);
     } else if (args.resolution === 'skirmish-back-a') {
-      if (regionId && nextWorld.regions[regionId]) {
-        const region = nextWorld.regions[regionId];
-        nextWorld.regions[regionId] = { ...region, control: a, contested: false };
+      if (regionId) {
+        effects.push({ kind: 'region:setControl', regionId, control: a, contested: false });
       }
-      adjustTensionPair(nextWorld, a, b, 6);
+      effects.push({ kind: 'tension', a, b, delta: 6 });
       logEntries.push(`⚔ Claim endorsed in ${regionName} (+6 tension).`);
     } else if (args.resolution === 'skirmish-back-b') {
-      if (regionId && nextWorld.regions[regionId]) {
-        const region = nextWorld.regions[regionId];
-        nextWorld.regions[regionId] = { ...region, control: b, contested: false };
+      if (regionId) {
+        effects.push({ kind: 'region:setControl', regionId, control: b, contested: false });
       }
-      adjustTensionPair(nextWorld, a, b, 6);
+      effects.push({ kind: 'tension', a, b, delta: 6 });
       logEntries.push(`⚔ Claim endorsed in ${regionName} (+6 tension).`);
     }
 
-    return { world: nextWorld, logEntries };
+    return { world: applyWorldEffects(args.world, effects), logEntries };
   }
 
   // summit
   if (args.resolution === 'summit-accord') {
-    adjustTensionPair(nextWorld, a, b, -15);
+    effects.push({ kind: 'tension', a, b, delta: -15 });
     logEntries.push('⚔ Accord signed at the summit (-15 tension).');
   } else if (args.resolution === 'summit-slight-a') {
-    adjustTensionPair(nextWorld, a, b, 10);
+    effects.push({ kind: 'tension', a, b, delta: 10 });
     logEntries.push('⚔ The summit ends in public rebuke (+10 tension).');
   } else if (args.resolution === 'summit-slight-b') {
-    adjustTensionPair(nextWorld, a, b, 10);
+    effects.push({ kind: 'tension', a, b, delta: 10 });
     logEntries.push('⚔ The summit ends in public rebuke (+10 tension).');
   }
 
-  return { world: nextWorld, logEntries };
+  return { world: applyWorldEffects(args.world, effects), logEntries };
 }

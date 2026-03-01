@@ -222,8 +222,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         const choice = node.choices[idx];
         if (!choice) return;
 
+        const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+
         const locked =
-          choiceUiHints?.[idx]?.locked ?? lockedChoices?.[idx] ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+          alreadyDecided
+            ? false
+            : choiceUiHints?.[idx]?.locked ?? lockedChoices?.[idx] ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
 
         if (locked) {
           nudgeLockedChoice(choice.id);
@@ -384,7 +388,11 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
             {node.choices.map((choice, i) => {
               const hint = choiceUiHints?.[i];
 
-              const locked = hint?.locked ?? lockedChoices?.[i] ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+              const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+
+              const locked = alreadyDecided
+                ? false
+                : hint?.locked ?? lockedChoices?.[i] ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
 
               const repReq = hint?.requiredReputation ?? choice.requiredReputation;
 
@@ -410,7 +418,11 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
               };
 
               const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
-              const historyLocked = locked && !repLocked && !secretsLocked && isChoiceLockedByHistory(choice, selectedChoiceIds);
+              const historyLocked = alreadyDecided;
+
+              const displayEffects = alreadyDecided
+                ? (hint?.effects ?? choice.effects).map(effect => ({ ...effect, reputationChange: 0 }))
+                : (hint?.effects ?? choice.effects);
 
               return (
                 <motion.button
@@ -479,7 +491,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                           </span>
                         )}
 
-                        {(hint?.effects ?? choice.effects).map(effect => (
+                        {displayEffects.map(effect => (
                           <span
                             key={effect.factionId}
                             className={`text-[10px] font-display tracking-wider ${

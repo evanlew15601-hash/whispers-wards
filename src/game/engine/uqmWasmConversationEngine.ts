@@ -2,11 +2,9 @@ import type { ConversationEngine, ChoiceUiHint } from './conversationEngine';
 import type { DialogueChoice, GameState } from '../types';
 
 import { dialogueTree } from '../data';
-import { applyExpiredEncounterConsequence } from '../encounters';
-import { simulateWorldTurn } from '../simulation';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
-import { isChoiceLocked } from '../choiceLocks';
+import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -195,6 +193,12 @@ function applyChoiceUsingWasm(
 ): GameState | null {
   if (!prev.currentDialogue) return null;
 
+  // WASM engine applies reputation deltas inside the wasm core. For already-decided
+  // rep-affecting choices, fall back to the TS engine which suppresses effects.
+  if (isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log)) {
+    return null;
+  }
+
   if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds)) {
     return prev;
   }
@@ -268,6 +272,11 @@ function applyChoiceUsingWasm(
     if (!prevExpected.has(s)) newlyLearned.push(s);
   }
 
+  // Track secrets even when they exceed the wasm mask capacity.
+  if (choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo) && !newlyLearned.includes(choice.revealsInfo)) {
+    newlyLearned.push(choice.revealsInfo);
+  }
+
   // Keep external secrets (e.g. "override") and keep order stable for secrets represented
   // in the wasm mask.
   const ordered: string[] = prev.knownSecrets.filter(s => {
@@ -280,6 +289,10 @@ function applyChoiceUsingWasm(
     const s = graph.bitToSecret[bit];
     if (!s) continue;
     if (expected.has(s) && !ordered.includes(s)) ordered.push(s);
+  }
+
+  for (const s of newlyLearned) {
+    if (!ordered.includes(s)) ordered.push(s);
   }
 
   const newSecrets = [...new Set(ordered)];
@@ -308,41 +321,6 @@ function applyChoiceUsingWasm(
     ...newlyLearned.map(s => `🔍 Secret learned: ${s}`),
   ];
 
-  const nextTurnNumber = prev.turnNumber + 1;
-
-  // `expiresOnTurn` is inclusive: the encounter expires only after turn N resolves
-  // (i.e. it is still retained when `expiresOnTurn === nextTurnNumber`).
-  const existingEncounter =
-    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn >= nextTurnNumber ? prev.pendingEncounter : null;
-
-  const expiredEncounter =
-    prev.pendingEncounter && prev.pendingEncounter.expiresOnTurn < nextTurnNumber ? prev.pendingEncounter : null;
-
-  // If an encounter just expired this turn, apply a deterministic consequence *before*
-  // running the world's simulation so that the consequence can influence the sim.
-  let worldBeforeSim = prev.world;
-  let expiryLog: string[] = [];
-  if (expiredEncounter) {
-    const expired = applyExpiredEncounterConsequence({
-      world: worldBeforeSim,
-      encounter: expiredEncounter,
-      turnNumber: nextTurnNumber,
-    });
-    worldBeforeSim = expired.world;
-    expiryLog = expired.logEntries;
-  }
-
-  // Turn-based world simulation runs after each player choice.
-  const sim = simulateWorldTurn({
-    world: worldBeforeSim,
-    factions: newFactions,
-    turnNumber: nextTurnNumber,
-    rngSeed: prev.rngSeed,
-  });
-
-  const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
-  const nextEncounter = existingEncounter ?? sim.pendingEncounter;
-
   return {
     ...prev,
     factions: newFactions,
@@ -350,11 +328,8 @@ function applyChoiceUsingWasm(
     events: newEvents,
     knownSecrets: [...new Set(newSecrets)],
     selectedChoiceIds: prev.selectedChoiceIds.includes(choice.id) ? prev.selectedChoiceIds : [...prev.selectedChoiceIds, choice.id],
-    turnNumber: nextTurnNumber,
-    log: [...newLog, ...worldLog, ...expiryLog],
-    world: sim.world,
-    rngSeed: sim.rngSeed,
-    pendingEncounter: nextEncounter,
+    stepNumber: prev.stepNumber + 1,
+    log: newLog,
   };
 }
 
@@ -362,7 +337,7 @@ function applyChoiceUsingWasm(
  * Create a ConversationEngine backed by the minimal UQM-derived WASM conversation core.
  *
  * This keeps the broader game-state transition logic identical to `tsConversationEngine`
- * (events, logging, world simulation), but delegates *conversation graph transitions*
+ * (events, logging, endTurn simulation), but delegates *conversation graph transitions*
  * (next node, reputation deltas, choice locks) to WASM.
  */
 export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): ConversationEngine {
@@ -385,6 +360,9 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       if (next) return next;
       // Safe fallback (should be rare)
       return tsConversationEngine.applyChoice(prev, choice);
+    },
+    endTurn(prev) {
+      return tsConversationEngine.endTurn(prev);
     },
     getChoiceLockedFlags(state) {
       if (!state.currentDialogue) return null;
@@ -515,7 +493,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
           locked,
           requiredReputation: reqFactionId ? { factionId: reqFactionId, min: reqMin } : null,
           effects,
-          revealsInfo: revealInfo,
+          revealsInfo: revealInfo ?? choice.revealsInfo ?? null,
         };
       });
     },
