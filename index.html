@@ -16,10 +16,41 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Lovable" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <style>
+      #boot-fallback {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: #120f0c;
+        color: #f0e6d6;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+        text-align: center;
+      }
+
+      #boot-fallback code {
+        padding: 0.1rem 0.35rem;
+        border-radius: 0.25rem;
+        background: rgba(240, 230, 214, 0.08);
+      }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-fallback">
+        <div>
+          <div style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.75rem;">Loading Crown & Concord…</div>
+          <div style="opacity: 0.85; line-height: 1.5;">
+            If this stays on screen, the app JavaScript isn’t loading.
+            <br />
+            Make sure your deploy runs <code>npm run build</code> and serves the <code>dist/</code> folder (not the repo root).
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

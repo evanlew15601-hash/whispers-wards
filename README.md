@@ -17,6 +17,15 @@ npm run test
 npm run build
 ```
 
+## Deployment (static hosting)
+
+This is a Vite app — you must deploy the **built** output, not the repository root.
+
+- Build command: `npm run build`
+- Publish directory: `dist/`
+
+If you deploy the repo root (with `src/`), the site will render a "Loading…" screen forever because `/src/main.tsx` is not compiled.
+
 ### UQM WASM demo
 
 This repo includes a tiny **UQM-derived** WebAssembly module (derived from `third_party/uqm/sc2/src/uqm/comm.c`) used as a runtime proof that we can execute UQM-originating code in-browser.
