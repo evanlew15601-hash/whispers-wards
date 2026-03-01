@@ -26,13 +26,22 @@ interface GameScreenProps {
   deleteSlot: (slotId: number) => void;
   exitToTitle: () => void;
   enterPendingEncounter: () => void;
-  choiceLockedFlags: boolea  choiceLock  choiceUiHints: ChoiceUiHi  choiceUiHin}
+  returnToHub: () => void;
+  choiceLockedFlags: boolean[] | null;
+  choiceUiHints: ChoiceUiHint[] | null;
+}
 
-type GameMenuTab = 'save' |type GameMenuTab = 'save' | 'loa
-const isUserTyping = () => co  const el = document.activ  const el = document.activeElem  if (!el) return false;
+type GameMenuTab = 'save' | 'load' | 'campaign' | 'about';
 
-  const tag = el.tagName.to  const tag =  if (tag === 'input' || ta  if (tag === 'input' || tag === 'textarea' || tag 
-  return el.isContentEditab  re};
+const isUserTyping = () => {
+  const el = document.activeElement as HTMLElement | null;
+  if (!el) return false;
+
+  const tag = el.tagName.toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+
+  return el.isContentEditable;
+};
 
 const GameScreen = ({
   state,
@@ -47,13 +56,20 @@ const GameScreen = ({
   deleteSlot,
   exitToTitle,
   enterPendingEncounter,
+  returnToHub,
   choiceLockedFlags,
   choiceUiHints,
 }: GameScreenProps) => {
   useAmbience('game');
 
-  const conversationEnded =  const conversationEnded  const [menuOpen, setMenuO  const [menuOpen, setMe  const [menuTab, setMenuTa  const [menuTab, setMenuTab] = useS
-  const isEncounterDialogue  const isEncounterDialogue = state.currentDialogue?.id.startsWi  const canAddressEncounter  const canAddressEncounter = state.currentDialogue?.id ===   const shouldS  const shouldShowEncounterPrompt = Boolea
+  const conversationEnded = !state.currentDialogue;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
+
+  const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
+  const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue);
+  const shouldShowEncounterPrompt = canAddressEncounter;
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
@@ -149,13 +165,21 @@ const GameScreen = ({
             <motion.div className="flex flex-col items-center justify-center gap-6 py-20" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <p className="font-display text-lg text-muted-foreground text-center">The conversation has reached its conclusion.</p>
               <p className="font-body text-sm italic text-muted-foreground/60 text-center max-w-md">Your choices have shaped the realm's future. The factions remember.</p>
-              <Button
-                onClick={resetGame}
-                variant="outline"
-                className="h-auto rounded-sm border-primary/30 px-6 py-2 font-display text-sm tracking-[0.2em] text-primary transition-colors hover:border-primary/60 hover:text-gold-glow"
-              >
-                Begin Again
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  onClick={returnToHub}
+                  className="h-auto rounded-sm px-6 py-2 font-display text-sm tracking-[0.2em] uppercase"
+                >
+                  Return to Concord Hall
+                </Button>
+                <Button
+                  onClick={resetGame}
+                  variant="outline"
+                  className="h-auto rounded-sm border-primary/30 px-6 py-2 font-display text-sm tracking-[0.2em] text-primary transition-colors hover:border-primary/60 hover:text-gold-glow"
+                >
+                  Begin Again
+                </Button>
+              </div>
             </motion.div>
           ) : (
             <>
@@ -200,13 +224,6 @@ const GameScreen = ({
             onAddressEncounter={enterPendingEncounter}
           />
         </motion.aside>
-      </div>
-    </div>
-  );
-};
-
-export default GameScreen;
-motion.aside>
       </div>
     </div>
   );
