@@ -9,6 +9,7 @@ import FactionPanel from '@/components/FactionPanel';
 import InfoPanel from '@/components/InfoPanel';
 import GameMenu from '@/components/GameMenu';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { BUILD_ID } from '@/lib/buildInfo';
 import { getChapter } from '@/game/chapters';
 
@@ -69,9 +70,14 @@ const GameScreen = ({
 
   const chapter = getChapter(state.chapterId);
   const isInHub = state.currentDialogue?.id === chapter.hubNodeId;
+  const focusMode = !conversationEnded && !isInHub;
 
   const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
   const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue && isInHub);
+
+  const encounterTurnsLeft = state.pendingEncounter ? state.pendingEncounter.expiresOnTurn - state.turnNumber : null;
+  const encounterBadgeVariant: 'default' | 'secondary' | 'destructive' =
+    encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'destructive' : focusMode ? 'secondary' : 'default';
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -124,13 +130,45 @@ const GameScreen = ({
         </h1>
         <div className="flex items-center gap-3">
           <span className="font-display text-xs text-muted-foreground">Turn {state.turnNumber}</span>
-          <Button
-            onClick={endTurn}
-            variant="outline"
-            className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
-          >
-            End Turn
-          </Button>
+
+          {focusMode && (
+            <span className="hidden md:inline font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
+              AP {state.management.apRemaining}/{state.management.apMax} • Coin {state.resources.coin} • Influence {state.resources.influence} • Supplies {state.resources.supplies} • Intel {state.resources.intel}
+            </span>
+          )}
+
+          {state.pendingEncounter && (
+            <Badge
+              variant={encounterBadgeVariant}
+              className="font-display text-[10px] tracking-[0.22em] uppercase"
+              title={
+                encounterTurnsLeft !== null && encounterTurnsLeft >= 0
+                  ? `Pending encounter (expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'})`
+                  : 'Pending encounter'
+              }
+            >
+              Encounter
+              {encounterTurnsLeft !== null && encounterTurnsLeft >= 0 ? ` ${encounterTurnsLeft}T` : ''}
+            </Badge>
+          )}
+
+          {isInHub ? (
+            <Button
+              onClick={endTurn}
+              variant="outline"
+              className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+            >
+              End Turn
+            </Button>
+          ) : !conversationEnded ? (
+            <Button
+              onClick={returnToHub}
+              variant="secondary"
+              className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+            >
+              Concord Hall
+            </Button>
+          ) : null}
           <span className="font-display text-xs text-muted-foreground">Envoy: {state.player.name}</span>
           <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
             Engine: {engineLabel}
@@ -155,13 +193,15 @@ const GameScreen = ({
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 p-6 lg:flex-row">
-        <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-          <div className="flex flex-col gap-6">
-            <ManagementPanel state={state} onTakeAction={takeManagementAction} actionsEnabled={isInHub} />
-            <FactionPanel factions={state.factions} />
-          </div>
-        </motion.aside>
+      <div className={focusMode ? "mx-auto flex max-w-3xl flex-col gap-6 p-6" : "mx-auto flex max-w-7xl flex-col gap-6 p-6 lg:flex-row"}>
+        {!focusMode && (
+          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+            <div className="flex flex-col gap-6">
+              <ManagementPanel state={state} onTakeAction={takeManagementAction} actionsEnabled={isInHub} />
+              <FactionPanel factions={state.factions} />
+            </div>
+          </motion.aside>
+        )}
 
         <main className="flex-1 min-w-0">
           {conversationEnded ? (
@@ -195,26 +235,26 @@ const GameScreen = ({
               playerPortraitId={state.player.portraitId}
               lockedChoices={choiceLockedFlags}
               choiceUiHints={choiceUiHints}
-              showReturnToHub={!isInHub}
-              onReturnToHub={returnToHub}
             />
           )}
         </main>
 
-        <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-          <InfoPanel
-            currentDialogue={state.currentDialogue}
-            knownSecrets={state.knownSecrets}
-            turnNumber={state.turnNumber}
-            log={state.log}
-            world={state.world}
-            factions={state.factions}
-            pendingEncounter={state.pendingEncounter}
-            player={state.player}
-            canAddressEncounter={canAddressEncounter}
-            onAddressEncounter={enterPendingEncounter}
-          />
-        </motion.aside>
+        {!focusMode && (
+          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+            <InfoPanel
+              currentDialogue={state.currentDialogue}
+              knownSecrets={state.knownSecrets}
+              turnNumber={state.turnNumber}
+              log={state.log}
+              world={state.world}
+              factions={state.factions}
+              pendingEncounter={state.pendingEncounter}
+              player={state.player}
+              canAddressEncounter={canAddressEncounter}
+              onAddressEncounter={enterPendingEncounter}
+            />
+          </motion.aside>
+        )}
       </div>
     </div>
   );

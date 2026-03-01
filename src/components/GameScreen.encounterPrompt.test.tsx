@@ -107,6 +107,27 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
   );
 
 describe('GameScreen pending encounter controls', () => {
+  it('only shows End Turn in the hub', () => {
+    const hub = renderScreen({
+      ...baseState,
+      currentDialogue: hubDialogue,
+    });
+
+    expect(screen.getByRole('button', { name: /end turn/i })).toBeEnabled();
+
+    hub.unmount();
+
+    const convo = renderScreen({
+      ...baseState,
+      currentDialogue: otherDialogue,
+    });
+
+    expect(screen.queryByRole('button', { name: /end turn/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /concord hall/i })).toBeInTheDocument();
+
+    convo.unmount();
+  });
+
   it('enables Address in the Info panel while in the hub', () => {
     const enterPendingEncounter = vi.fn();
 
@@ -126,7 +147,7 @@ describe('GameScreen pending encounter controls', () => {
     expect(enterPendingEncounter).toHaveBeenCalledTimes(1);
   });
 
-  it('shows Address disabled outside the hub', () => {
+  it('hides Address outside the hub (focus mode)', () => {
     const enterPendingEncounter = vi.fn();
 
     renderScreen(
@@ -138,14 +159,11 @@ describe('GameScreen pending encounter controls', () => {
       enterPendingEncounter,
     );
 
-    const button = screen.getByRole('button', { name: /^address$/i });
-    expect(button).toBeDisabled();
-
-    fireEvent.click(button);
-    expect(enterPendingEncounter).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /^address$/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/encounter/i)).toBeInTheDocument();
   });
 
-  it('shows Address disabled while already in an encounter dialogue', () => {
+  it('hides Address while already in an encounter dialogue (focus mode)', () => {
     const enterPendingEncounter = vi.fn();
 
     renderScreen(
@@ -157,7 +175,6 @@ describe('GameScreen pending encounter controls', () => {
       enterPendingEncounter,
     );
 
-    const button = screen.getByRole('button', { name: /^address$/i });
-    expect(button).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^address$/i })).not.toBeInTheDocument();
   });
 });

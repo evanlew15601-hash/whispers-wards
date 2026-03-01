@@ -5,10 +5,9 @@ import type { ComponentType, CSSProperties } from 'react';
 import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } from '@/game/engine/uqmTextWrap';
 import { isChoiceLocked, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
 import { useAudio } from '@/audio/useAudio';
-import { CornerUpLeft, Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
+import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
 import CommPortrait from '@/components/CommPortrait';
 import { getPortraitById, getSpeakerPortrait } from '@/game/portraits';
-import { Button } from '@/components/ui/button';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -22,8 +21,6 @@ interface DialoguePanelProps {
   playerName?: string;
   lockedChoices?: boolean[] | null;
   choiceUiHints?: ChoiceUiHint[] | null;
-  showReturnToHub?: boolean;
-  onReturnToHub?: () => void;
 }
 
 const factionLabelColors: Record<string, string> = {
@@ -58,7 +55,7 @@ const isUserTyping = () => {
   return el.isContentEditable;
 };
 
-const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceIds = [], playerPortraitId, playerName, lockedChoices, choiceUiHints, showReturnToHub = false, onReturnToHub }: DialoguePanelProps) => {
+const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceIds = [], playerPortraitId, playerName, lockedChoices, choiceUiHints }: DialoguePanelProps) => {
   const { playSfx } = useAudio();
 
   const fullText = node.text;
@@ -290,26 +287,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {node.speakerFaction && (
-              <div className="hidden sm:flex items-center gap-2 text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/50" />
-                <span>{node.speakerFaction.replace('-', ' ')}</span>
-              </div>
-            )}
-
-            {showReturnToHub && onReturnToHub && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={onReturnToHub}
-                className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.18em] uppercase"
-              >
-                <CornerUpLeft className="mr-2 h-4 w-4" aria-hidden="true" />
-                Concord Hall
-              </Button>
-            )}
-          </div>
+          {node.speakerFaction && (
+            <div className="hidden sm:flex items-center gap-2 text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/50" />
+              <span>{node.speakerFaction.replace('-', ' ')}</span>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
