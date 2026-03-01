@@ -79,6 +79,10 @@ const TitleScreen = ({ onStart, onLoad, slots = [], onContinue }: TitleScreenPro
           ⚜
         </motion.div>
 
+        <div className="font-display text-[10px] tracking-[0.25em] text-muted-foreground/80 uppercase">
+          Build {BUILD_ID}
+        </div>
+
         <motion.h1
           className="font-display text-5xl font-bold tracking-widest gold-text-gradient sm:text-7xl md:text-8xl"
           initial={{ y: 30, opacity: 0 }}

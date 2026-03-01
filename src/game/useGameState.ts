@@ -292,5 +292,6 @@ export function useGameState() {
     takeManagementAction,
     resetGame,
     enterPendingEncounter,
+    returnToHub,
   };
 }
