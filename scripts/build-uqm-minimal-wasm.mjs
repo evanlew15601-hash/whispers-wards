@@ -12,6 +12,7 @@ const srcC = path.join(root, 'third_party', 'uqm', 'minimal_wasm', 'uqm_min.c');
 const srcWat = path.join(root, 'third_party', 'uqm', 'minimal_wasm', 'uqm_min.wat');
 const outDir = path.join(root, 'public', 'wasm');
 const outWasm = path.join(outDir, 'uqm_minimal.wasm');
+const outAvailability = path.join(outDir, 'uqm_minimal.available.json');
 
 function tryRun(cmd, args) {
   const res = spawnSync(cmd, args, {
@@ -94,12 +95,18 @@ function validateWasm(bytes) {
 
 async function main() {
   const skip = String(process.env.SKIP_UQM_WASM ?? '').toLowerCase();
-  if (skip === '1' || skip === 'true' || skip === 'yes') {
-    console.log('[uqm-wasm] SKIP_UQM_WASM set; skipping wasm build');
-    return;
-  }
 
   fs.mkdirSync(outDir, { recursive: true });
+
+  const writeAvailability = (available) => {
+    fs.writeFileSync(outAvailability, `${JSON.stringify({ available }, null, 2)}\n`);
+  };
+
+  if (skip === '1' || skip === 'true' || skip === 'yes') {
+    console.log('[uqm-wasm] SKIP_UQM_WASM set; skipping wasm build');
+    writeAvailability(false);
+    return;
+  }
 
   // Skip if output is newer than sources (but still validate it).
   try {
@@ -109,6 +116,7 @@ async function main() {
       try {
         const bytes = fs.readFileSync(outWasm);
         if (validateWasm(bytes)) {
+          writeAvailability(true);
           console.log(`[uqm-wasm] up-to-date: ${path.relative(root, outWasm)}`);
           process.exit(0);
         }
@@ -226,6 +234,7 @@ async function main() {
     built = true;
   }
 
+  writeAvailability(true);
   console.log(`[uqm-wasm] wrote ${path.relative(root, outWasm)}`);
 }
 
@@ -233,11 +242,28 @@ main().catch(err => {
   const lifecycle = process.env.npm_lifecycle_event;
   const strict = lifecycle === 'pretest' || lifecycle === 'test' || process.env.CI === 'true';
 
+  try {
+    fs.mkdirSync(outDir, { recursive: true });
+
+    let available = false;
+    try {
+      const bytes = fs.readFileSync(outWasm);
+      available = validateWasm(bytes);
+    } catch {
+      available = false;
+    }
+
+    fs.writeFileSync(outAvailability, `${JSON.stringify({ available }, null, 2)}\n`);
+  } catch {
+    // ignore
+  }
+
   if (strict) {
     console.error(err);
     process.exit(1);
   }
 
   console.warn('[uqm-wasm] optional wasm build failed; continuing without wasm conversation core');
+  console.warn(err instanceof Error ? err.message : String(err));
   process.exit(0);
 });
