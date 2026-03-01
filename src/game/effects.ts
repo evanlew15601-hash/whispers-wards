@@ -101,9 +101,9 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
   if (!effects.length) return prev;
 
   let next = prev;
-  let world: WorldState | null = null;
   let projectStartIdx = 0;
   const followUpEffects: GameEffect[] = [];
+  const worldEffects: GameEffect[] = [];
 
   for (const eff of effects) {
     if (eff.kind === 'rep') {
@@ -147,7 +147,9 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
       const template = getProjectTemplateById(eff.templateId);
       if (!template) continue;
 
-      const already = next.projects.some(p => p.templateId === eff.templateId && p.status !== 'cancelled' && p.status !== 'completed');
+      const already = next.projects.some(
+        p => p.templateId === eff.templateId && p.status !== 'cancelled' && p.status !== 'completed'
+      );
       if (already) continue;
 
       if (next === prev) next = { ...next };
@@ -219,7 +221,9 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
     }
 
     if (eff.kind === 'project:cancelByTemplate') {
-      const idx = next.projects.findIndex(p => p.templateId === eff.templateId && p.status !== 'cancelled' && p.status !== 'completed');
+      const idx = next.projects.findIndex(
+        p => p.templateId === eff.templateId && p.status !== 'cancelled' && p.status !== 'completed'
+      );
       if (idx < 0) continue;
       const p = next.projects[idx];
       if (!p) continue;
@@ -281,40 +285,15 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
     }
 
     // World effects.
-    if (!world) world = cloneWorld(next.world);
-
-    if (eff.kind === 'tension') {
-      adjustTensionPair(world, eff.a, eff.b, eff.delta);
-      continue;
-    }
-
-    if (eff.kind === 'tradeRoute:setStatus') {
-      const route = world.tradeRoutes[eff.routeId];
-      if (!route) continue;
-      world.tradeRoutes[eff.routeId] = {
-        ...route,
-        status: eff.status,
-        untilTurn: eff.untilTurn,
-        embargoedBy: eff.embargoedBy,
-      };
-      continue;
-    }
-
-    if (eff.kind === 'region:setControl') {
-      const region = world.regions[eff.regionId];
-      if (!region) continue;
-      world.regions[eff.regionId] = {
-        ...region,
-        control: eff.control,
-        contested: eff.contested,
-      };
-      continue;
-    }
+    worldEffects.push(eff);
   }
 
-  if (world) {
-    if (next === prev) next = { ...next };
-    next.world = world;
+  if (worldEffects.length) {
+    const updatedWorld = applyWorldEffects(next.world, worldEffects);
+    if (updatedWorld !== next.world) {
+      if (next === prev) next = { ...next };
+      next.world = updatedWorld;
+    }
   }
 
   if (next !== prev) {
