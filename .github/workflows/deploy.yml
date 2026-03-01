@@ -32,6 +32,9 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
         env:
