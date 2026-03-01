@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { DialogueNode, Faction, PlayerProfile, WorldState, SecondaryEncounter } from '@/game/types';
 import { getPortraitById } from '@/game/portraits';
 import { getLeadHintsForCurrentDialogue } from '@/game/leads';
@@ -16,12 +15,10 @@ interface InfoPanelProps {
   factions: Faction[];
   pendingEncounter: SecondaryEncounter | null;
   player?: PlayerProfile;
-  canAddressEncounter?: boolean;
-  onAddressEncounter?: () => void;
 }
 
 const InfoPanel = (
-  { currentDialogue, knownSecrets, turnNumber, log, world, factions, pendingEncounter, player, canAddressEncounter = false, onAddressEncounter }: InfoPanelProps,
+  { currentDialogue, knownSecrets, turnNumber, log, world, factions, pendingEncounter, player }: InfoPanelProps,
 ) => {
   const encounterTurnsLeft = pendingEncounter ? pendingEncounter.expiresOnTurn - turnNumber : null;
   const leadHints = getLeadHintsForCurrentDialogue(currentDialogue, knownSecrets);
@@ -150,18 +147,6 @@ const InfoPanel = (
                     : `Expires on turn ${pendingEncounter.expiresOnTurn}`}
                 </div>
               </div>
-
-              {onAddressEncounter && (
-                <Button
-                  size="sm"
-                  variant={canAddressEncounter ? 'default' : 'secondary'}
-                  disabled={!canAddressEncounter}
-                  onClick={onAddressEncounter}
-                  title={canAddressEncounter ? 'Address this encounter' : 'Already addressing this encounter'}
-                >
-                  Address
-                </Button>
-              )}
             </div>
           </div>
         )}

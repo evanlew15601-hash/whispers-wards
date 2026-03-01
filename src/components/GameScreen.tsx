@@ -9,7 +9,10 @@ import FactionPanel from '@/components/FactionPanel';
 import InfoPanel from '@/components/InfoPanel';
 import GameMenu from '@/components/GameMenu';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { BUILD_ID } from '@/lib/buildInfo';
+import { getChapter } from '@/game/chapters';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -66,9 +69,22 @@ const GameScreen = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
 
-  const isEncounterDialogue = state.currentDialogue?.id.startsWith('encounter:') ?? false;
-  const canAddressEncounter = Boolean(state.pendingEncounter && !isEncounterDialogue);
-  const shouldShowEncounterPrompt = canAddressEncounter;
+  const chapter = getChapter(state.chapterId);
+  const isInHub = state.currentDialogue?.id === chapter.hubNodeId;
+  const focusMode = !conversationEnded && !isInHub;
+
+  const canAddressEncounter = Boolean(state.pendingEncounter && isInHub);
+
+  const encounterTurnsLeft = state.pendingEncounter ? state.pendingEncounter.expiresOnTurn - state.turnNumber : null;
+  const encounterBadgeVariant: 'default' | 'secondary' | 'destructive' =
+    encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'destructive' : focusMode ? 'secondary' : 'default';
+
+  const concordButtonVariant: 'secondary' | 'destructive' =
+    encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'destructive' : 'secondary';
+
+  const scrollToManagement = () => {
+    document.getElementById('cc-management-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -121,20 +137,57 @@ const GameScreen = ({
         </h1>
         <div className="flex items-center gap-3">
           <span className="font-display text-xs text-muted-foreground">Turn {state.turnNumber}</span>
-          <Button
-            onClick={endTurn}
-            variant="outline"
-            className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
-          >
-            End Turn
-          </Button>
-          <span className="font-display text-xs text-muted-foreground">Envoy: {state.player.name}</span>
-          <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
-            Engine: {engineLabel}
-          </span>
-          <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/60 uppercase">
-            Build: {BUILD_ID}
-          </span>
+
+          {focusMode && (
+            <span className="hidden md:inline font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
+              AP {state.management.apRemaining}/{state.management.apMax} • Coin {state.resources.coin} • Influence {state.resources.influence} • Supplies {state.resources.supplies} • Intel {state.resources.intel}
+            </span>
+          )}
+
+          {state.pendingEncounter && (
+            <Badge
+              variant={encounterBadgeVariant}
+              className="font-display text-[10px] tracking-[0.22em] uppercase"
+              title={
+                encounterTurnsLeft !== null && encounterTurnsLeft >= 0
+                  ? `Pending encounter (expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'})`
+                  : 'Pending encounter'
+              }
+            >
+              Encounter
+              {encounterTurnsLeft !== null && encounterTurnsLeft >= 0 ? ` ${encounterTurnsLeft}T` : ''}
+            </Badge>
+          )}
+
+          {isInHub ? (
+            <Button
+              onClick={endTurn}
+              variant="outline"
+              className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+            >
+              End Turn
+            </Button>
+          ) : !conversationEnded ? (
+            <Button
+              onClick={returnToHub}
+              variant={concordButtonVariant}
+              className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+            >
+              Concord Hall
+            </Button>
+          ) : null}
+
+          {!focusMode && (
+            <>
+              <span className="font-display text-xs text-muted-foreground">Envoy: {state.player.name}</span>
+              <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
+                Engine: {engineLabel}
+              </span>
+              <span className="font-display text-[10px] tracking-[0.22em] text-muted-foreground/60 uppercase">
+                Build: {BUILD_ID}
+              </span>
+            </>
+          )}
 
           <GameMenu
             slots={saveSlots}
@@ -152,13 +205,15 @@ const GameScreen = ({
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 p-6 lg:flex-row">
-        <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-          <div className="flex flex-col gap-6">
-            <ManagementPanel state={state} onTakeAction={takeManagementAction} />
-            <FactionPanel factions={state.factions} />
-          </div>
-        </motion.aside>
+      <div className={focusMode ? "mx-auto flex max-w-3xl flex-col gap-6 p-6" : "mx-auto flex max-w-7xl flex-col gap-6 p-6 lg:flex-row"}>
+        {!focusMode && (
+          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+            <div id="cc-management-panel" className="flex flex-col gap-6">
+              <ManagementPanel state={state} onTakeAction={takeManagementAction} actionsEnabled={isInHub} />
+              <FactionPanel factions={state.factions} />
+            </div>
+          </motion.aside>
+        )}
 
         <main className="flex-1 min-w-0">
           {conversationEnded ? (
@@ -183,16 +238,80 @@ const GameScreen = ({
             </motion.div>
           ) : (
             <>
-              {shouldShowEncounterPrompt && (
-                <div className="parchment-border mb-4 flex items-center justify-between gap-4 rounded-sm bg-card p-4">
-                  <div>
-                    <div className="font-display text-xs tracking-[0.2em] text-primary uppercase">Pending encounter</div>
-                    <div className="mt-1 text-sm text-card-foreground">An encounter awaits your attention.</div>
-                  </div>
-                  <Button onClick={enterPendingEncounter} className="font-display tracking-[0.18em] uppercase">
-                    Address encounter
-                  </Button>
-                </div>
+              {isInHub && (state.pendingEncounter || state.management.apRemaining > 0) && (
+                <motion.div
+                  className="mb-4"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <Card className="parchment-border rounded-sm bg-card/40 shadow-none">
+                    <div className="flex flex-col gap-3 p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
+                            Agenda
+                          </div>
+
+                          {state.pendingEncounter ? (
+                            <>
+                              <div className="mt-1 font-display text-xs tracking-[0.2em] text-primary uppercase">
+                                Pending encounter
+                              </div>
+                              <div className="mt-1 text-sm text-card-foreground">
+                                {state.pendingEncounter.title}
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                {state.pendingEncounter.description}
+                              </div>
+                              <div
+                                className={`mt-2 text-[11px] ${
+                                  encounterTurnsLeft !== null && encounterTurnsLeft <= 1
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground'
+                                }`}
+                              >
+                                {encounterTurnsLeft !== null && encounterTurnsLeft >= 0
+                                  ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${state.pendingEncounter.expiresOnTurn})`
+                                  : `Expires on turn ${state.pendingEncounter.expiresOnTurn}`}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="mt-1 font-display text-xs tracking-[0.2em] text-primary uppercase">
+                                Actions available
+                              </div>
+                              <div className="mt-1 text-sm text-card-foreground">
+                                You have {state.management.apRemaining} AP remaining.
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                Spend AP in Management to advance projects and directives.
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-2">
+                          {state.pendingEncounter ? (
+                            <Button
+                              size="sm"
+                              variant={encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'destructive' : 'default'}
+                              onClick={enterPendingEncounter}
+                              disabled={!canAddressEncounter}
+                              title={!canAddressEncounter ? 'Already addressing this encounter' : undefined}
+                            >
+                              Address
+                            </Button>
+                          ) : state.management.apRemaining > 0 ? (
+                            <Button size="sm" variant="secondary" onClick={scrollToManagement}>
+                              Management
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
               )}
 
               <DialoguePanel
@@ -210,20 +329,20 @@ const GameScreen = ({
           )}
         </main>
 
-        <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-          <InfoPanel
-            currentDialogue={state.currentDialogue}
-            knownSecrets={state.knownSecrets}
-            turnNumber={state.turnNumber}
-            log={state.log}
-            world={state.world}
-            factions={state.factions}
-            pendingEncounter={state.pendingEncounter}
-            player={state.player}
-            canAddressEncounter={canAddressEncounter}
-            onAddressEncounter={enterPendingEncounter}
-          />
-        </motion.aside>
+        {!focusMode && (
+          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+            <InfoPanel
+              currentDialogue={state.currentDialogue}
+              knownSecrets={state.knownSecrets}
+              turnNumber={state.turnNumber}
+              log={state.log}
+              world={state.world}
+              factions={state.factions}
+              pendingEncounter={state.pendingEncounter}
+              player={state.player}
+            />
+          </motion.aside>
+        )}
       </div>
     </div>
   );

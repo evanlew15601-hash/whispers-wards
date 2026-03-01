@@ -132,7 +132,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
       stepNumber: prev.stepNumber + 1,
       // Return to the main hall hub so the campaign continues.
-      currentDialogue: dialogueTree['concord-hub'] ?? withEffects.currentDialogue,
+      currentDialogue: dialogueTree[getChapter(withEffects.chapterId).hubNodeId] ?? withEffects.currentDialogue,
       pendingEncounter: null,
       log: [
         ...prev.log,
@@ -145,7 +145,12 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     };
   }
 
-  const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : null;
+  const chapter = getChapter(withEffects.chapterId);
+  const hub = dialogueTree[chapter.hubNodeId] ?? null;
+
+  // Most scenes should resolve back to the chapter hub rather than dropping the player
+  // into a "no dialogue" state.
+  const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : hub;
 
   return {
     ...withEffects,

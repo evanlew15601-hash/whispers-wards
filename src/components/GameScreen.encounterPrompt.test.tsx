@@ -4,7 +4,7 @@ import type { GameState, DialogueNode, SecondaryEncounter } from '@/game/types';
 import type { SaveSlotInfo } from '@/game/storage';
 
 // DialoguePanel does async text-wrapping work which can cause act() warnings.
-// Stub it out: these tests only care about the presence/behavior of the encounter prompt.
+// Stub it out: these tests only care about hub/focus encounter controls.
 vi.mock('@/components/DialoguePanel', () => ({
   default: () => <div data-testid="dialogue-panel" />,
 }));
@@ -106,6 +106,31 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
     />,
   );
 
+describe('GameScreen pending encounter controls', () => {
+  it('only shows End Turn in the hub', () => {
+    const hub = renderScreen({
+      ...baseState,
+      currentDialogue: hubDialogue,
+    });
+
+    expect(screen.getByRole('button', { name: /end turn/i })).toBeEnabled();
+
+    hub.unmount();
+
+    const convo = renderScreen({
+      ...baseState,
+      currentDialogue: otherDialogue,
+    });
+
+    expect(screen.queryByRole('button', { name: /end turn/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /concord hall/i })).toBeInTheDocument();
+
+    convo.unmount();
+  });
+
+  it('enables Address in the hub agenda while in the hub', () => {
+    const enterPendingEncounter = vi.fn();
+
     renderScreen(
       {
         ...baseState,
@@ -115,42 +140,41 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
       enterPendingEncounter,
     );
 
-    const button = screen.getByRole('button', { name: /address encounter/i });
-    fireEvent.click(button);
+    const button = screen.getByRole('button', { name: /^address$/i });
+    expect(button).toBeEnabled();
 
+    fireEvent.click(button);
     expect(enterPendingEncounter).toHaveBeenCalledTimes(1);
   });
 
-  it('renders the Address encounter button outside the hub if a pending encounter exists', () => {
-    renderScreen({
-      ...baseState,
-      currentDialogue: otherDialogue,
-      pendingEncounter,
-    });
+  it('hides Address outside the hub (focus mode)', () => {
+    const enterPendingEncounter = vi.fn();
 
-    expect(screen.getByRole('button', { name: /address encounter/i })).toBeInTheDocument();
-  });
-
-  it('does not render the Address encounter button without a pending encounter or within encounter dialogues', () => {
-    const cases: GameState[] = [
+    renderScreen(
       {
         ...baseState,
-        currentDialogue: hubDialogue,
-        pendingEncounter: null,
+        currentDialogue: otherDialogue,
+        pendingEncounter,
       },
+      enterPendingEncounter,
+    );
+
+    expect(screen.queryByRole('button', { name: /^address$/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/encounter/i)).toBeInTheDocument();
+  });
+
+  it('hides Address while already in an encounter dialogue (focus mode)', () => {
+    const enterPendingEncounter = vi.fn();
+
+    renderScreen(
       {
         ...baseState,
         currentDialogue: encounterDialogue,
         pendingEncounter,
       },
-    ];
+      enterPendingEncounter,
+    );
 
-    for (const testState of cases) {
-      const { unmount } = renderScreen(testState);
-
-      expect(screen.queryByRole('button', { name: /address encounter/i })).not.toBeInTheDocument();
-
-      unmount();
-    }
+    expect(screen.queryByRole('button', { name: /^address$/i })).not.toBeInTheDocument();
   });
 });

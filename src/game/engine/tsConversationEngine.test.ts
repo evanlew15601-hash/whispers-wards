@@ -54,6 +54,20 @@ describe('tsConversationEngine', () => {
     expect(afterTurn.log.some(l => l.startsWith('💰 Income: '))).toBe(true);
   });
 
+  it('treats nextNodeId=null as returning to the chapter hub', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const choice = {
+      id: 'qa-end-scene',
+      text: 'End this scene',
+      effects: [],
+      nextNodeId: null,
+    };
+
+    const next = tsConversationEngine.applyChoice(initial, choice);
+    expect(next.currentDialogue?.id).toBe('concord-hub');
+  });
+
   it('applyChoice triggers threshold events and logs secrets; world sim output is logged on endTurn', () => {
     const initial = tsConversationEngine.startNewGame();
 

@@ -8,6 +8,7 @@ import { getChapter } from '@/game/chapters';
 interface ManagementPanelProps {
   state: GameState;
   onTakeAction: (actionId: string) => void;
+  actionsEnabled?: boolean;
 }
 
 const formatCost = (state: GameState, resourceId: keyof GameState['resources'], amount: number) => {
@@ -15,7 +16,7 @@ const formatCost = (state: GameState, resourceId: keyof GameState['resources'], 
   return `${resourceId} ${have}/${amount}`;
 };
 
-const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
+const ManagementPanel = ({ state, onTakeAction, actionsEnabled = true }: ManagementPanelProps) => {
   const ap = state.management;
 
   const chapter = getChapter(state.chapterId);
@@ -82,10 +83,10 @@ const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
                     {accelerate && (
                       <Button
                         size="sm"
-                        variant={accelerateAvail?.available ? 'default' : 'secondary'}
-                        disabled={!accelerateAvail?.available}
+                        variant={actionsEnabled && accelerateAvail?.available ? 'default' : 'secondary'}
+                        disabled={!actionsEnabled || !accelerateAvail?.available}
                         onClick={() => onTakeAction(accelerate.id)}
-                        title={!accelerateAvail?.available ? accelerateAvail?.reason : undefined}
+                        title={!actionsEnabled ? 'Return to Concord Hall to manage projects.' : !accelerateAvail?.available ? accelerateAvail?.reason : undefined}
                       >
                         Accelerate
                       </Button>
@@ -93,10 +94,10 @@ const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
                     {pause && (
                       <Button
                         size="sm"
-                        variant={pauseAvail?.available ? 'default' : 'secondary'}
-                        disabled={!pauseAvail?.available}
+                        variant={actionsEnabled && pauseAvail?.available ? 'default' : 'secondary'}
+                        disabled={!actionsEnabled || !pauseAvail?.available}
                         onClick={() => onTakeAction(pause.id)}
-                        title={!pauseAvail?.available ? pauseAvail?.reason : undefined}
+                        title={!actionsEnabled ? 'Return to Concord Hall to manage projects.' : !pauseAvail?.available ? pauseAvail?.reason : undefined}
                       >
                         Pause
                       </Button>
@@ -104,10 +105,10 @@ const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
                     {resume && (
                       <Button
                         size="sm"
-                        variant={resumeAvail?.available ? 'default' : 'secondary'}
-                        disabled={!resumeAvail?.available}
+                        variant={actionsEnabled && resumeAvail?.available ? 'default' : 'secondary'}
+                        disabled={!actionsEnabled || !resumeAvail?.available}
                         onClick={() => onTakeAction(resume.id)}
-                        title={!resumeAvail?.available ? resumeAvail?.reason : undefined}
+                        title={!actionsEnabled ? 'Return to Concord Hall to manage projects.' : !resumeAvail?.available ? resumeAvail?.reason : undefined}
                       >
                         Resume
                       </Button>
@@ -115,10 +116,10 @@ const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
                     {cancel && (
                       <Button
                         size="sm"
-                        variant={cancelAvail?.available ? 'destructive' : 'secondary'}
-                        disabled={!cancelAvail?.available}
+                        variant={actionsEnabled && cancelAvail?.available ? 'destructive' : 'secondary'}
+                        disabled={!actionsEnabled || !cancelAvail?.available}
                         onClick={() => onTakeAction(cancel.id)}
-                        title={!cancelAvail?.available ? cancelAvail?.reason : undefined}
+                        title={!actionsEnabled ? 'Return to Concord Hall to manage projects.' : !cancelAvail?.available ? cancelAvail?.reason : undefined}
                       >
                         Cancel
                       </Button>
@@ -135,10 +136,13 @@ const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
 
       <div className="parchment-border rounded-sm bg-card p-4">
         <div className="mb-3 font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Actions</div>
+        {!actionsEnabled && (
+          <div className="mb-2 text-xs text-muted-foreground">Return to Concord Hall to take actions.</div>
+        )}
         <div className="flex flex-col gap-2">
           {availableActions.map((action, i) => {
             const availability = getManagementActionAvailability(state, action);
-            const disabled = !availability.available;
+            const disabled = !actionsEnabled || !availability.available;
 
             const costLabel = action.costs?.length
               ? action.costs.map(c => formatCost(state, c.resourceId, c.amount)).join(' · ')
@@ -164,9 +168,9 @@ const ManagementPanel = ({ state, onTakeAction }: ManagementPanelProps) => {
                       {costLabel ? ` · ${costLabel}` : ''}
                       {action.cooldownTurns ? ` · cooldown ${action.cooldownTurns}` : ''}
                     </div>
-                    {!availability.available && (
+                    {(!actionsEnabled || !availability.available) && (
                       <div className="mt-1 text-[11px] text-destructive">
-                        {availability.reason}
+                        {!actionsEnabled ? 'Return to Concord Hall to take actions.' : availability.reason}
                       </div>
                     )}
                   </div>

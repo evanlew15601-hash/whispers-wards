@@ -5,6 +5,7 @@ import { dialogueTree } from '../data';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import { getChapter } from '../chapters';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -251,7 +252,10 @@ function applyChoiceUsingWasm(
   const newRep1 = clamp(exp.uqm_conv_get_rep(1), -100, 100);
   const newRep2 = clamp(exp.uqm_conv_get_rep(2), -100, 100);
 
-  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : null;
+  const chapter = getChapter(prev.chapterId);
+  const hub = dialogueTree[chapter.hubNodeId] ?? null;
+
+  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : hub;
 
   const newFactions = prev.factions.map(f => {
     if (f.id === 'iron-pact') return { ...f, reputation: newRep0 };
