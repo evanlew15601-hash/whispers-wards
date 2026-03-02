@@ -23,6 +23,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import Tip from '@/ui/tips/Tip';
 import { BUILD_ID } from '@/lib/buildInfo';
 import { getChapter } from '@/game/chapters';
@@ -81,6 +89,7 @@ const GameScreen = ({
   const conversationEnded = !state.currentDialogue;
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const chapter = getChapter(state.chapterId);
   const currentDialogueId = state.currentDialogue?.id ?? null;
@@ -114,6 +123,9 @@ const GameScreen = ({
       const mod = e.ctrlKey || e.metaKey;
 
       if (key === 'escape') {
+        const openDialog = document.querySelector('[role="dialog"],[role="alertdialog"]');
+        if (openDialog) return;
+
         setMenuOpen(prev => !prev);
         return;
       }
@@ -192,6 +204,39 @@ const GameScreen = ({
               Crisis
               {encounterTurnsLeft !== null && encounterTurnsLeft >= 0 ? ` ${encounterTurnsLeft}T` : ''}
             </Badge>
+          )}
+
+          {focusMode && (
+            <Sheet open={infoOpen} onOpenChange={setInfoOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+                >
+                  Info
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md">
+                <SheetHeader>
+                  <SheetTitle className="font-display tracking-[0.2em] uppercase">Info</SheetTitle>
+                  <SheetDescription>Leads, intel, event log, and the world map.</SheetDescription>
+                </SheetHeader>
+
+                <div className="mt-4">
+                  <InfoPanel
+                    currentDialogue={state.currentDialogue}
+                    knownSecrets={state.knownSecrets}
+                    turnNumber={state.turnNumber}
+                    log={state.log}
+                    world={state.world}
+                    factions={state.factions}
+                    pendingEncounter={state.pendingEncounter}
+                    player={state.player}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
           )}
 
           {isInHub ? (() => {
@@ -445,7 +490,12 @@ const GameScreen = ({
               )}
 
               {isInHub ? (
-                <HubPanel node={state.currentDialogue!} onChoice={makeChoice} />
+                <HubPanel
+                  node={state.currentDialogue!}
+                  onChoice={makeChoice}
+                  crisisPending={Boolean(state.pendingEncounter)}
+                  crisisTurnsLeft={encounterTurnsLeft}
+                />
               ) : (
                 <DialoguePanel
                   node={state.currentDialogue!}

@@ -157,7 +157,7 @@ const InfoPanel = (
           </Collapsible>
         )}
 
-        {/* Pending encounter */}
+        {/* Crisis */}
         {pendingEncounter && (
           <Collapsible defaultOpen={pendingUrgent}>
             <div className={`parchment-border rounded-sm bg-card p-4 ${pendingUrgent ? 'ring-1 ring-destructive/20' : ''}`}>
@@ -165,7 +165,7 @@ const InfoPanel = (
                 <button
                   type="button"
                   className="group flex w-full items-center justify-between gap-3"
-                  aria-label="Toggle pending encounter"
+                  aria-label="Toggle crisis"
                 >
                   <div className="flex items-center gap-2">
                     <h3 className="flex items-center gap-2 font-display text-xs tracking-[0.2em] text-primary uppercase">

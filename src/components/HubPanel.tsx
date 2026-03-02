@@ -1,7 +1,17 @@
 import { motion } from 'framer-motion';
-import { Fragment, useEffect } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import type { DialogueChoice, DialogueNode } from '@/game/types';
 import Tip from '@/ui/tips/Tip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const isUserTyping = () => {
   const el = document.activeElement as HTMLElement | null;
@@ -16,15 +26,49 @@ const isUserTyping = () => {
 interface HubPanelProps {
   node: DialogueNode;
   onChoice: (choice: DialogueChoice) => void;
+  crisisPending?: boolean;
+  crisisTurnsLeft?: number | null;
 }
 
-const HubPanel = ({ node, onChoice }: HubPanelProps) => {
+const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = null }: HubPanelProps) => {
   const paragraphs = node.text.split(/\n\n+/g).filter(Boolean);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingChoice, setPendingChoice] = useState<DialogueChoice | null>(null);
+
+  const confirmDescription = useMemo(() => {
+    if (!crisisPending) return '';
+
+    const suffix =
+      crisisTurnsLeft !== null && crisisTurnsLeft >= 0
+        ? ` It expires in ${crisisTurnsLeft} turn${crisisTurnsLeft === 1 ? '' : 's'}.`
+        : '';
+
+    return `A crisis is pending in the Hall. You can address it immediately without advancing time.${suffix}`;
+  }, [crisisPending, crisisTurnsLeft]);
+
+  const requestChoice = useCallback((choice: DialogueChoice) => {
+    if (!crisisPending) {
+      onChoice(choice);
+      return;
+    }
+
+    setPendingChoice(choice);
+    setConfirmOpen(true);
+  }, [crisisPending, onChoice]);
+
+  const confirmChoice = useCallback(() => {
+    if (pendingChoice) onChoice(pendingChoice);
+    setConfirmOpen(false);
+    setPendingChoice(null);
+  }, [onChoice, pendingChoice]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (isUserTyping()) return;
+
+      if (confirmOpen) return;
 
       const key = e.key;
       if (key >= '1' && key <= '9') {
@@ -32,13 +76,13 @@ const HubPanel = ({ node, onChoice }: HubPanelProps) => {
         const choice = node.choices[idx];
         if (!choice) return;
         e.preventDefault();
-        onChoice(choice);
+        requestChoice(choice);
       }
     };
 
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [node.id, node.choices, onChoice]);
+  }, [confirmOpen, node.id, node.choices, requestChoice]);
 
   return (
     <motion.div
@@ -95,6 +139,12 @@ const HubPanel = ({ node, onChoice }: HubPanelProps) => {
           </span>
         </div>
 
+        {crisisPending && (
+          <div className="text-xs text-muted-foreground">
+            A crisis is pending in the Hall. You can still travel, but the crisis will remain unresolved.
+          </div>
+        )}
+
         <div className="flex flex-col gap-2">
           {node.choices.map((choice, i) => {
             const hotkey = i < 9 ? String(i + 1) : null;
@@ -104,7 +154,7 @@ const HubPanel = ({ node, onChoice }: HubPanelProps) => {
                 key={choice.id}
                 type="button"
                 aria-keyshortcuts={hotkey ?? undefined}
-                onClick={() => onChoice(choice)}
+                onClick={() => requestChoice(choice)}
                 className="group relative overflow-hidden rounded-sm border border-border bg-secondary/35 p-4 text-left font-body text-sm transition-all sm:text-base hover:border-primary/40 hover:bg-secondary"
                 initial={{ x: -10, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
@@ -126,6 +176,24 @@ const HubPanel = ({ node, onChoice }: HubPanelProps) => {
           })}
         </div>
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={next => {
+        if (!next) {
+          setConfirmOpen(false);
+          setPendingChoice(null);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave the Hall?</AlertDialogTitle>
+            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay in Hall</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmChoice}>Leave anyway</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 };
