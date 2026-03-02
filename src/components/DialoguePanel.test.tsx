@@ -184,4 +184,80 @@ describe('DialoguePanel', () => {
 
     vi.useRealTimers();
   });
+
+  it('can hide redundant evidence-dependent choices once proof is known', () => {
+    vi.useFakeTimers();
+
+    const onChoice = vi.fn();
+
+    const node: DialogueNode = {
+      id: 'node-hide',
+      speaker: 'Narrator',
+      text: 'A short line of dialogue.',
+      choices: [
+        {
+          id: 'generic',
+          text: 'Generic option',
+          effects: [],
+          nextNodeId: 'node-2',
+          hideWhenHasAnySecrets: ['proof:better'],
+        },
+        {
+          id: 'specific',
+          text: 'Specific option',
+          effects: [],
+          nextNodeId: 'node-3',
+          requiresAnySecrets: ['proof:better'],
+          hideWhenLockedBySecrets: true,
+        },
+      ],
+    };
+
+    const factions: Faction[] = [
+      {
+        id: 'ember-throne',
+        name: 'The Ember Throne',
+        description: '',
+        motto: '',
+        color: 'ember',
+        reputation: 0,
+        traits: [],
+      },
+    ];
+
+    const { rerender, queryByText } = render(
+      <DialoguePanel
+        node={node}
+        onChoice={onChoice}
+        knownSecrets={[]}
+        factions={factions}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: ' ' });
+
+    // Initially: only generic is visible (specific is hidden due to missing proof).
+    expect(queryByText('Generic option')).toBeTruthy();
+    expect(queryByText('Specific option')).toBeFalsy();
+
+    // After learning proof: generic disappears and specific appears.
+    rerender(
+      <DialoguePanel
+        node={node}
+        onChoice={onChoice}
+        knownSecrets={['proof:better']}
+        factions={factions}
+      />,
+    );
+
+    expect(queryByText('Generic option')).toBeFalsy();
+    expect(queryByText('Specific option')).toBeTruthy();
+
+    // Hotkey 1 should now select the specific option (since it's the first visible choice).
+    fireEvent.keyDown(window, { key: '1' });
+    expect(onChoice).toHaveBeenCalledTimes(1);
+    expect(onChoice).toHaveBeenCalledWith(node.choices[1]);
+
+    vi.useRealTimers();
+  });
 });

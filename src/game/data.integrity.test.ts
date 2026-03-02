@@ -52,6 +52,15 @@ describe('dialogueTree integrity', () => {
           }
         }
 
+        if (choice.hideWhenHasAnySecrets) {
+          expect(Array.isArray(choice.hideWhenHasAnySecrets)).toBe(true);
+          expect(choice.hideWhenHasAnySecrets.length).toBeGreaterThan(0);
+          for (const secret of choice.hideWhenHasAnySecrets) {
+            expect(typeof secret).toBe('string');
+            expect(secret.trim().length).toBeGreaterThan(0);
+          }
+        }
+
         for (const eff of choice.effects) {
           expect(factionIds.has(eff.factionId)).toBe(true);
           expect(typeof eff.reputationChange).toBe('number');
@@ -89,7 +98,11 @@ describe('dialogueTree integrity', () => {
 
     for (const node of Object.values(dialogueTree)) {
       for (const choice of node.choices) {
-        const required = [...(choice.requiresAllSecrets ?? []), ...(choice.requiresAnySecrets ?? [])];
+        const required = [
+          ...(choice.requiresAllSecrets ?? []),
+          ...(choice.requiresAnySecrets ?? []),
+          ...(choice.hideWhenHasAnySecrets ?? []),
+        ];
         for (const secret of required) {
           if (secret === 'override') continue;
           expect(learnableSecrets.has(secret)).toBe(true);
