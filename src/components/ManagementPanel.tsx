@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import type { GameState } from '@/game/types';
 
@@ -18,6 +20,7 @@ const formatCost = (state: GameState, resourceId: keyof GameState['resources'], 
 
 const ManagementPanel = ({ state, onTakeAction, actionsEnabled = true }: ManagementPanelProps) => {
   const ap = state.management;
+  const [showUnavailableActions, setShowUnavailableActions] = useState(false);
 
   const chapter = getChapter(state.chapterId);
   const allowedPools = new Set([chapter.managementPoolId, chapter.projectPoolId]);
@@ -36,6 +39,23 @@ const ManagementPanel = ({ state, onTakeAction, actionsEnabled = true }: Managem
     );
     return !alreadyUnderway;
   });
+
+  const actionCards = availableActions.map(action => ({
+    action,
+    availability: getManagementActionAvailability(state, action),
+  }));
+
+  const visibleActionCards = showUnavailableActions
+    ? actionCards
+    : actionCards.filter(a => a.availability.available);
+
+  const actionsByCategory = (['projects', 'diplomacy', 'routes'] as const)
+    .map(category => ({
+      category,
+      label: category === 'projects' ? 'Projects' : category === 'diplomacy' ? 'Diplomacy' : 'Routes',
+      actions: visibleActionCards.filter(a => a.action.category === category),
+    }))
+    .filter(g => g.actions.length);
 
   return (
     <div className="flex flex-col gap-4">
@@ -149,60 +169,87 @@ const ManagementPanel = ({ state, onTakeAction, actionsEnabled = true }: Managem
       </div>
 
       <div className="parchment-border rounded-sm bg-card p-4">
-        <div className="mb-3 font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Actions</div>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Actions</div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowUnavailableActions(v => !v)}
+            className="h-7 px-2 text-[11px]"
+          >
+            {showUnavailableActions ? 'Hide unavailable' : 'Show unavailable'}
+          </Button>
+        </div>
         {!actionsEnabled && (
           <div className="mb-2 text-xs text-muted-foreground">Return to Concord Hall to take actions.</div>
         )}
-        <div className="flex flex-col gap-2">
-          {availableActions.map((action, i) => {
-            const availability = getManagementActionAvailability(state, action);
-            const disabled = !actionsEnabled || !availability.available;
 
-            const costLabel = action.costs?.length
-              ? action.costs.map(c => formatCost(state, c.resourceId, c.amount)).join(' · ')
-              : null;
+        {actionsByCategory.length ? (
+          <Accordion type="multiple" defaultValue={[actionsByCategory[0].category]} className="w-full">
+            {actionsByCategory.map(group => (
+              <AccordionItem key={group.category} value={group.category} className="border-border">
+                <AccordionTrigger className="py-2 font-display text-xs tracking-[0.18em] text-card-foreground uppercase">
+                  {group.label} <span className="ml-2 text-[10px] text-muted-foreground">({group.actions.length})</span>
+                </AccordionTrigger>
+                <AccordionContent className="pt-1">
+                  <div className="flex flex-col gap-2">
+                    {group.actions.map(({ action, availability }, i) => {
+                      const disabled = !actionsEnabled || !availability.available;
 
-            return (
-              <motion.div
-                key={action.id}
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: 0.05 * i, duration: 0.25 }}
-                className="rounded-sm border border-border bg-secondary/20 p-3"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-display text-xs tracking-[0.18em] text-card-foreground uppercase">
-                      {action.title}
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">{action.description}</div>
-                    <div className="mt-2 text-[11px] text-muted-foreground">
-                      <span className="font-display tracking-[0.18em] uppercase">Cost:</span>{' '}
-                      {action.apCost} AP
-                      {costLabel ? ` · ${costLabel}` : ''}
-                      {action.cooldownTurns ? ` · cooldown ${action.cooldownTurns}` : ''}
-                    </div>
-                    {(!actionsEnabled || !availability.available) && (
-                      <div className="mt-1 text-[11px] text-destructive">
-                        {!actionsEnabled ? 'Return to Concord Hall to take actions.' : availability.reason}
-                      </div>
-                    )}
+                      const costLabel = action.costs?.length
+                        ? action.costs.map(c => formatCost(state, c.resourceId, c.amount)).join(' · ')
+                        : null;
+
+                      return (
+                        <motion.div
+                          key={action.id}
+                          initial={{ x: 20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: 0.05 * i, duration: 0.25 }}
+                          className="rounded-sm border border-border bg-secondary/20 p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="font-display text-xs tracking-[0.18em] text-card-foreground uppercase">
+                                {action.title}
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">{action.description}</div>
+                              <div className="mt-2 text-[11px] text-muted-foreground">
+                                <span className="font-display tracking-[0.18em] uppercase">Cost:</span>{' '}
+                                {action.apCost} AP
+                                {costLabel ? ` · ${costLabel}` : ''}
+                                {action.cooldownTurns ? ` · cooldown ${action.cooldownTurns}` : ''}
+                              </div>
+                              {showUnavailableActions && !availability.available && (
+                                <div className="mt-1 text-[11px] text-destructive">
+                                  {availability.reason}
+                                </div>
+                              )}
+                            </div>
+
+                            <Button
+                              size="sm"
+                              variant={disabled ? 'secondary' : 'default'}
+                              disabled={disabled}
+                              onClick={() => onTakeAction(action.id)}
+                              className="shrink-0"
+                            >
+                              Do
+                            </Button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
-
-                  <Button
-                    size="sm"
-                    variant={disabled ? 'secondary' : 'default'}
-                    disabled={disabled}
-                    onClick={() => onTakeAction(action.id)}
-                    className="shrink-0"
-                  >
-                    Do
-                  </Button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            {showUnavailableActions ? 'No actions available.' : 'No actions available (toggle "Show unavailable" to view all).'}
+          </div>
+        )}
       </div>
     </div>
   );
