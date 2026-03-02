@@ -184,11 +184,11 @@ export function buildEncounterDialogueNode(encounter: SecondaryEncounter): Dialo
   };
 }
 
-export function applyExpiredEncounterConsequence(args: {
+export function getExpiredEncounterConsequenceEffects(args: {
   world: WorldState;
   encounter: SecondaryEncounter;
   turnNumber: number;
-}): { world: WorldState; logEntries: string[] } {
+}): GameEffect[] {
   const kind: SecondaryEncounterKind = args.encounter.kind ?? 'summit';
   const a = args.encounter.relatedFactions[0] ?? 'unknown-a';
   const b = args.encounter.relatedFactions[1] ?? 'unknown-b';
@@ -226,6 +226,50 @@ export function applyExpiredEncounterConsequence(args: {
   }
 
   effects.push({ kind: 'tension', a, b, delta: 5 });
+
+  return effects;
+}
+
+export function describeExpiredEncounterConsequence(args: {
+  world: WorldState;
+  encounter: SecondaryEncounter;
+  turnNumber: number;
+  factionNameById?: Record<string, string>;
+}): string {
+  const effects = getExpiredEncounterConsequenceEffects(args);
+
+  const nameOf = (id: string) => args.factionNameById?.[id] ?? id;
+
+  const parts: string[] = [];
+
+  const tension = effects.find((e): e is Extract<GameEffect, { kind: 'tension' }> => e.kind === 'tension');
+  if (tension) {
+    parts.push(`+${tension.delta} tension (${nameOf(tension.a)} vs ${nameOf(tension.b)})`);
+  }
+
+  for (const eff of effects) {
+    if (eff.kind === 'tradeRoute:setStatus') {
+      const routeName = args.world.tradeRoutes[eff.routeId]?.name ?? eff.routeId;
+      parts.push(`Trade route: ${routeName} becomes ${eff.status}`);
+      continue;
+    }
+
+    if (eff.kind === 'region:setControl' && eff.contested) {
+      const regionName = args.world.regions[eff.regionId]?.name ?? eff.regionId;
+      parts.push(`Region: ${regionName} becomes contested`);
+      continue;
+    }
+  }
+
+  return parts.length ? `If ignored: ${parts.join(' · ')}` : 'If ignored: consequences will escalate.';
+}
+
+export function applyExpiredEncounterConsequence(args: {
+  world: WorldState;
+  encounter: SecondaryEncounter;
+  turnNumber: number;
+}): { world: WorldState; logEntries: string[] } {
+  const effects = getExpiredEncounterConsequenceEffects(args);
 
   const logEntries = [`⏳ Encounter expired: ${args.encounter.title} (+5 tension)`];
 

@@ -10,6 +10,8 @@ import { applyEffects, type GameEffect } from '../effects';
 import { evaluateChapterTransition, getChapter } from '../chapters';
 import { advanceProjectsOneTurn } from '../projects';
 import { DEFAULT_PLAYER_PROFILE } from '../player';
+import { formatLogLeftHallWithCrisis } from '../logFormat';
+import { BASE_INCOME, computeDeterministicIncome } from './income';
 
 const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractured realm...';
 
@@ -152,6 +154,14 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
   // into a "no dialogue" state.
   const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : hub;
 
+  const leavingHall = Boolean(hub && prev.currentDialogue?.id === hub.id && nextDialogue && nextDialogue.id !== hub.id);
+
+  const crisisUrgent = Boolean(
+    leavingHall &&
+      prev.pendingEncounter &&
+      prev.pendingEncounter.expiresOnTurn - prev.turnNumber <= 1,
+  );
+
   return {
     ...withEffects,
     currentDialogue: nextDialogue,
@@ -160,6 +170,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     stepNumber: prev.stepNumber + 1,
     log: [
       ...prev.log,
+      ...(crisisUrgent && prev.pendingEncounter ? [formatLogLeftHallWithCrisis(prev.pendingEncounter.title)] : []),
       `> ${choice.text}`,
       ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
       ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
@@ -207,24 +218,13 @@ const endTurn = (prev: GameState): GameState => {
   const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
   const nextEncounter = existingEncounter ?? sim.pendingEncounter;
 
-  const baseCoinIncome = 1;
-  const baseInfluenceIncome = 1;
-  const baseSuppliesIncome = 1;
-  const baseIntelIncome = 0;
-
-  const routes = Object.values(sim.world.tradeRoutes);
-  const openRoutes = routes.filter(r => r.status === 'open').length;
-  const embargoedRoutes = routes.filter(r => r.status === 'embargoed').length;
-  const raidedRoutes = routes.filter(r => r.status === 'raided').length;
-  const blockedRoutes = embargoedRoutes + raidedRoutes;
-
-  const coinIncome = Math.max(0, baseCoinIncome + openRoutes - blockedRoutes);
+  const income = computeDeterministicIncome(sim.world);
 
   const incomeEffects: GameEffect[] = [
-    { kind: 'resource', resourceId: 'coin', delta: coinIncome },
-    { kind: 'resource', resourceId: 'influence', delta: baseInfluenceIncome },
-    { kind: 'resource', resourceId: 'supplies', delta: baseSuppliesIncome },
-    { kind: 'resource', resourceId: 'intel', delta: baseIntelIncome },
+    { kind: 'resource', resourceId: 'coin', delta: income.coinIncome },
+    { kind: 'resource', resourceId: 'influence', delta: BASE_INCOME.influence },
+    { kind: 'resource', resourceId: 'supplies', delta: BASE_INCOME.supplies },
+    { kind: 'resource', resourceId: 'intel', delta: BASE_INCOME.intel },
   ];
 
   const nextState: GameState = {
@@ -246,9 +246,9 @@ const endTurn = (prev: GameState): GameState => {
   let withIncome = applyEffects(nextState, incomeEffects);
 
   const incomeLog =
-    `💰 Income: +${coinIncome} coin, +${baseInfluenceIncome} influence, +${baseSuppliesIncome} supplies` +
-    (blockedRoutes ? ` (routes disrupted: ${blockedRoutes})` : '') +
-    (baseIntelIncome ? `, +${baseIntelIncome} intel` : '');
+    `💰 Income: +${income.coinIncome} coin, +${BASE_INCOME.influence} influence, +${BASE_INCOME.supplies} supplies` +
+    (income.blockedRoutes ? ` (routes disrupted: ${income.blockedRoutes})` : '') +
+    (BASE_INCOME.intel ? `, +${BASE_INCOME.intel} intel` : '');
 
   withIncome = {
     ...withIncome,

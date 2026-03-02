@@ -139,4 +139,17 @@ describe('GameScreen menu keyboard shortcuts', () => {
 
     input.remove();
   });
+
+  it('does not react to global shortcuts while a dialog is open', async () => {
+    renderScreen();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('tab', { name: /^save$/i })).toHaveAttribute('aria-selected', 'true');
+
+    fireEvent.keyDown(window, { key: 'o', ctrlKey: true });
+
+    expect(within(dialog).getByRole('tab', { name: /^save$/i })).toHaveAttribute('aria-selected', 'true');
+  });
 });

@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 import { Faction, WorldState, TradeRouteState, RegionState, SecondaryEncounter } from '@/game/types';
+import { getTension, getTensionTier } from '@/game/tension';
 import Tip from '@/ui/tips/Tip';
 
 interface WorldMapProps {
@@ -429,6 +430,11 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
                   .join(' ↔ ')
               : 'Unknown';
 
+            const a = selectedRoute.affectedFactions[0] ?? null;
+            const b = selectedRoute.affectedFactions[1] ?? null;
+            const routeTension = a && b ? getTension(world, a, b) : null;
+            const tier = routeTension !== null ? getTensionTier(routeTension) : null;
+
             return (
               <div className="flex flex-col gap-1">
                 <div className="font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase">Selected Route</div>
@@ -436,6 +442,9 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
                 <div className="text-[10px] text-muted-foreground">Status: {selectedRoute.status}</div>
                 <div className="text-[10px] text-muted-foreground">Affected: {affected || '—'}</div>
                 <div className="text-[10px] text-muted-foreground">Endpoints: {endpoints}</div>
+                {routeTension !== null && (
+                  <div className="text-[10px] text-muted-foreground">Tension: {routeTension} ({tier})</div>
+                )}
               </div>
             );
           })()}

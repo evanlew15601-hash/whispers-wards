@@ -3,10 +3,13 @@ import { useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DialogueNode, Faction, PlayerProfile, WorldState, SecondaryEncounter } from '@/game/types';
+import { describeExpiredEncounterConsequence } from '@/game/encounters';
 import { getPortraitById } from '@/game/portraits';
 import { getLeadHintsForCurrentDialogue } from '@/game/leads';
 import WorldMap from '@/components/WorldMap';
 import Tip from '@/ui/tips/Tip';
+import { getTopTensionPairs } from '@/game/tension';
+import { parseLogLine } from '@/game/logging';
 import { ChevronDown, Compass, Eye, Swords } from 'lucide-react';
 
 interface InfoPanelProps {
@@ -28,39 +31,23 @@ const InfoPanel = (
 
   const pendingUrgent = encounterTurnsLeft !== null && encounterTurnsLeft <= 1;
 
+  const tensionHotspots = useMemo(() => {
+    return getTopTensionPairs(world, factions, 3);
+  }, [factions, world]);
+
   const crisisExpiryPreview = useMemo(() => {
     if (!pendingEncounter) return null;
 
-    const kind = pendingEncounter.kind ?? 'summit';
-    const routeId = pendingEncounter.routeId;
-    const regionId = pendingEncounter.regionId;
+    const factionNameById = Object.fromEntries(factions.map(f => [f.id, f.name] as const));
 
-    const aId = pendingEncounter.relatedFactions[0] ?? null;
-    const bId = pendingEncounter.relatedFactions[1] ?? null;
-
-    const nameOf = (id: string | null) => {
-      if (!id) return 'Unknown';
-      return factions.find(f => f.id === id)?.name ?? id;
-    };
-
-    const parts: string[] = [];
-    if (aId && bId) parts.push(`+5 tension (${nameOf(aId)} vs ${nameOf(bId)})`);
-    else parts.push('+5 tension');
-
-    if ((kind === 'embargo' || kind === 'raid') && routeId) {
-      const route = world.tradeRoutes[routeId];
-      if (route) {
-        parts.push(`Trade route: ${route.name} becomes ${kind === 'embargo' ? 'embargoed' : 'raided'}`);
-      }
-    }
-
-    if (kind === 'skirmish' && regionId) {
-      const region = world.regions[regionId];
-      if (region) parts.push(`Region: ${region.name} becomes contested`);
-    }
-
-    return `If ignored: ${parts.join(' · ')}`;
-  }, [factions, pendingEncounter, world.regions, world.tradeRoutes]);
+    return describeExpiredEncounterConsequence({
+      world,
+      encounter: pendingEncounter,
+      // Deterministic preview only; this value only affects duration bookkeeping for route effects.
+      turnNumber: turnNumber + 1,
+      factionNameById,
+    });
+  }, [factions, pendingEncounter, turnNumber, world]);
 
   return (
     <Tabs defaultValue="chronicle" className="flex flex-col gap-4">
@@ -245,6 +232,40 @@ const InfoPanel = (
           </Collapsible>
         )}
 
+        {/* Tension hotspots */}
+        {tensionHotspots.length > 0 && (
+          <div className="parchment-border rounded-sm bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Tension hotspots
+                </h3>
+                <Tip
+                  id="tension"
+                  label="Tip: Tension"
+                  content={
+                    'Tension is a 0–100 pressure gauge between factions. Higher tension makes raids, embargoes, and skirmishes more likely. 0–39 Calm, 40–69 Strained, 70+ Volatile.'
+                  }
+                />
+              </div>
+              <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase">Top 3</span>
+            </div>
+
+            <div className="mt-3 flex flex-col gap-2">
+              {tensionHotspots.map(pair => (
+                <div key={`${pair.aId}:${pair.bId}`} className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0 truncate text-muted-foreground">
+                    {pair.aName} ↔ {pair.bName}
+                  </div>
+                  <div className="shrink-0 font-display text-[10px] tracking-[0.2em] text-primary uppercase">
+                    {pair.value} {pair.tier}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Event log */}
         <Collapsible defaultOpen={true}>
           <div className="parchment-border rounded-sm bg-card p-4">
@@ -263,22 +284,28 @@ const InfoPanel = (
 
             <CollapsibleContent>
               <div className="mt-3 flex max-h-48 flex-col gap-1.5 overflow-y-auto">
-                {log.map((entry, i) => (
-                  <p
-                    key={i}
-                    className={`font-body text-xs ${
-                      entry.startsWith('>')
-                        ? 'text-primary/80 italic'
-                        : entry.startsWith('⚡')
+                {log.map((raw, i) => {
+                  const entry = parseLogLine(raw);
+
+                  const className =
+                    entry.kind === 'choice'
+                      ? 'text-primary/80 italic'
+                      : entry.kind === 'event'
                         ? 'text-accent font-semibold'
-                        : entry.startsWith('🔍')
-                        ? 'text-accent/80'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {entry}
-                  </p>
-                ))}
+                        : entry.kind === 'secret'
+                          ? 'text-accent/80'
+                          : entry.kind === 'warning'
+                            ? 'text-destructive'
+                            : entry.kind === 'income'
+                              ? 'text-primary/80'
+                              : 'text-muted-foreground';
+
+                  return (
+                    <p key={i} className={`font-body text-xs ${className}`}>
+                      {entry.raw}
+                    </p>
+                  );
+                })}
               </div>
             </CollapsibleContent>
           </div>
