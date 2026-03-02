@@ -6,6 +6,7 @@ type LockableChoice = Pick<
   'id' |
     'text' |
     'effects' |
+    'gameEffects' |
     'revealsInfo' |
     'exclusiveGroup' |
     'requiredReputation' |
@@ -33,6 +34,10 @@ export function isChoiceLockedBySecrets(choice: SecretLockableChoice, knownSecre
 
 const hasNonZeroReputationEffect = (choice: Pick<DialogueChoice, 'effects'>) => {
   return choice.effects.some(e => e.reputationChange !== 0);
+};
+
+const hasAnyGameEffects = (choice: Pick<DialogueChoice, 'gameEffects'>) => {
+  return Boolean(choice.gameEffects?.length);
 };
 
 const uniqueRepChoiceIdByRevealsInfo = (() => {
@@ -107,12 +112,13 @@ const isChoiceLockedByExclusiveGroup = (
 };
 
 export function isChoiceLockedByHistory(
-  choice: Pick<DialogueChoice, 'id' | 'text' | 'effects' | 'revealsInfo'>,
+  choice: Pick<DialogueChoice, 'id' | 'text' | 'effects' | 'gameEffects' | 'revealsInfo'>,
   selectedChoiceIds: string[],
   knownSecrets: string[] = [],
   log: string[] = [],
 ): boolean {
-  if (!hasNonZeroReputationEffect(choice)) return false;
+  const hasSuppressibleEffects = hasNonZeroReputationEffect(choice) || hasAnyGameEffects(choice);
+  if (!hasSuppressibleEffects) return false;
 
   // Primary guard: record by id.
   if (selectedChoiceIds.includes(choice.id)) return true;
@@ -120,13 +126,13 @@ export function isChoiceLockedByHistory(
   // Secondary guard: if a rep-affecting choice represents learning a specific fact,
   // treat that fact as proof the choice has already been taken (helps older saves),
   // but only when the secret is uniquely revealed by this one choice.
-  if (choice.revealsInfo && knownSecrets.includes(choice.revealsInfo)) {
+  if (hasNonZeroReputationEffect(choice) && choice.revealsInfo && knownSecrets.includes(choice.revealsInfo)) {
     const uniqueId = uniqueRepChoiceIdByRevealsInfo.get(choice.revealsInfo) ?? null;
     if (uniqueId === choice.id) return true;
   }
 
   // Tertiary guard: legacy saves without selectedChoiceIds can still contain a choice log.
-  if (log.length) {
+  if (hasNonZeroReputationEffect(choice) && log.length) {
     const uniqueId = uniqueRepChoiceIdByText.get(choice.text) ?? null;
     if (uniqueId === choice.id && log.includes(`> ${choice.text}`)) return true;
   }

@@ -62,6 +62,7 @@ const suppressReputationEffects = (choice: DialogueChoice): DialogueChoice => {
   return {
     ...choice,
     effects: choice.effects.map(e => ({ ...e, reputationChange: 0 })),
+    gameEffects: choice.gameEffects?.length ? [] : choice.gameEffects,
   };
 };
 
@@ -86,7 +87,7 @@ const evaluateEvents = (prev: GameState, factions: GameState['factions']) => {
 };
 
 const choiceToEffects = (prev: GameState, choice: DialogueChoice): GameEffect[] => {
-  const effects: GameEffect[] = [];
+  const effects: GameEffect[] = [...(choice.gameEffects ?? [])];
 
   for (const e of choice.effects) {
     if (e.reputationChange === 0) continue;
@@ -113,7 +114,12 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   const secretLearned = Boolean(choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo));
 
-  const withEffects = applyEffects(prev, choiceToEffects(prev, effectiveChoice));
+  const baseWithLog = {
+    ...prev,
+    log: [...prev.log, `> ${choice.text}`],
+  };
+
+  const withEffects = applyEffects(baseWithLog, choiceToEffects(prev, effectiveChoice));
 
   const { newEvents, triggeredEvents } = evaluateEvents(prev, withEffects.factions);
 
@@ -135,8 +141,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       currentDialogue: dialogueTree[getChapter(withEffects.chapterId).hubNodeId] ?? withEffects.currentDialogue,
       pendingEncounter: null,
       log: [
-        ...prev.log,
-        `> ${choice.text}`,
+        ...withEffects.log,
         ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
         ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
         ...resolved.logEntries,
@@ -159,8 +164,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
     stepNumber: prev.stepNumber + 1,
     log: [
-      ...prev.log,
-      `> ${choice.text}`,
+      ...withEffects.log,
       ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
       ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
     ],

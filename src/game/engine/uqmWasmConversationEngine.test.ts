@@ -8,6 +8,32 @@ import { dialogueTree } from '../data';
 import { isChoiceLocked } from '../choiceLocks';
 import { buildEncounterDialogueNode } from '../encounters';
 import type { SecondaryEncounter } from '../types';
+import type { GameEffect } from '../effects';
+
+const repByFaction = (state: { factions: { id: string; reputation: number }[] }) => {
+  return Object.fromEntries(state.factions.map(f => [f.id, f.reputation] as const));
+};
+
+const triggeredEventIds = (state: { events: { id: string; triggered: boolean }[] }) => {
+  return state.events.filter(e => e.triggered).map(e => e.id).sort();
+};
+
+const sortedSet = (values: string[]) => [...new Set(values)].sort();
+
+const expectParity = (tsState: any, wasmState: any) => {
+  expect(wasmState.currentDialogue?.id).toBe(tsState.currentDialogue?.id);
+  expect(repByFaction(wasmState)).toEqual(repByFaction(tsState));
+  expect(sortedSet(wasmState.knownSecrets)).toEqual(sortedSet(tsState.knownSecrets));
+  expect(sortedSet(wasmState.selectedChoiceIds)).toEqual(sortedSet(tsState.selectedChoiceIds));
+  expect(triggeredEventIds(wasmState)).toEqual(triggeredEventIds(tsState));
+
+  const tsEncounterId = tsState.pendingEncounter?.id ?? null;
+  const wasmEncounterId = wasmState.pendingEncounter?.id ?? null;
+  expect(wasmEncounterId).toBe(tsEncounterId);
+
+  expect(wasmState.resources).toEqual(tsState.resources);
+  expect(sortedSet(wasmState.milestones)).toEqual(sortedSet(tsState.milestones));
+};
 
 function makeRuntime(exports: Awaited<ReturnType<typeof loadUqmMinimalWasmExports>>): UqmWasmRuntime {
   const encoder = new TextEncoder();
@@ -421,5 +447,109 @@ describe('uqmWasmConversationEngine', () => {
 
     const repsAfter = Object.fromEntries(afterRepeat.factions.map(f => [f.id, f.reputation] as const));
     expect(repsAfter).toEqual(repsBefore);
+  });
+
+  it('maintains parity across summit conclusion variants (proof-backed vs generic)', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+
+    const baseSummit = {
+      ...start,
+      currentDialogue: dialogueTree['summit-start'],
+      rngSeed: 123456789,
+      factions: start.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
+    };
+
+    const accordSummit = {
+      ...baseSummit,
+      knownSecrets: ['The archives confirm Greenmarch Pass was once neutral ground under a tripartite accord.'],
+    };
+
+    const accordChoice = accordSummit.currentDialogue!.choices.find(c => c.id === 'summit-compact-accord');
+    if (!accordChoice) throw new Error('Expected summit-compact-accord choice');
+
+    expect(isChoiceLocked(accordChoice, accordSummit.factions, accordSummit.knownSecrets, accordSummit.selectedChoiceIds)).toBe(false);
+
+    const nextTsAccord = tsConversationEngine.applyChoice(accordSummit, accordChoice);
+    const nextWasmAccord = wasmEngine.applyChoice(accordSummit, accordChoice);
+
+    expectParity(nextTsAccord, nextWasmAccord);
+
+    const genericChoice = baseSummit.currentDialogue!.choices.find(c => c.id === 'summit-compact');
+    if (!genericChoice) throw new Error('Expected summit-compact choice');
+
+    const nextTsGeneric = tsConversationEngine.applyChoice(baseSummit, genericChoice);
+    const nextWasmGeneric = wasmEngine.applyChoice(baseSummit, genericChoice);
+
+    expectParity(nextTsGeneric, nextWasmGeneric);
+  });
+
+  it('falls back to TS when a choice includes generalized gameEffects (parity)', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+
+    const node = dialogueTree['aldric-followup'];
+    const original = node.choices.find(c => c.id === 'aldric-dispatches');
+    if (!original) throw new Error('Expected aldric-dispatches choice');
+
+    const gameEffects: GameEffect[] = [{ kind: 'resource', resourceId: 'intel', delta: 2 }];
+
+    const injected = {
+      ...original,
+      gameEffects,
+    };
+
+    const injectedNode = {
+      ...node,
+      choices: node.choices.map(c => (c.id === injected.id ? injected : c)),
+    };
+
+    const state = {
+      ...start,
+      rngSeed: 123456789,
+      currentDialogue: injectedNode,
+    };
+
+    const nextTs = tsConversationEngine.applyChoice(state, injected);
+    const nextWasm = wasmEngine.applyChoice(state, injected);
+
+    expectParity(nextTs, nextWasm);
+    expect(nextTs.resources.intel).toBe(2);
+  });
+
+  it('suppresses generalized effects on revisit using choice history (no resource farming)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const node = dialogueTree['aldric-followup'];
+    const original = node.choices.find(c => c.id === 'aldric-dispatches');
+    if (!original) throw new Error('Expected aldric-dispatches choice');
+
+    const injected = {
+      ...original,
+      gameEffects: [{ kind: 'resource', resourceId: 'intel', delta: 2 } satisfies GameEffect],
+    };
+
+    const injectedNode = {
+      ...node,
+      choices: node.choices.map(c => (c.id === injected.id ? injected : c)),
+    };
+
+    const state = {
+      ...initial,
+      currentDialogue: injectedNode,
+    };
+
+    const afterFirst = tsConversationEngine.applyChoice(state, injected);
+    expect(afterFirst.resources.intel).toBe(2);
+
+    const revisit = {
+      ...afterFirst,
+      currentDialogue: injectedNode,
+    };
+
+    const afterSecond = tsConversationEngine.applyChoice(revisit, injected);
+    expect(afterSecond.resources.intel).toBe(2);
   });
 });

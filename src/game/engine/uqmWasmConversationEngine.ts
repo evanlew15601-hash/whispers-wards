@@ -36,17 +36,23 @@ function compileGraph(secretBitCapacity: number, choiceStrideBytes: number): Com
   const nodeIds = Object.keys(dialogueTree).sort();
   const nodeIdToIndex = new Map<string, number>(nodeIds.map((id, idx) => [id, idx]));
 
-  const secrets = new Set<string>();
+  const lockSecrets = new Set<string>();
+  const otherSecrets = new Set<string>();
+
   for (const nodeId of nodeIds) {
     for (const c of dialogueTree[nodeId].choices) {
-      if (c.revealsInfo) secrets.add(c.revealsInfo);
-      if (c.requiresAllSecrets) for (const s of c.requiresAllSecrets) secrets.add(s);
-      if (c.requiresAnySecrets) for (const s of c.requiresAnySecrets) secrets.add(s);
+      if (c.requiresAllSecrets) for (const s of c.requiresAllSecrets) lockSecrets.add(s);
+      if (c.requiresAnySecrets) for (const s of c.requiresAnySecrets) lockSecrets.add(s);
+      if (c.revealsInfo) otherSecrets.add(c.revealsInfo);
     }
   }
 
-  const secretsSorted = [...secrets].sort();
-  const secretsForWasm = secretsSorted.slice(0, secretBitCapacity);
+  // Prioritize secrets that participate in locking so that WASM can compute locks/hints
+  // consistently with TS even when total secrets exceed the mask capacity.
+  const lockSorted = [...lockSecrets].sort();
+  const otherSorted = [...otherSecrets].filter(s => !lockSecrets.has(s)).sort();
+
+  const secretsForWasm = [...lockSorted, ...otherSorted].slice(0, secretBitCapacity);
   const secretToBit = new Map<string, number>(secretsForWasm.map((s, i) => [s, i]));
 
   const bitToSecret = new Array<string | null>(secretBitCapacity).fill(null);
@@ -193,6 +199,9 @@ function applyChoiceUsingWasm(
   graph: CompiledGraph,
 ): GameState | null {
   if (!prev.currentDialogue) return null;
+
+  // Generalized effects are TS-only (WASM core doesn't execute them).
+  if (choice.gameEffects?.length) return null;
 
   // WASM engine applies reputation deltas inside the wasm core. For already-decided
   // rep-affecting choices, fall back to the TS engine which suppresses effects.

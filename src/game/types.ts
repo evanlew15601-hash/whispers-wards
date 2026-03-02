@@ -1,3 +1,5 @@
+import type { GameEffect } from './effects';
+
 export interface Faction {
   id: string;
   name: string;
@@ -15,6 +17,15 @@ export interface DialogueChoice {
     factionId: string;
     reputationChange: number;
   }[];
+
+  /**
+   * Generalized effects applied by the TS engine.
+   *
+   * The WASM conversation core does not execute these; the WASM-backed engine will
+   * fall back to TS execution when these are present to preserve semantics.
+   */
+  gameEffects?: GameEffect[];
+
   nextNodeId: string | null; // null = end scene (defaults to returning to the chapter hub)
 
   /**
