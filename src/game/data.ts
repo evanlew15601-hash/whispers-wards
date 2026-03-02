@@ -1,1 +1,1 @@
-export { initialFactions, dialogueTree, initialEvents } from './content/chapter-1';
+export { initialFactions, dialogueTree, initialEvents } from './content';

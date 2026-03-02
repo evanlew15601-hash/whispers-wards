@@ -196,6 +196,10 @@ describe('tsConversationEngine', () => {
       currentDialogue: dialogueTree['renzo-ledger-request'],
     };
 
+    const revisitHints = tsConversationEngine.getChoiceUiHints(revisit);
+    expect(revisitHints?.[stealIdx]?.alreadyDecided).toBe(true);
+    expect(revisitHints?.[stealIdx]?.locked).toBe(false);
+
     const repsBefore = Object.fromEntries(revisit.factions.map(f => [f.id, f.reputation] as const));
 
     const afterRepeat = tsConversationEngine.applyChoice(revisit, stealChoice);

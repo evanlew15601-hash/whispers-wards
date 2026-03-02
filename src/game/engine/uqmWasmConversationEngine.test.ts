@@ -275,6 +275,25 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextTs).not.toBe(withOverride);
     expect(nextWasm).not.toBe(withOverride);
     expect(nextWasm.currentDialogue?.id).toBe(nextTs.currentDialogue?.id);
+
+    // Already-decided choices should stay selectable even if later reputation would lock them.
+    const emberIdx = base.currentDialogue!.choices.findIndex(c => c.id === 'summit-ember');
+    expect(emberIdx).toBeGreaterThanOrEqual(0);
+
+    const emberChoice = base.currentDialogue!.choices[emberIdx];
+
+    const revisitWithLowRep = {
+      ...base,
+      factions: base.factions.map(f => (f.id === 'ember-throne' ? { ...f, reputation: 0 } : f)),
+      selectedChoiceIds: [...base.selectedChoiceIds, emberChoice.id],
+    };
+
+    expect(wasmEngine.getChoiceLockedFlags?.(revisitWithLowRep)).toEqual(tsConversationEngine.getChoiceLockedFlags?.(revisitWithLowRep));
+    expect(wasmEngine.getChoiceUiHints?.(revisitWithLowRep)).toEqual(tsConversationEngine.getChoiceUiHints?.(revisitWithLowRep));
+
+    const revisitHints = wasmEngine.getChoiceUiHints?.(revisitWithLowRep);
+    expect(revisitHints?.[emberIdx]?.alreadyDecided).toBe(true);
+    expect(revisitHints?.[emberIdx]?.locked).toBe(false);
   });
 
   it('locks mutually-exclusive choices via exclusiveGroup to prevent branch swapping on revisit', () => {

@@ -1,4 +1,4 @@
-import type { Faction, DialogueNode, GameEvent } from '../types';
+import type { Faction, DialogueNode, GameEvent } from '../../types';
 
 export const initialFactions: Faction[] = [
   {

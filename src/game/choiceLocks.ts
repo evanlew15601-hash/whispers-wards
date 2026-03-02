@@ -96,10 +96,10 @@ const choiceIdToExclusiveGroup = (() => {
   return out;
 })();
 
-const isChoiceLockedByExclusiveGroup = (
+export function isChoiceLockedByExclusiveGroup(
   choice: Pick<DialogueChoice, 'id' | 'exclusiveGroup'>,
   selectedChoiceIds: string[],
-): boolean => {
+): boolean {
   const group = choice.exclusiveGroup ?? null;
   if (!group) return false;
 
@@ -109,7 +109,7 @@ const isChoiceLockedByExclusiveGroup = (
   }
 
   return false;
-};
+}
 
 export function isChoiceLockedByHistory(
   choice: Pick<DialogueChoice, 'id' | 'text' | 'effects' | 'gameEffects' | 'revealsInfo'>,

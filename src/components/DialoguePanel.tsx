@@ -101,8 +101,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     if (knownSecrets.includes('override')) return node.choices;
 
     return node.choices.filter(choice => {
+      const hint = choiceUiHintById.get(choice.id);
+
       // Preserve visibility if it was already selected; we still want “already decided” to show.
-      const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+      const alreadyDecided = hint?.alreadyDecided ?? isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
       if (alreadyDecided) return true;
 
       if (choice.hideWhenHasAnySecrets?.length) {
@@ -113,9 +115,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
       if (!choice.hideWhenLockedBySecrets) return true;
 
       // Only hide when the lock is due to missing secrets.
-      return !isChoiceLockedBySecrets(choice, knownSecrets);
+      const lockedBySecrets = hint?.lockedBySecrets ?? isChoiceLockedBySecrets(choice, knownSecrets);
+      return !lockedBySecrets;
     });
-  }, [knownSecrets, node.choices, selectedChoiceIds]);
+  }, [knownSecrets, node.choices, selectedChoiceIds, choiceUiHintById]);
 
   const skipReveal = useCallback(() => {
     playSfx('ui.skip');
@@ -263,10 +266,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         const choice = visibleChoices[idx];
         if (!choice) return;
 
-        const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
-
         const hint = choiceUiHintById.get(choice.id);
         const lockedFlag = lockedChoiceFlagById.get(choice.id);
+
+        const alreadyDecided = hint?.alreadyDecided ?? isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
 
         const locked =
           alreadyDecided
@@ -466,7 +469,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
             {visibleChoices.map((choice, i) => {
               const hint = choiceUiHintById.get(choice.id);
 
-              const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+              const alreadyDecided = hint?.alreadyDecided ?? isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
 
               const locked = alreadyDecided
                 ? false
@@ -475,7 +478,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
               const repReq = hint?.requiredReputation ?? choice.requiredReputation;
 
               const repLocked = Boolean(
-                repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+                !alreadyDecided && repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
               );
 
               const reqFactionName = repReq
@@ -495,8 +498,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 onChoice(choice);
               };
 
-              const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
+              const secretsLocked = locked && (hint?.lockedBySecrets ?? isChoiceLockedBySecrets(choice, knownSecrets));
               const historyLocked = alreadyDecided;
+
+              const repLockedLabel = locked && (hint?.lockedByReputation ?? repLocked);
 
               const displayEffects = alreadyDecided
                 ? (hint?.effects ?? choice.effects).map(effect => ({ ...effect, reputationChange: 0 }))
@@ -548,7 +553,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                       </span>
 
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {repReq && locked && (
+                        {repReq && repLockedLabel && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
                             <Lock className="h-3 w-3" />
                             requires {reqFactionName ?? repReq.factionId.replace('-', ' ')} ≥ {repReq.min}

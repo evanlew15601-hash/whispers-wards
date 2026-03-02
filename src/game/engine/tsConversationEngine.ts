@@ -5,7 +5,7 @@ import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '../choiceLocks';
 import { applyEffects, type GameEffect } from '../effects';
 import { evaluateChapterTransition, getChapter } from '../chapters';
 import { advanceProjectsOneTurn } from '../projects';
@@ -287,12 +287,42 @@ export const tsConversationEngine: ConversationEngine = {
   },
   getChoiceUiHints(state) {
     if (!state.currentDialogue) return null;
-    return state.currentDialogue.choices.map(choice => ({
-      locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
-      requiredReputation: choice.requiredReputation ?? null,
-      effects: choice.effects,
-      revealsInfo: choice.revealsInfo ?? null,
-    }));
+
+    return state.currentDialogue.choices.map(choice => {
+      const alreadyDecided = isChoiceLockedByHistory(choice, state.selectedChoiceIds, state.knownSecrets, state.log);
+
+      if (alreadyDecided) {
+        return {
+          locked: false,
+          alreadyDecided: true,
+          lockedBySecrets: false,
+          lockedByReputation: false,
+          lockedByExclusiveGroup: false,
+          requiredReputation: choice.requiredReputation ?? null,
+          effects: choice.effects,
+          revealsInfo: choice.revealsInfo ?? null,
+        };
+      }
+
+      const lockedByExclusiveGroup = isChoiceLockedByExclusiveGroup(choice, state.selectedChoiceIds);
+      const lockedBySecrets = isChoiceLockedBySecrets(choice, state.knownSecrets);
+
+      const repReq = choice.requiredReputation ?? null;
+      const lockedByReputation = Boolean(
+        repReq && (state.factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+      );
+
+      return {
+        locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
+        alreadyDecided: false,
+        lockedBySecrets,
+        lockedByReputation,
+        lockedByExclusiveGroup,
+        requiredReputation: repReq,
+        effects: choice.effects,
+        revealsInfo: choice.revealsInfo ?? null,
+      };
+    });
   },
 };
 

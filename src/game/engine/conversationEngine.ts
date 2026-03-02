@@ -2,6 +2,10 @@ import type { DialogueChoice, GameState } from '../types';
 
 export type ChoiceUiHint = {
   locked: boolean;
+  alreadyDecided: boolean;
+  lockedBySecrets: boolean;
+  lockedByReputation: boolean;
+  lockedByExclusiveGroup: boolean;
   requiredReputation: { factionId: string; min: number } | null;
   effects: { factionId: string; reputationChange: number }[];
   revealsInfo: string | null;
