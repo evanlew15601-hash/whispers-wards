@@ -1333,6 +1333,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
         id: 'summit-expose-manifest',
         text: 'Accuse the Ember Throne—cite the manifests and the docket trail that puts furnace salts on the road.',
         hideWhenLockedBySecrets: true,
+        // If you have multiple proofs, prefer the most concrete: ledger > manifest > maps.
+        hideWhenHasAnySecrets: [
+          "Renzo's ledger pages show coded payments tied to the border killings.",
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+        ],
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'verdant-court', reputationChange: 10 },
@@ -1349,6 +1354,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
         id: 'summit-expose-maps',
         text: 'Accuse the Ember Throne—cite the forged maps and the way they nudged the border toward blood.',
         hideWhenLockedBySecrets: true,
+        hideWhenHasAnySecrets: [
+          "Renzo's ledger pages show coded payments tied to the border killings.",
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+        ],
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'verdant-court', reputationChange: 10 },

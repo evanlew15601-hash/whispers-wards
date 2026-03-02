@@ -104,6 +104,29 @@ describe('dialogueTree integrity', () => {
     }
   });
 
+  it('ensures each choice has at most one reputation effect per faction (TS/WASM parity)', () => {
+    for (const node of Object.values(dialogueTree)) {
+      for (const choice of node.choices) {
+        const byFaction = new Map<string, number>();
+        for (const eff of choice.effects) {
+          const prev = byFaction.get(eff.factionId) ?? 0;
+          byFaction.set(eff.factionId, prev + 1);
+        }
+
+        for (const [factionId, count] of byFaction.entries()) {
+          expect(count).toBeLessThanOrEqual(1);
+          expect(factionId.trim().length).toBeGreaterThan(0);
+        }
+
+        if (choice.requiredReputation) {
+          // WASM stores this as i16.
+          expect(choice.requiredReputation.min).toBeGreaterThanOrEqual(-32768);
+          expect(choice.requiredReputation.min).toBeLessThanOrEqual(32767);
+        }
+      }
+    }
+  });
+
   it('caps choice count per node at 9 (UQM numeric hotkeys)', () => {
     const maxChoices = 9;
 
@@ -228,6 +251,53 @@ describe('dialogueTree integrity', () => {
       'verdant-ward-inspection',
       'aldric-ward-sample',
       'ember-manifest-check',
+    ];
+
+    for (const id of required) {
+      expect(visited.has(id)).toBe(true);
+    }
+  });
+
+  it('keeps summit branch nodes reachable from the opening (structural)', () => {
+    const startId = 'opening';
+
+    const visited = new Set<string>();
+    const queue: string[] = [startId];
+
+    while (queue.length) {
+      const id = queue.shift()!;
+      if (visited.has(id)) continue;
+      visited.add(id);
+
+      const node = dialogueTree[id];
+      if (!node) continue;
+
+      for (const choice of node.choices) {
+        if (!choice.nextNodeId) continue;
+        queue.push(choice.nextNodeId);
+      }
+    }
+
+    const required = [
+      // Summit entry.
+      'summit-start',
+
+      // Summit proof sources.
+      'map-revelation',
+      'hall-archives',
+      'renzo-ledger-stolen',
+      'renzo-ledger-bought',
+      'ember-manifest-check',
+
+      // Summit endings.
+      'ending-greenmarch-compact',
+      'ending-greenmarch-compact-accord',
+      'ending-iron-march',
+      'ending-verdant-seal',
+      'ending-ember-web',
+      'ending-embers-fall-ledger',
+      'ending-embers-fall-manifest',
+      'ending-embers-fall-maps',
     ];
 
     for (const id of required) {
