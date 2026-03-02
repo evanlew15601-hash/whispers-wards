@@ -455,7 +455,7 @@ const GameMenu = ({
                     <span className="font-mono">Space</span> / <span className="font-mono">Enter</span> Skip dialogue reveal
                   </li>
                   <li>
-                    <span className="font-mono">1</span>–<span className="font-mono">9</span> Choose a response
+                    <span className="font-mono">1</span>–<span className="font-mono">9</span> Choose an option
                   </li>
                   <li>
                     <span className="font-mono">Ctrl</span>/<span className="font-mono">Cmd</span>+<span className="font-mono">S</span>{' '}

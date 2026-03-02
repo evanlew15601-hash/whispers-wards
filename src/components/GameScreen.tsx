@@ -155,27 +155,29 @@ const GameScreen = ({
           <span className="font-display text-xs text-muted-foreground">Turn {state.turnNumber}</span>
 
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="font-display text-[10px] tracking-[0.22em] uppercase">
-              {isInHub ? 'Hall' : isEncounter ? 'Encounter' : 'Scene'}
+            <Badge variant="secondary" className="max-w-56 truncate font-display text-[10px] tracking-[0.22em] uppercase">
+              {conversationEnded
+                ? 'Epilogue'
+                : isInHub
+                  ? 'Hall'
+                  : isEncounter
+                    ? 'Encounter'
+                    : `Scene: ${state.currentDialogue?.speaker ?? '—'}`}
             </Badge>
             <Tip
               id="mode"
               label="Tip: Mode"
               content={
-                isInHub
-                  ? 'Hall is the planning phase: address encounters, spend AP, then choose a destination.'
-                  : isEncounter
-                    ? 'Encounter scenes resolve urgent crises. Addressing a pending encounter does not advance time; ending the turn does.'
-                    : 'Scenes are where you commit to dialogue choices. You can return to the Hall without advancing time.'
+                conversationEnded
+                  ? 'Epilogue: the current scene has concluded. Return to the Hall to plan your next move.'
+                  : isInHub
+                    ? 'Hall is the planning phase: address crises, spend AP, then choose a destination.'
+                    : isEncounter
+                      ? 'Encounters resolve urgent crises. Addressing a crisis from the Hall does not advance time; ending the turn does.'
+                      : 'Scenes are where you commit to dialogue choices. You can return to the Hall without advancing time.'
               }
             />
           </div>
-
-          {focusMode && (
-            <span className="hidden md:inline font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
-              AP {state.management.apRemaining}/{state.management.apMax} • Coin {state.resources.coin} • Influence {state.resources.influence} • Supplies {state.resources.supplies} • Intel {state.resources.intel}
-            </span>
-          )}
 
           {state.pendingEncounter && !isEncounter && (
             <Badge
@@ -227,10 +229,10 @@ const GameScreen = ({
                     <AlertDialogTitle>End the turn?</AlertDialogTitle>
                     <AlertDialogDescription>
                       {warnAp && warnEncounter
-                        ? `You still have ${state.management.apRemaining} AP remaining, and a pending encounter in the hall.`
+                        ? `You still have ${state.management.apRemaining} AP remaining, and a crisis pending in the hall.`
                         : warnAp
                           ? `You still have ${state.management.apRemaining} AP remaining.`
-                          : `A pending encounter is waiting in the hall.`}
+                          : `A crisis is waiting in the hall.`}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -241,28 +243,39 @@ const GameScreen = ({
               </AlertDialog>
             );
           })() : !conversationEnded ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant={concordButtonVariant}
-                  className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
-                >
-                  Return to Hall
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Return to Concord Hall?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Leave this scene without choosing a response. This does not advance time.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Stay</AlertDialogCancel>
-                  <AlertDialogAction onClick={returnToHub}>Return to Hall</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            isEncounter ? (
+              <Button
+                disabled
+                variant={concordButtonVariant}
+                className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+                title="Resolve the encounter to return to the Hall."
+              >
+                Return to Hall
+              </Button>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant={concordButtonVariant}
+                    className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+                  >
+                    Return to Hall
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Return to Concord Hall?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Leave this scene without choosing a response. This does not advance time.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Stay</AlertDialogCancel>
+                    <AlertDialogAction onClick={returnToHub}>Return to Hall</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )
           ) : null}
 
           {!focusMode && (
@@ -344,9 +357,9 @@ const GameScreen = ({
                             {state.pendingEncounter ? (
                               <Tip
                                 id="pending-encounter"
-                                label="Tip: Pending encounter"
+                                label="Tip: Crisis"
                                 content={
-                                  'Pending encounters can be addressed immediately from the Hall without advancing time. If they expire, tensions rise and the situation may worsen.'
+                                  'A crisis can be addressed immediately from the Hall without advancing time. If it expires, tensions rise and the situation may worsen.'
                                 }
                               />
                             ) : state.management.apRemaining > 0 ? (
@@ -361,7 +374,7 @@ const GameScreen = ({
                           {state.pendingEncounter ? (
                             <>
                               <div className="mt-1 font-display text-xs tracking-[0.2em] text-primary uppercase">
-                                Pending encounter
+                                Crisis pending
                               </div>
                               <div className="mt-1 text-sm text-card-foreground">
                                 {state.pendingEncounter.title}

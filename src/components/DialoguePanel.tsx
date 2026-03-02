@@ -250,7 +250,13 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
   const portrait = useMemo(() => getSpeakerPortrait(node.speaker, node.speakerFaction), [node.speaker, node.speakerFaction]);
 
-  const responseLabel = isRevealing ? 'Hold—listening…' : 'Your move';
+  const isEncounterNode = node.id.startsWith('encounter:');
+
+  const responseLabel = isRevealing
+    ? 'Hold—listening…'
+    : isEncounterNode
+      ? 'Choose an action'
+      : 'Choose a response';
 
   return (
     <AnimatePresence mode="wait">
@@ -282,7 +288,11 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 {node.speaker}
               </span>
               <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
-                {isRevealing ? 'Press Space to reveal' : 'Press 1–9 to answer'}
+                {isRevealing
+                  ? 'Press Space to reveal'
+                  : isEncounterNode
+                    ? 'Press 1–9 to choose'
+                    : 'Press 1–9 to respond'}
               </span>
             </div>
           </div>

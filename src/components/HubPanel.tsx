@@ -62,7 +62,7 @@ const HubPanel = ({ node, onChoice }: HubPanelProps) => {
           id="hall-mode"
           label="Tip: Hall mode"
           content={
-            'Hall is the planning phase: handle pending encounters, spend AP on management, then choose a destination. Ending the turn advances the world.'
+            'Hall is the planning phase: address crises, spend AP on management, then choose a destination. Ending the turn advances the world.'
           }
         />
       </div>

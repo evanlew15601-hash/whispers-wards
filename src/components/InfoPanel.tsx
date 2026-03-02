@@ -170,13 +170,13 @@ const InfoPanel = (
                   <div className="flex items-center gap-2">
                     <h3 className="flex items-center gap-2 font-display text-xs tracking-[0.2em] text-primary uppercase">
                       <Swords className="h-4 w-4" aria-hidden="true" />
-                      Pending Encounter
+                      Crisis pending
                     </h3>
                     <Tip
                       id="pending-encounter"
-                      label="Tip: Pending encounter"
+                      label="Tip: Crisis"
                       content={
-                        'Pending encounters can be addressed immediately from the Hall without advancing time. If they expire, tensions rise and the situation may worsen.'
+                        'A crisis can be addressed immediately from the Hall without advancing time. If it expires, tensions rise and the situation may worsen.'
                       }
                     />
                   </div>
