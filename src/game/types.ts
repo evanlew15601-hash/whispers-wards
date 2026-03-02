@@ -28,6 +28,23 @@ export interface DialogueChoice {
   requiredReputation?: { factionId: string; min: number };
   requiresAllSecrets?: string[];
   requiresAnySecrets?: string[];
+
+  /**
+   * If true, the UI may omit this option entirely when it is locked due to missing secrets.
+   *
+   * Intended for “evidence-dependent” options where showing a locked button would be noisy.
+   * (Example: multiple summit accusations that only appear once you have a specific proof.)
+   */
+  hideWhenLockedBySecrets?: boolean;
+
+  /**
+   * If set, the UI may omit this option when the player already knows any of these secrets.
+   *
+   * Intended to reduce redundant options once a “strictly better / more specific” alternative becomes available.
+   * (Example: hide a generic summit compromise option once the player has the Greenmarch accord proof.)
+   */
+  hideWhenHasAnySecrets?: string[];
+
   revealsInfo?: string;
 }
 

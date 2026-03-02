@@ -122,7 +122,7 @@ describe('tsConversationEngine', () => {
       knownSecrets: [],
     };
 
-    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose');
+    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-ledger');
     expect(exposeIdx).toBeGreaterThanOrEqual(0);
 
     const exposeChoice = atSummit.currentDialogue!.choices[exposeIdx];
@@ -143,7 +143,7 @@ describe('tsConversationEngine', () => {
 
     const next = tsConversationEngine.applyChoice(withProof, exposeChoice);
     expect(next).not.toBe(withProof);
-    expect(next.currentDialogue?.id).toBe('ending-embers-fall');
+    expect(next.currentDialogue?.id).toBe('ending-embers-fall-ledger');
   });
 
   it('suppresses reputation effects when repeating rep-affecting choices in legacy saves', () => {
