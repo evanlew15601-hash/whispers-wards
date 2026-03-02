@@ -52,6 +52,19 @@ describe('dialogueTree integrity', () => {
           }
         }
 
+        if (choice.hideWhenLockedBySecrets != null) {
+          expect(typeof choice.hideWhenLockedBySecrets).toBe('boolean');
+        }
+
+        if (choice.hideWhenHasAnySecrets) {
+          expect(Array.isArray(choice.hideWhenHasAnySecrets)).toBe(true);
+          expect(choice.hideWhenHasAnySecrets.length).toBeGreaterThan(0);
+          for (const secret of choice.hideWhenHasAnySecrets) {
+            expect(typeof secret).toBe('string');
+            expect(secret.trim().length).toBeGreaterThan(0);
+          }
+        }
+
         for (const eff of choice.effects) {
           expect(factionIds.has(eff.factionId)).toBe(true);
           expect(typeof eff.reputationChange).toBe('number');
