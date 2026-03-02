@@ -13,6 +13,7 @@ import {
 import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
+import { buildEncounterDialogueNode } from './encounters';
 import { applyGameFlowEvent } from './flow/gameFlow';
 
 const uniqueRepChoiceIdByText = (() => {

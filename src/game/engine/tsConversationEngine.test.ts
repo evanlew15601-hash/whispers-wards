@@ -122,7 +122,7 @@ describe('tsConversationEngine', () => {
       knownSecrets: [],
     };
 
-    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-ledger');
+    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose');
     expect(exposeIdx).toBeGreaterThanOrEqual(0);
 
     const exposeChoice = atSummit.currentDialogue!.choices[exposeIdx];
@@ -133,17 +133,41 @@ describe('tsConversationEngine', () => {
     const nextLocked = tsConversationEngine.applyChoice(atSummit, exposeChoice);
     expect(nextLocked).toBe(atSummit);
 
-    const withProof = {
+    const withLedgerProof = {
       ...atSummit,
       knownSecrets: ['Renzo\'s ledger pages show coded payments tied to the border killings.'],
     };
 
-    const unlockedFlags = tsConversationEngine.getChoiceLockedFlags(withProof);
-    expect(unlockedFlags?.[exposeIdx]).toBe(false);
+    const unlockedLedger = tsConversationEngine.getChoiceLockedFlags(withLedgerProof);
+    expect(unlockedLedger?.[exposeIdx]).toBe(false);
 
-    const next = tsConversationEngine.applyChoice(withProof, exposeChoice);
-    expect(next).not.toBe(withProof);
-    expect(next.currentDialogue?.id).toBe('ending-embers-fall-ledger');
+    const nextLedger = tsConversationEngine.applyChoice(withLedgerProof, exposeChoice);
+    expect(nextLedger).not.toBe(withLedgerProof);
+    expect(nextLedger.currentDialogue?.id).toBe('ending-embers-fall-ledger');
+
+    const withManifestProof = {
+      ...atSummit,
+      knownSecrets: ['Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.'],
+    };
+
+    const unlockedManifest = tsConversationEngine.getChoiceLockedFlags(withManifestProof);
+    expect(unlockedManifest?.[exposeIdx]).toBe(false);
+
+    const nextManifest = tsConversationEngine.applyChoice(withManifestProof, exposeChoice);
+    expect(nextManifest).not.toBe(withManifestProof);
+    expect(nextManifest.currentDialogue?.id).toBe('ending-embers-fall-manifest');
+
+    const withMapsProof = {
+      ...atSummit,
+      knownSecrets: ['The Ember Throne forged maps to manipulate the border dispute.'],
+    };
+
+    const unlockedMaps = tsConversationEngine.getChoiceLockedFlags(withMapsProof);
+    expect(unlockedMaps?.[exposeIdx]).toBe(false);
+
+    const nextMaps = tsConversationEngine.applyChoice(withMapsProof, exposeChoice);
+    expect(nextMaps).not.toBe(withMapsProof);
+    expect(nextMaps.currentDialogue?.id).toBe('ending-embers-fall-maps');
   });
 
   it('suppresses reputation effects when repeating rep-affecting choices in legacy saves', () => {

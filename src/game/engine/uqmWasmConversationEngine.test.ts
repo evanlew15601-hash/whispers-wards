@@ -210,7 +210,7 @@ describe('uqmWasmConversationEngine', () => {
       knownSecrets: [],
     };
 
-    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-ledger');
+    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose');
     expect(exposeIdx).toBeGreaterThanOrEqual(0);
 
     const exposeChoice = atSummit.currentDialogue!.choices[exposeIdx];
@@ -218,20 +218,49 @@ describe('uqmWasmConversationEngine', () => {
     const lockedFlags = wasmEngine.getChoiceLockedFlags?.(atSummit);
     expect(lockedFlags?.[exposeIdx]).toBe(true);
 
-    const nextLocked = wasmEngine.applyChoice(atSummit, exposeChoice);
-    expect(nextLocked).toBe(atSummit);
+    const nextLockedTs = tsConversationEngine.applyChoice(atSummit, exposeChoice);
+    const nextLockedWasm = wasmEngine.applyChoice(atSummit, exposeChoice);
+    expect(nextLockedTs).toBe(atSummit);
+    expect(nextLockedWasm).toBe(atSummit);
 
-    const withProof = {
+    const withLedgerProof = {
       ...atSummit,
       knownSecrets: ['Renzo\'s ledger pages show coded payments tied to the border killings.'],
     };
 
-    const unlockedFlags = wasmEngine.getChoiceLockedFlags?.(withProof);
-    expect(unlockedFlags?.[exposeIdx]).toBe(false);
+    const unlockedLedger = wasmEngine.getChoiceLockedFlags?.(withLedgerProof);
+    expect(unlockedLedger?.[exposeIdx]).toBe(false);
 
-    const next = wasmEngine.applyChoice(withProof, exposeChoice);
-    expect(next).not.toBe(withProof);
-    expect(next.currentDialogue?.id).toBe('ending-embers-fall-ledger');
+    const nextLedgerTs = tsConversationEngine.applyChoice(withLedgerProof, exposeChoice);
+    const nextLedgerWasm = wasmEngine.applyChoice(withLedgerProof, exposeChoice);
+    expectParity(nextLedgerTs, nextLedgerWasm);
+    expect(nextLedgerWasm.currentDialogue?.id).toBe('ending-embers-fall-ledger');
+
+    const withManifestProof = {
+      ...atSummit,
+      knownSecrets: ['Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.'],
+    };
+
+    const unlockedManifest = wasmEngine.getChoiceLockedFlags?.(withManifestProof);
+    expect(unlockedManifest?.[exposeIdx]).toBe(false);
+
+    const nextManifestTs = tsConversationEngine.applyChoice(withManifestProof, exposeChoice);
+    const nextManifestWasm = wasmEngine.applyChoice(withManifestProof, exposeChoice);
+    expectParity(nextManifestTs, nextManifestWasm);
+    expect(nextManifestWasm.currentDialogue?.id).toBe('ending-embers-fall-manifest');
+
+    const withMapsProof = {
+      ...atSummit,
+      knownSecrets: ['The Ember Throne forged maps to manipulate the border dispute.'],
+    };
+
+    const unlockedMaps = wasmEngine.getChoiceLockedFlags?.(withMapsProof);
+    expect(unlockedMaps?.[exposeIdx]).toBe(false);
+
+    const nextMapsTs = tsConversationEngine.applyChoice(withMapsProof, exposeChoice);
+    const nextMapsWasm = wasmEngine.applyChoice(withMapsProof, exposeChoice);
+    expectParity(nextMapsTs, nextMapsWasm);
+    expect(nextMapsWasm.currentDialogue?.id).toBe('ending-embers-fall-maps');
   });
 
   it('keeps lock behavior aligned (UI/TS helper vs engine execution) for summit choices', () => {

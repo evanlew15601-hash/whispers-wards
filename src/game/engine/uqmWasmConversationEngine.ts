@@ -4,7 +4,8 @@ import type { DialogueChoice, GameState } from '../types';
 import { dialogueTree } from '../data';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
-import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '../choiceLocks';
+import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import { resolveNextNodeId } from '../choiceNext';
 import { getChapter } from '../chapters';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
@@ -250,21 +251,16 @@ function applyChoiceUsingWasm(
   // `-1` can mean either "end conversation" or "invalid". Disambiguate using the
   // TS node id on the choice; if the choice expects a next node but wasm returned
   // an invalid index, fall back.
-  let nextDialogueId: string | null = null;
-  if (nextNodeIdx >= 0 && nextNodeIdx < graph.nodeIds.length) {
-    nextDialogueId = graph.nodeIds[nextNodeIdx];
-  } else if (choice.nextNodeId != null) {
-    return null;
+  const expectsNextNode =
+    choice.nextNodeId != null || (choice.nextNodeIdBySecrets?.some(r => r.nextNodeId != null) ?? false);
+
+  if (!(nextNodeIdx >= 0 && nextNodeIdx < graph.nodeIds.length)) {
+    if (expectsNextNode) return null;
   }
 
   const newRep0 = clamp(exp.uqm_conv_get_rep(0), -100, 100);
   const newRep1 = clamp(exp.uqm_conv_get_rep(1), -100, 100);
   const newRep2 = clamp(exp.uqm_conv_get_rep(2), -100, 100);
-
-  const chapter = getChapter(prev.chapterId);
-  const hub = dialogueTree[chapter.hubNodeId] ?? null;
-
-  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : hub;
 
   const newFactions = prev.factions.map(f => {
     if (f.id === 'iron-pact') return { ...f, reputation: newRep0 };
@@ -309,6 +305,12 @@ function applyChoiceUsingWasm(
   }
 
   const newSecrets = [...new Set(ordered)];
+
+  const chapter = getChapter(prev.chapterId);
+  const hub = dialogueTree[chapter.hubNodeId] ?? null;
+
+  const resolvedNextNodeId = resolveNextNodeId(choice, newSecrets);
+  const nextDialogue = resolvedNextNodeId ? dialogueTree[resolvedNextNodeId] ?? null : hub;
 
   // Check events (same logic as TS engine)
   const newEvents = prev.events.map(event => {

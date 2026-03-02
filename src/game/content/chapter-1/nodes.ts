@@ -1393,8 +1393,8 @@ export const dialogueTree = defineDialogueTree({
         requiredReputation: { factionId: 'ember-throne', min: 15 },
       },
       {
-        id: 'summit-expose-ledger',
-        text: 'Accuse the Ember Throne—cite the ledger entries and the mercenary payments hiding behind them.',
+        id: 'summit-expose',
+        text: 'Accuse the Ember Throne—put your proof on the record and demand sanctions.',
         hideWhenLockedBySecrets: true,
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
@@ -1402,53 +1402,35 @@ export const dialogueTree = defineDialogueTree({
           { factionId: 'ember-throne', reputationChange: -40 },
         ],
         requiresAnySecrets: [
-          'Renzo\'s ledger pages show coded payments tied to the border killings.',
-          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
-        ],
-        nextNodeId: 'ending-embers-fall-ledger',
-        requiredReputation: { factionId: 'iron-pact', min: 5 },
-        revealsInfo: 'You publicly accused the Ember Throne, citing ledger entries that trace coin to violence.',
-      },
-      {
-        id: 'summit-expose-manifest',
-        text: 'Accuse the Ember Throne—cite the manifests and the docket trail that puts furnace salts on the road.',
-        hideWhenLockedBySecrets: true,
-        hideWhenHasAnySecrets: [
-          'Renzo\'s ledger pages show coded payments tied to the border killings.',
-          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
-        ],
-        effects: [
-          { factionId: 'iron-pact', reputationChange: 10 },
-          { factionId: 'verdant-court', reputationChange: 10 },
-          { factionId: 'ember-throne', reputationChange: -40 },
-        ],
-        requiresAnySecrets: [
-          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
-        ],
-        nextNodeId: 'ending-embers-fall-manifest',
-        requiredReputation: { factionId: 'iron-pact', min: 5 },
-        revealsInfo: 'You publicly accused the Ember Throne, citing manifests and a Hall docket trail.',
-      },
-      {
-        id: 'summit-expose-maps',
-        text: 'Accuse the Ember Throne—cite the forged maps and the way they nudged the border toward blood.',
-        hideWhenLockedBySecrets: true,
-        hideWhenHasAnySecrets: [
           'Renzo\'s ledger pages show coded payments tied to the border killings.',
           'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
           'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
-        ],
-        effects: [
-          { factionId: 'iron-pact', reputationChange: 10 },
-          { factionId: 'verdant-court', reputationChange: 10 },
-          { factionId: 'ember-throne', reputationChange: -40 },
-        ],
-        requiresAnySecrets: [
           'The Ember Throne forged maps to manipulate the border dispute.',
+        ],
+        nextNodeIdBySecrets: [
+          {
+            requiresAnySecrets: [
+              'Renzo\'s ledger pages show coded payments tied to the border killings.',
+              'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+            ],
+            nextNodeId: 'ending-embers-fall-ledger',
+          },
+          {
+            requiresAnySecrets: [
+              'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+            ],
+            nextNodeId: 'ending-embers-fall-manifest',
+          },
+          {
+            requiresAnySecrets: [
+              'The Ember Throne forged maps to manipulate the border dispute.',
+            ],
+            nextNodeId: 'ending-embers-fall-maps',
+          },
         ],
         nextNodeId: 'ending-embers-fall-maps',
         requiredReputation: { factionId: 'iron-pact', min: 5 },
-        revealsInfo: 'You publicly accused the Ember Throne, citing forged maps as the first lever of escalation.',
+        revealsInfo: 'You publicly accused the Ember Throne, putting your proof on the record.',
       },
       {
         id: 'summit-adjourn',

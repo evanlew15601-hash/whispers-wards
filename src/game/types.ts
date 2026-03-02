@@ -29,6 +29,16 @@ export interface DialogueChoice {
   nextNodeId: string | null; // null = end scene (defaults to returning to the chapter hub)
 
   /**
+   * Optional conditional next-node routing based on secrets known after the choice is applied.
+   *
+   * The first matching rule wins; if no rules match, `nextNodeId` is used.
+   *
+   * Intended to reduce redundant “variant” choices in the UI (e.g. a single “Accuse Ember”
+   * option that routes to ledger/manifest/map endings depending on which proof was found).
+   */
+  nextNodeIdBySecrets?: { requiresAnySecrets: string[]; nextNodeId: string | null }[];
+
+  /**
    * Marks a mutually-exclusive decision group.
    *
    * If the player has previously selected a different choice in the same group,
