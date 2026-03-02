@@ -56,7 +56,17 @@ const isUserTyping = () => {
   return el.isContentEditable;
 };
 
-const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceIds = [], playerPortraitId, playerName, lockedChoices, choiceUiHints }: DialoguePanelProps) => {
+const DialoguePanel = ({
+  node,
+  onChoice,
+  knownSecrets,
+  factions,
+  selectedChoiceIds = [],
+  playerPortraitId,
+  playerName,
+  lockedChoices,
+  choiceUiHints,
+}: DialoguePanelProps) => {
   const { playSfx } = useAudio();
 
   const fullText = node.text;
@@ -128,16 +138,19 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     setIsRevealing(false);
   }, [fullText.length, playSfx]);
 
-  const nudgeLockedChoice = useCallback((choiceId: string) => {
-    playSfx('ui.locked');
+  const nudgeLockedChoice = useCallback(
+    (choiceId: string) => {
+      playSfx('ui.locked');
 
-    setLockedNudgeId(choiceId);
-    if (nudgeTimerRef.current != null) window.clearTimeout(nudgeTimerRef.current);
-    nudgeTimerRef.current = window.setTimeout(() => {
-      setLockedNudgeId(prev => (prev === choiceId ? null : prev));
-      nudgeTimerRef.current = null;
-    }, 220);
-  }, [playSfx]);
+      setLockedNudgeId(choiceId);
+      if (nudgeTimerRef.current != null) window.clearTimeout(nudgeTimerRef.current);
+      nudgeTimerRef.current = window.setTimeout(() => {
+        setLockedNudgeId(prev => (prev === choiceId ? null : prev));
+        nudgeTimerRef.current = null;
+      }, 220);
+    },
+    [playSfx]
+  );
 
   useEffect(() => {
     playSfx('ui.page');
@@ -161,13 +174,14 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     const steps = Math.max(1, Math.ceil(durationMs / REVEAL_TICK_MS));
     const stepChars = Math.max(1, Math.ceil(fullText.length / steps));
 
-    const voiceId = node.speakerFaction === 'iron-pact'
-      ? 'voice.iron'
-      : node.speakerFaction === 'verdant-court'
-        ? 'voice.verdant'
-        : node.speakerFaction === 'ember-throne'
-          ? 'voice.ember'
-          : 'voice.narrator';
+    const voiceId =
+      node.speakerFaction === 'iron-pact'
+        ? 'voice.iron'
+        : node.speakerFaction === 'verdant-court'
+          ? 'voice.verdant'
+          : node.speakerFaction === 'ember-throne'
+            ? 'voice.ember'
+            : 'voice.narrator';
 
     lastVoiceAtRef.current = 0;
 
@@ -301,10 +315,15 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
   const dialogueParagraphs = splitWrappedLinesIntoParagraphs(dialogueLines);
 
-  const aura = node.speakerFaction ? factionAuraVars[node.speakerFaction] ?? 'var(--gold-glow)' : 'var(--gold-glow)';
+  const aura = node.speakerFaction
+    ? factionAuraVars[node.speakerFaction] ?? 'var(--gold-glow)'
+    : 'var(--gold-glow)';
   const SpeakerIcon = node.speakerFaction ? factionIcons[node.speakerFaction] ?? Sparkles : Sparkles;
 
-  const portrait = useMemo(() => getSpeakerPortrait(node.speaker, node.speakerFaction), [node.speaker, node.speakerFaction]);
+  const portrait = useMemo(
+    () => getSpeakerPortrait(node.speaker, node.speakerFaction),
+    [node.speaker, node.speakerFaction]
+  );
 
   const isEncounterNode = node.id.startsWith('encounter:');
 
@@ -335,14 +354,14 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 <SpeakerIcon className="h-4 w-4 text-primary" />
               </div>
               {node.speakerFaction && (
-                <div className={`absolute -bottom-1 -right-1 h-2 w-2 rounded-full ${factionLabelColors[node.speakerFaction] || ''}`} />
+                <div
+                  className={`absolute -bottom-1 -right-1 h-2 w-2 rounded-full ${factionLabelColors[node.speakerFaction] || ''}`}
+                />
               )}
             </div>
 
             <div className="flex flex-col">
-              <span className="font-display text-sm tracking-widest text-primary uppercase">
-                {node.speaker}
-              </span>
+              <span className="font-display text-sm tracking-widest text-primary uppercase">{node.speaker}</span>
               <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
                 {isRevealing
                   ? 'Press Space to reveal'
@@ -411,201 +430,214 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
               </div>
 
               <div className="relative">
-            {dialogueParagraphs.map((paragraphLines, i) => (
-              <motion.p
-                key={i}
-                className="mb-3 font-body text-sm leading-relaxed text-card-foreground last:mb-0 sm:text-base"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.12, duration: 0.35 }}
-              >
-                {paragraphLines.map((line, j) => (
-                  <Fragment key={j}>
-                    {line}
-                    {j < paragraphLines.length - 1 && <br />}
-                  </Fragment>
+                {dialogueParagraphs.map((paragraphLines, i) => (
+                  <motion.p
+                    key={i}
+                    className="mb-3 font-body text-sm leading-relaxed text-card-foreground last:mb-0 sm:text-base"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.12, duration: 0.35 }}
+                  >
+                    {paragraphLines.map((line, j) => (
+                      <Fragment key={j}>
+                        {line}
+                        {j < paragraphLines.length - 1 && <br />}
+                      </Fragment>
+                    ))}
+                  </motion.p>
                 ))}
-              </motion.p>
-            ))}
 
-            {isRevealing && (
-              <div className="mt-4 flex items-center gap-3">
-                <div className="h-1 w-full overflow-hidden rounded-full bg-muted/60">
-                  <div
-                    className="h-full bg-primary/70"
-                    style={{ width: `${Math.min(100, Math.round((revealedChars / Math.max(1, fullText.length)) * 100))}%` }}
-                  />
-                </div>
-                <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground uppercase">
-                  skip
-                </span>
+                {isRevealing && (
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="h-1 w-full overflow-hidden rounded-full bg-muted/60">
+                      <div
+                        className="h-full bg-primary/70"
+                        style={{
+                          width: `${Math.min(100, Math.round((revealedChars / Math.max(1, fullText.length)) * 100))}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground uppercase">
+                      skip
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
-        {/* Choices */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
-              {responseLabel}
-            </span>
-            <Tip
-              id="choices"
-              label="Tip: Choices"
-              content={
-                isEncounterNode
-                  ? 'Encounters often have mechanical outcomes. Some options may require reputation or proof to unlock.'
-                  : 'Some responses require reputation or proof to unlock. Locked options will explain what you need.'
-              }
-              kind="tooltip"
-            />
-          </div>
+            {/* Choices */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  {responseLabel}
+                </span>
+                <Tip
+                  id="choices"
+                  label="Tip: Choices"
+                  content={
+                    isEncounterNode
+                      ? 'Encounters often have mechanical outcomes. Some options may require reputation or proof to unlock.'
+                      : 'Some responses require reputation or proof to unlock. Locked options will explain what you need.'
+                  }
+                  kind="tooltip"
+                />
+              </div>
 
-          <div className={`flex flex-col gap-2 transition-opacity ${isRevealing ? 'opacity-45 pointer-events-none' : 'opacity-100'}`}>
-            {visibleChoices.map((choice, i) => {
-              const hint = choiceUiHintById.get(choice.id);
+              <div
+                className={`flex flex-col gap-2 transition-opacity ${isRevealing ? 'opacity-45 pointer-events-none' : 'opacity-100'}`}
+              >
+                {visibleChoices.map((choice, i) => {
+                  const hint = choiceUiHintById.get(choice.id);
 
-              const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+                  const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
 
-              const locked = alreadyDecided
-                ? false
-                : hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+                  const locked = alreadyDecided
+                    ? false
+                    : hint?.locked ??
+                      lockedChoiceFlagById.get(choice.id) ??
+                      isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
 
-              const repReq = hint?.requiredReputation ?? choice.requiredReputation;
+                  const repReq = hint?.requiredReputation ?? choice.requiredReputation;
 
-              const repLocked = Boolean(
-                repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
-              );
+                  const reqFactionName = repReq
+                    ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
+                    : null;
 
-              const reqFactionName = repReq
-                ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
-                : null;
+                  const lines = choiceLines[choice.id] ?? [choice.text];
+                  const hotkey = i < 9 ? String(i + 1) : null;
+                  const playerPortraitSrc = playerPortraitId
+                    ? getPortraitById(playerPortraitId)?.src ?? null
+                    : null;
 
-              const lines = choiceLines[choice.id] ?? [choice.text];
-              const hotkey = i < 9 ? String(i + 1) : null;
-              const playerPortraitSrc = playerPortraitId ? getPortraitById(playerPortraitId)?.src ?? null : null;
-
-              const onSelect = () => {
-                if (locked) {
-                  nudgeLockedChoice(choice.id);
-                  return;
-                }
-                playSfx('ui.select');
-                onChoice(choice);
-              };
-
-              const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
-              const historyLocked = alreadyDecided;
-
-              const displayEffects = alreadyDecided
-                ? (hint?.effects ?? choice.effects).map(effect => ({ ...effect, reputationChange: 0 }))
-                : (hint?.effects ?? choice.effects);
-
-              return (
-                <motion.button
-                  key={choice.id}
-                  type="button"
-                  aria-disabled={locked}
-                  aria-keyshortcuts={hotkey ?? undefined}
-                  title={locked && repReq ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}` : undefined}
-                  onClick={onSelect}
-                  className={`group relative overflow-hidden rounded-sm border border-border bg-secondary/45 p-4 text-left font-body text-sm transition-all sm:text-base
-                    ${locked
-                      ? 'cursor-not-allowed opacity-50'
-                      : 'hover:border-primary/50 hover:bg-secondary'
+                  const onSelect = () => {
+                    if (locked) {
+                      nudgeLockedChoice(choice.id);
+                      return;
                     }
-                    ${lockedNudgeId === choice.id ? 'cc-choice-nudge' : ''}`}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.25 + i * 0.08, duration: 0.35 }}
-                  whileHover={locked ? {} : { x: 4 }}
-                >
-                  <div className="flex items-start gap-3">
-                    {hotkey && (
-                      <div className="relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm border border-border bg-card/60">
-                        {playerPortraitSrc && (
-                          <img
-                            src={playerPortraitSrc}
-                            alt={playerName ?? 'You'}
-                            className="absolute inset-0 h-full w-full object-cover opacity-80"
-                          />
+                    playSfx('ui.select');
+                    onChoice(choice);
+                  };
+
+                  const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
+                  const historyLocked = alreadyDecided;
+
+                  const displayEffects = alreadyDecided
+                    ? (hint?.effects ?? choice.effects).map(effect => ({ ...effect, reputationChange: 0 }))
+                    : (hint?.effects ?? choice.effects);
+
+                  return (
+                    <motion.button
+                      key={choice.id}
+                      type="button"
+                      aria-disabled={locked}
+                      aria-keyshortcuts={hotkey ?? undefined}
+                      title={
+                        locked && repReq
+                          ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}`
+                          : undefined
+                      }
+                      onClick={onSelect}
+                      className={`group relative overflow-hidden rounded-sm border border-border bg-secondary/45 p-4 text-left font-body text-sm transition-all sm:text-base
+                        ${locked
+                          ? 'cursor-not-allowed opacity-50'
+                          : 'hover:border-primary/50 hover:bg-secondary'
+                        }
+                        ${lockedNudgeId === choice.id ? 'cc-choice-nudge' : ''}`}
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.25 + i * 0.08, duration: 0.35 }}
+                      whileHover={locked ? {} : { x: 4 }}
+                    >
+                      <div className="flex items-start gap-3">
+                        {hotkey && (
+                          <div className="relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm border border-border bg-card/60">
+                            {playerPortraitSrc && (
+                              <img
+                                src={playerPortraitSrc}
+                                alt={playerName ?? 'You'}
+                                className="absolute inset-0 h-full w-full object-cover opacity-80"
+                              />
+                            )}
+                            <div className="relative flex h-full w-full items-center justify-center bg-background/15 font-display text-[10px] tracking-wider text-muted-foreground">
+                              {hotkey}
+                            </div>
+                          </div>
                         )}
-                        <div className="relative flex h-full w-full items-center justify-center bg-background/15 font-display text-[10px] tracking-wider text-muted-foreground">
-                          {hotkey}
+
+                        <div className="min-w-0 flex-1">
+                          <span className="text-secondary-foreground">
+                            {lines.map((line, j) => (
+                              <Fragment key={j}>
+                                {line}
+                                {j < lines.length - 1 && <br />}
+                              </Fragment>
+                            ))}
+                          </span>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            {repReq && locked && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
+                                <Lock className="h-3 w-3" />
+                                requires {reqFactionName ?? repReq.factionId.replace('-', ' ')} ≥ {repReq.min}
+                              </span>
+                            )}
+
+                            {secretsLocked && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
+                                <Lock className="h-3 w-3" />
+                                requires proof
+                              </span>
+                            )}
+
+                            {historyLocked && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
+                                <Lock className="h-3 w-3" />
+                                already decided
+                              </span>
+                            )}
+
+                            {displayEffects.map(effect => (
+                              <span
+                                key={effect.factionId}
+                                className={`text-[10px] font-display tracking-wider ${
+                                  effect.reputationChange > 0
+                                    ? 'text-primary'
+                                    : effect.reputationChange < 0
+                                      ? 'text-destructive'
+                                      : 'text-muted-foreground'
+                                }`}
+                              >
+                                {effect.factionId.replace('-', ' ')}{' '}
+                                {effect.reputationChange > 0
+                                  ? '▲'
+                                  : effect.reputationChange < 0
+                                    ? '▼'
+                                    : '—'}
+                              </span>
+                            ))}
+
+                            {(hint?.revealsInfo ?? choice.revealsInfo) && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-accent">
+                                <Eye className="h-3 w-3" />
+                                intel
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    )}
 
-                    <div className="min-w-0 flex-1">
-                      <span className="text-secondary-foreground">
-                        {lines.map((line, j) => (
-                          <Fragment key={j}>
-                            {line}
-                            {j < lines.length - 1 && <br />}
-                          </Fragment>
-                        ))}
-                      </span>
+                      <span className="absolute left-0 top-0 h-full w-0.5 bg-primary/0 transition-all group-hover:bg-primary/60" />
 
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {repReq && locked && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
-                            <Lock className="h-3 w-3" />
-                            requires {reqFactionName ?? repReq.factionId.replace('-', ' ')} ≥ {repReq.min}
-                          </span>
-                        )}
-
-                        {secretsLocked && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
-                            <Lock className="h-3 w-3" />
-                            requires proof
-                          </span>
-                        )}
-
-                        {historyLocked && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
-                            <Lock className="h-3 w-3" />
-                            already decided
-                          </span>
-                        )}
-
-                        {displayEffects.map(effect => (
-                          <span
-                            key={effect.factionId}
-                            className={`text-[10px] font-display tracking-wider ${
-                              effect.reputationChange > 0
-                                ? 'text-primary'
-                                : effect.reputationChange < 0
-                                ? 'text-destructive'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
-                            {effect.factionId.replace('-', ' ')} {effect.reputationChange > 0 ? '▲' : effect.reputationChange < 0 ? '▼' : '—'}
-                          </span>
-                        ))}
-
-                        {(hint?.revealsInfo ?? choice.revealsInfo) && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-accent">
-                            <Eye className="h-3 w-3" />
-                            intel
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <span className="absolute left-0 top-0 h-full w-0.5 bg-primary/0 transition-all group-hover:bg-primary/60" />
-
-                  {!locked && (
-                    <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100">
-                      <span className="cc-choice-sheen absolute inset-0" />
-                    </span>
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
-        </div>
+                      {!locked && (
+                        <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100">
+                          <span className="cc-choice-sheen absolute inset-0" />
+                        </span>
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>

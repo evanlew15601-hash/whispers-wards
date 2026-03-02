@@ -58,10 +58,11 @@ const startNewGame = (): GameState => {
 
 const addChoiceId = (prevIds: string[], id: string) => (prevIds.includes(id) ? prevIds : [...prevIds, id]);
 
-const suppressReputationEffects = (choice: DialogueChoice): DialogueChoice => {
+const suppressNonRepeatableEffects = (choice: DialogueChoice): DialogueChoice => {
   return {
     ...choice,
     effects: choice.effects.map(e => ({ ...e, reputationChange: 0 })),
+    gameEffects: [],
   };
 };
 
@@ -97,6 +98,10 @@ const choiceToEffects = (prev: GameState, choice: DialogueChoice): GameEffect[] 
     effects.push({ kind: 'secret:add', secret: choice.revealsInfo });
   }
 
+  if (choice.gameEffects?.length) {
+    effects.push(...choice.gameEffects);
+  }
+
   return effects;
 };
 
@@ -104,16 +109,22 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
   const alreadyDecided = isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log);
 
   // Only block genuinely unavailable choices. If the player already made this decision in
-  // the past, keep it selectable and suppress its reputation effects.
+  // the past, keep it selectable and suppress its effects.
   if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds) && !alreadyDecided) {
     return prev;
   }
 
-  const effectiveChoice = alreadyDecided ? suppressReputationEffects(choice) : choice;
+  const effectiveChoice = alreadyDecided ? suppressNonRepeatableEffects(choice) : choice;
 
   const secretLearned = Boolean(choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo));
 
-  const withEffects = applyEffects(prev, choiceToEffects(prev, effectiveChoice));
+  // Apply effects after adding the choice to the log so effect-driven log entries appear in-order.
+  const withChoiceLog: GameState = {
+    ...prev,
+    log: [...prev.log, `> ${choice.text}`],
+  };
+
+  const withEffects = applyEffects(withChoiceLog, choiceToEffects(prev, effectiveChoice));
 
   const { newEvents, triggeredEvents } = evaluateEvents(prev, withEffects.factions);
 
@@ -135,8 +146,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       currentDialogue: dialogueTree[getChapter(withEffects.chapterId).hubNodeId] ?? withEffects.currentDialogue,
       pendingEncounter: null,
       log: [
-        ...prev.log,
-        `> ${choice.text}`,
+        ...withEffects.log,
         ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
         ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
         ...resolved.logEntries,
@@ -159,8 +169,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
     stepNumber: prev.stepNumber + 1,
     log: [
-      ...prev.log,
-      `> ${choice.text}`,
+      ...withEffects.log,
       ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
       ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
     ],
