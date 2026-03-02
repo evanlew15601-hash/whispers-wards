@@ -521,10 +521,88 @@ export const dialogueTree = defineDialogueTree({
         nextNodeId: 'thessaly-oath',
       },
       {
+        id: 'honest-passages',
+        text: '"Some halls have doors that aren\'t on maps. Hidden passages. Do yours still breathe?"',
+        effects: [
+          { factionId: 'verdant-court', reputationChange: 2 },
+        ],
+        nextNodeId: 'thessaly-passages',
+      },
+      {
         id: 'honest-back',
         text: 'Leave Thessaly to her vines and return to the hall.',
         effects: [],
         nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'thessaly-passages': {
+    id: 'thessaly-passages',
+    speaker: 'Emissary Thessaly',
+    speakerFaction: 'verdant-court',
+    text: 'Thessaly\'s eyes narrow, then soften into something like tired amusement.\n\n"The Iron love doors," she says. "They build them to be guarded. The Court prefers thresholds that only open for the right hands."\n\nA vine traces a slow circle on the stone. "There are passages in Concord Hall that predate Concord. Some are sealed. Some are… forgotten on purpose."\n\nShe studies you. "If you want to breathe that dust, do it carefully. And if you find a mark you can\'t name—do not show it to anyone who still kneels to the Court."',
+    choices: [
+      {
+        id: 'passages-investigate',
+        text: 'Slip into the east wing and look for what the maps don\'t show.',
+        effects: [
+          { factionId: 'verdant-court', reputationChange: 1 },
+        ],
+        nextNodeId: 'verdant-passages-door',
+      },
+      {
+        id: 'passages-exile',
+        text: 'Find an exile—someone Court oaths no longer bind—and ask what the marks mean.',
+        hideWhenLockedBySecrets: true,
+        requiresAnySecrets: [
+          'Verdant hinge-sigils mark a hidden passage door in Concord\'s east wing.',
+        ],
+        requiredReputationMax: { factionId: 'verdant-court', max: 20 },
+        effects: [],
+        nextNodeId: 'verdant-exile-intro',
+      },
+      {
+        id: 'passages-back',
+        text: 'Return to the hall and keep your questions broader than doorways.',
+        effects: [],
+        nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'verdant-passages-door': {
+    id: 'verdant-passages-door',
+    speaker: 'Narrator',
+    text: 'The east wing is quieter than the rest of the hall, the air cooler where stained glass throws green and amber across the stone. You follow Thessaly\'s hint: a seam that should not be there, a draft that should not exist.\n\nBehind a tapestry, your fingers find a ridge. The wall gives—just enough to reveal a narrow door and a spiral of faint carvings along the hinge. Not Iron work. Not Ember craft. Something older, patient, and alive.',
+    choices: [
+      {
+        id: 'passages-mark',
+        text: 'Take a rubbing of the hinge marks and commit the pattern to memory.',
+        effects: [],
+        nextNodeId: 'thessaly-passages',
+        revealsInfo: 'Verdant hinge-sigils mark a hidden passage door in Concord\'s east wing.',
+      },
+      {
+        id: 'passages-door-back',
+        text: 'Leave it untouched and return to the hall.',
+        effects: [],
+        nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'verdant-exile-intro': {
+    id: 'verdant-exile-intro',
+    speaker: 'Exile of the Court',
+    speakerFaction: 'verdant-court',
+    text: 'You find them where Concord\'s stone gives way to an inner garden: a figure with moss in their hair and no insignia on their wrists. When you show the rubbing, their face tightens.\n\n"That\'s not a prayer mark," they say. "It\'s a route. A way to move through a hall without being seen. We used them when the Court wanted eyes in places it couldn\'t admit it cared about."\n\nThey look past you, wary. "If you\'re wearing the Court\'s favor like perfume, I won\'t say more."',
+    choices: [
+      {
+        id: 'exile-confirm',
+        text: '"I need the truth, not their blessing. Tell me where the passages lead."',
+        effects: [
+          { factionId: 'verdant-court', reputationChange: -1 },
+        ],
+        nextNodeId: 'concord-hub',
+        revealsInfo: 'An exile confirms the hinge-sigils match covert Verdant routes through Concord Hall.',
       },
     ],
   },
@@ -1439,7 +1517,7 @@ export const dialogueTree = defineDialogueTree({
   'ending-ember-web': {
     id: 'ending-ember-web',
     speaker: 'Narrator',
-    text: 'Renzo\'s smile widens as the others protest. You call it "neutral arbitration". Aldric calls it a leash. Thessaly calls it blight.\n\nBut the charter is signed. The Pass opens—not to soldiers or druids, but to auditors. Ember ledgers become the law, and every wagon crossing Greenmarch pays a toll that turns into influence, influence into obligation.\n\nThe killings end because the incentives change. The people who paid for the murders no longer need them.',
+    text: 'Renzo\'s smile widens as the others protest. You call it "neutral arbitration". Aldric calls it a leash. Thessaly calls it blight.\n\nBut the charter is written and signed in front of witnesses. The Pass opens—not to soldiers or druids, but to auditors. Ember ledgers become the law, and every wagon crossing Greenmarch pays a toll that turns into influence, influence into obligation.\n\nThe killings end because the incentives change. The people who paid for the murders no longer need them.',
     choices: [
       {
         id: 'end-ember',

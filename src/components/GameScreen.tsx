@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/sheet';
 import Tip from '@/ui/tips/Tip';
 import { BUILD_ID } from '@/lib/buildInfo';
-import { getChapter } from '@/game/chapters';
+import { getGameMode } from '@/game/flow/gameMode';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -91,12 +91,12 @@ const GameScreen = ({
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
   const [infoOpen, setInfoOpen] = useState(false);
 
-  const chapter = getChapter(state.chapterId);
   const currentDialogueId = state.currentDialogue?.id ?? null;
 
-  const isEncounter = Boolean(currentDialogueId && currentDialogueId.startsWith('encounter:'));
-  const isInHub = currentDialogueId === chapter.hubNodeId;
-  const focusMode = !conversationEnded && !isInHub;
+  const mode = getGameMode(state);
+  const isEncounter = mode === 'encounter';
+  const isInHub = mode === 'hub';
+  const focusMode = mode === 'scene' || mode === 'encounter';
 
   const canAddressEncounter = Boolean(state.pendingEncounter && isInHub);
 

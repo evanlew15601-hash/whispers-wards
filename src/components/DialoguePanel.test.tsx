@@ -125,6 +125,55 @@ describe('DialoguePanel', () => {
     vi.useRealTimers();
   });
 
+  it('supports requiredReputationMax gating (locks when reputation is too high)', () => {
+    vi.useFakeTimers();
+
+    const onChoice = vi.fn();
+
+    const node: DialogueNode = {
+      id: 'node-rep-max',
+      speaker: 'Narrator',
+      text: 'A short line of dialogue.',
+      choices: [
+        {
+          id: 'c1',
+          text: 'This option is only available if your Verdant reputation is low.',
+          effects: [],
+          nextNodeId: 'node-2',
+          requiredReputationMax: { factionId: 'verdant-court', max: 0 },
+        },
+      ],
+    };
+
+    const factions: Faction[] = [
+      {
+        id: 'verdant-court',
+        name: 'The Verdant Court',
+        description: '',
+        motto: '',
+        color: 'verdant',
+        reputation: 5,
+        traits: [],
+      },
+    ];
+
+    render(
+      <DialoguePanel
+        node={node}
+        onChoice={onChoice}
+        knownSecrets={[]}
+        factions={factions}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: ' ' });
+    fireEvent.keyDown(window, { key: '1' });
+
+    expect(onChoice).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
   it('locks choices that require proof until the secret is known', () => {
     vi.useFakeTimers();
 

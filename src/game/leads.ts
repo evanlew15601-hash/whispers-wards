@@ -16,6 +16,9 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.': [
     'Cross-reference shipping manifests with Concord docket filings in the archives.',
   ],
+  'Verdant hinge-sigils mark a hidden passage door in Concord\'s east wing.': [
+    'Search the east wing for seams behind tapestries or alcoves; look for faint hinge carvings in Verdant style.',
+  ],
 };
 
 function collectMissingProofSecrets(node: DialogueNode, knownSecrets: string[]): Set<string> {
