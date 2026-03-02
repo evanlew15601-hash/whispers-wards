@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 import { Faction, WorldState, TradeRouteState, RegionState, SecondaryEncounter } from '@/game/types';
+import Tip from '@/ui/tips/Tip';
 
 interface WorldMapProps {
   world: WorldState;
@@ -193,7 +194,16 @@ const WorldMap = ({ world, factions, highlightEncounter }: WorldMapProps) => {
   return (
     <div className="parchment-border rounded-sm bg-card p-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">World Map</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">World Map</h3>
+          <Tip
+            id="world-map"
+            label="Tip: World map"
+            content={
+              'Contested regions are unstable and may escalate. Trade routes can be Open, Embargoed, or Raided—disruption reduces income and increases tension between affected factions.'
+            }
+          />
+        </div>
         <span className="font-display text-[10px] text-muted-foreground">Regions & Routes</span>
       </div>
 

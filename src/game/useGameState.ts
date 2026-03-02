@@ -289,9 +289,14 @@ export function useGameState() {
       const chapter = getChapter(prev.chapterId);
       const hub = dialogueTree[chapter.hubNodeId] ?? null;
       if (!hub) return prev;
+
+      if (prev.currentDialogue?.id === hub.id) return prev;
+
       return {
         ...prev,
+        stepNumber: prev.stepNumber + 1,
         currentDialogue: hub,
+        log: [...prev.log, '↩ Returned to Concord Hall'],
       };
     });
   }, []);

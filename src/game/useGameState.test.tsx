@@ -157,6 +157,56 @@ describe('useGameState', () => {
     expect(result.current.state.currentDialogue?.choices.length).toBeGreaterThan(0);
   });
 
+  it('returnToHub logs and increments stepNumber when leaving a scene', async () => {
+    const factions = initialFactions.map(f => ({ ...f }));
+    const events = initialEvents.map(e => ({ ...e }));
+
+    const partialState = {
+      currentScene: 'game',
+      factions,
+      currentDialogue: { id: 'opening' },
+      events,
+      knownSecrets: [],
+      turnNumber: 7,
+      log: ['qa log'],
+      player: { name: 'Envoy', pronouns: 'they/them', portraitId: 'envoy-default' },
+    };
+
+    const meta = {
+      savedAt: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+      turnNumber: partialState.turnNumber,
+      factions: factions.map(f => ({ id: f.id, name: f.name, reputation: f.reputation })),
+    };
+
+    localStorage.setItem(
+      STORAGE_KEY_V1,
+      JSON.stringify({
+        version: 1,
+        slots: {
+          '1': { meta, state: partialState },
+        },
+      }),
+    );
+
+    const { useGameState } = await import('./useGameState');
+
+    const { result } = renderHook(() => useGameState());
+
+    await act(async () => {
+      result.current.loadFromSlot(1);
+    });
+
+    const before = result.current.state.stepNumber;
+
+    await act(async () => {
+      result.current.returnToHub();
+    });
+
+    expect(result.current.state.currentDialogue?.id).toBe('concord-hub');
+    expect(result.current.state.stepNumber).toBe(before + 1);
+    expect(result.current.state.log.at(-1)).toBe('↩ Returned to Concord Hall');
+  });
+
   it('saveToSlot reports failure when persistence fails', async () => {
     const { toast } = await import('sonner');
 

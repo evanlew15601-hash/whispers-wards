@@ -4,6 +4,7 @@ import { useAmbience } from '@/audio/useAmbience';
 import { GameState, DialogueChoice } from '@/game/types';
 import { SaveSlotInfo } from '@/game/storage';
 import DialoguePanel from '@/components/DialoguePanel';
+import HubPanel from '@/components/HubPanel';
 import ManagementPanel from '@/components/ManagementPanel';
 import FactionPanel from '@/components/FactionPanel';
 import InfoPanel from '@/components/InfoPanel';
@@ -11,6 +12,26 @@ import GameMenu from '@/components/GameMenu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import Tip from '@/ui/tips/Tip';
 import { BUILD_ID } from '@/lib/buildInfo';
 import { getChapter } from '@/game/chapters';
 
@@ -68,9 +89,13 @@ const GameScreen = ({
   const conversationEnded = !state.currentDialogue;
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const chapter = getChapter(state.chapterId);
-  const isInHub = state.currentDialogue?.id === chapter.hubNodeId;
+  const currentDialogueId = state.currentDialogue?.id ?? null;
+
+  const isEncounter = Boolean(currentDialogueId && currentDialogueId.startsWith('encounter:'));
+  const isInHub = currentDialogueId === chapter.hubNodeId;
   const focusMode = !conversationEnded && !isInHub;
 
   const canAddressEncounter = Boolean(state.pendingEncounter && isInHub);
@@ -98,6 +123,9 @@ const GameScreen = ({
       const mod = e.ctrlKey || e.metaKey;
 
       if (key === 'escape') {
+        const openDialog = document.querySelector('[role="dialog"],[role="alertdialog"]');
+        if (openDialog) return;
+
         setMenuOpen(prev => !prev);
         return;
       }
@@ -138,43 +166,162 @@ const GameScreen = ({
         <div className="flex items-center gap-3">
           <span className="font-display text-xs text-muted-foreground">Turn {state.turnNumber}</span>
 
-          {focusMode && (
-            <span className="hidden md:inline font-display text-[10px] tracking-[0.22em] text-muted-foreground/70 uppercase">
-              AP {state.management.apRemaining}/{state.management.apMax} • Coin {state.resources.coin} • Influence {state.resources.influence} • Supplies {state.resources.supplies} • Intel {state.resources.intel}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="max-w-56 truncate font-display text-[10px] tracking-[0.22em] uppercase">
+              {conversationEnded
+                ? 'Epilogue'
+                : isInHub
+                  ? 'Hall'
+                  : isEncounter
+                    ? 'Encounter'
+                    : `Scene: ${state.currentDialogue?.speaker ?? '—'}`}
+            </Badge>
+            <Tip
+              id="mode"
+              label="Tip: Mode"
+              content={
+                conversationEnded
+                  ? 'Epilogue: the current scene has concluded. Return to the Hall to plan your next move.'
+                  : isInHub
+                    ? 'Hall is the planning phase: address crises, spend AP, then choose a destination.'
+                    : isEncounter
+                      ? 'Encounters resolve urgent crises. Addressing a crisis from the Hall does not advance time; ending the turn does.'
+                      : 'Scenes are where you commit to dialogue choices. You can return to the Hall without advancing time.'
+              }
+            />
+          </div>
 
-          {state.pendingEncounter && (
+          {state.pendingEncounter && !isEncounter && (
             <Badge
               variant={encounterBadgeVariant}
               className="font-display text-[10px] tracking-[0.22em] uppercase"
               title={
-                encounterTurnsLeft !== null && encounterTurnsLeft >= 0
-                  ? `Pending encounter (expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'})`
-                  : 'Pending encounter'
+                (encounterTurnsLeft !== null && encounterTurnsLeft >= 0
+                  ? `Crisis pending (expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'})`
+                  : 'Crisis pending') + (crisisExpiryPreview ? ` — ${crisisExpiryPreview}` : '')
               }
             >
-              Encounter
+              Crisis
               {encounterTurnsLeft !== null && encounterTurnsLeft >= 0 ? ` ${encounterTurnsLeft}T` : ''}
             </Badge>
           )}
 
-          {isInHub ? (
-            <Button
-              onClick={endTurn}
-              variant="outline"
-              className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
-            >
-              End Turn
-            </Button>
-          ) : !conversationEnded ? (
-            <Button
-              onClick={returnToHub}
-              variant={concordButtonVariant}
-              className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
-            >
-              Concord Hall
-            </Button>
+          {focusMode && (
+            <Sheet open={infoOpen} onOpenChange={setInfoOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+                >
+                  Info
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md">
+                <SheetHeader>
+                  <SheetTitle className="font-display tracking-[0.2em] uppercase">Info</SheetTitle>
+                  <SheetDescription>Leads, intel, event log, and the world map.</SheetDescription>
+                </SheetHeader>
+
+                <div className="mt-4">
+                  <InfoPanel
+                    currentDialogue={state.currentDialogue}
+                    knownSecrets={state.knownSecrets}
+                    turnNumber={state.turnNumber}
+                    log={state.log}
+                    world={state.world}
+                    factions={state.factions}
+                    pendingEncounter={state.pendingEncounter}
+                    player={state.player}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
+
+          {isInHub ? (() => {
+            const crisisUrgent = encounterTurnsLeft !== null && encounterTurnsLeft <= 1;
+            const needsConfirm = Boolean(state.management.apRemaining > 0 || (state.pendingEncounter && crisisUrgent));
+
+            const button = (
+              <Button
+                variant="outline"
+                className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+              >
+                End Turn
+              </Button>
+            );
+
+            if (!needsConfirm) {
+              return (
+                <Button
+                  onClick={endTurn}
+                  variant="outline"
+                  className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+                >
+                  End Turn
+                </Button>
+              );
+            }
+
+            const warnEncounter = Boolean(state.pendingEncounter && crisisUrgent);
+            const warnAp = state.management.apRemaining > 0;
+
+            return (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>{button}</AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>End the turn?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {warnAp && warnEncounter
+                        ? `You still have ${state.management.apRemaining} AP remaining, and a crisis pending in the hall.`
+                        : warnAp
+                          ? `You still have ${state.management.apRemaining} AP remaining.`
+                          : `A crisis is waiting in the hall.`}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Stay in Hall</AlertDialogCancel>
+                    <AlertDialogAction onClick={endTurn}>End Turn</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            );
+          })() : !conversationEnded ? (
+            isEncounter ? (
+              <Button
+                disabled
+                variant={concordButtonVariant}
+                className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+                title="Resolve the encounter to return to the Hall."
+              >
+                Return to Hall
+              </Button>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant={concordButtonVariant}
+                    className="h-8 rounded-sm px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+                  >
+                    Return to Hall
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Return to Concord Hall?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Leave this scene without choosing a response. This does not advance time.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Stay</AlertDialogCancel>
+                    <AlertDialogAction onClick={returnToHub}>Return to Hall</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )
           ) : null}
 
           {!focusMode && (
@@ -238,7 +385,7 @@ const GameScreen = ({
             </motion.div>
           ) : (
             <>
-              {isInHub && (state.pendingEncounter || state.management.apRemaining > 0) && (
+              {isInHub && (
                 <motion.div
                   className="mb-4"
                   initial={{ opacity: 0, y: 8 }}
@@ -249,14 +396,31 @@ const GameScreen = ({
                     <div className="flex flex-col gap-3 p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
-                          <div className="font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
-                            Agenda
+                          <div className="flex items-center gap-2">
+                            <div className="font-display text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
+                              Agenda
+                            </div>
+                            {state.pendingEncounter ? (
+                              <Tip
+                                id="pending-encounter"
+                                label="Tip: Crisis"
+                                content={
+                                  'A crisis can be addressed immediately from the Hall without advancing time. If it expires, tensions rise and the situation may worsen.'
+                                }
+                              />
+                            ) : state.management.apRemaining > 0 ? (
+                              <Tip
+                                id="ap"
+                                label="Tip: Action points"
+                                content={'AP is spent on management actions in the Hall. It resets when you End Turn.'}
+                              />
+                            ) : null}
                           </div>
 
                           {state.pendingEncounter ? (
                             <>
                               <div className="mt-1 font-display text-xs tracking-[0.2em] text-primary uppercase">
-                                Pending encounter
+                                Crisis pending
                               </div>
                               <div className="mt-1 text-sm text-card-foreground">
                                 {state.pendingEncounter.title}
@@ -275,8 +439,13 @@ const GameScreen = ({
                                   ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${state.pendingEncounter.expiresOnTurn})`
                                   : `Expires on turn ${state.pendingEncounter.expiresOnTurn}`}
                               </div>
+                              {crisisExpiryPreview && (
+                                <div className="mt-2 text-[11px] text-muted-foreground">
+                                  {crisisExpiryPreview}
+                                </div>
+                              )}
                             </>
-                          ) : (
+                          ) : state.management.apRemaining > 0 ? (
                             <>
                               <div className="mt-1 font-display text-xs tracking-[0.2em] text-primary uppercase">
                                 Actions available
@@ -286,6 +455,18 @@ const GameScreen = ({
                               </div>
                               <div className="mt-1 text-xs text-muted-foreground">
                                 Spend AP in Management to advance projects and directives.
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="mt-1 font-display text-xs tracking-[0.2em] text-primary uppercase">
+                                Choose a destination
+                              </div>
+                              <div className="mt-1 text-sm text-card-foreground">
+                                Review the hall briefing and select where to apply pressure next.
+                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                Destinations are listed below.
                               </div>
                             </>
                           )}
@@ -304,7 +485,7 @@ const GameScreen = ({
                             </Button>
                           ) : state.management.apRemaining > 0 ? (
                             <Button size="sm" variant="secondary" onClick={scrollToManagement}>
-                              Management
+                              Spend AP
                             </Button>
                           ) : null}
                         </div>
@@ -314,17 +495,61 @@ const GameScreen = ({
                 </motion.div>
               )}
 
-              <DialoguePanel
-                node={state.currentDialogue!}
-                onChoice={makeChoice}
-                knownSecrets={state.knownSecrets}
-                factions={state.factions}
-                selectedChoiceIds={state.selectedChoiceIds}
-                playerName={state.player.name}
-                playerPortraitId={state.player.portraitId}
-                lockedChoices={choiceLockedFlags}
-                choiceUiHints={choiceUiHints}
-              />
+              {isInHub ? (
+                <HubPanel
+                  node={state.currentDialogue!}
+                  onChoice={makeChoice}
+                  crisisPending={Boolean(state.pendingEncounter)}
+                  crisisTurnsLeft={encounterTurnsLeft}
+                  crisisConsequence={crisisExpiryPreview}
+                />
+              ) : (
+                <DialoguePanel
+                  node={state.currentDialogue!}
+                  onChoice={makeChoice}
+                  knownSecrets={state.knownSecrets}
+                  factions={state.factions}
+                  selectedChoiceIds={state.selectedChoiceIds}
+                  playerName={state.player.name}
+                  playerPortraitId={state.player.portraitId}
+                  lockedChoices={choiceLockedFlags}
+                  choiceUiHints={choiceUiHints}
+                />
+              )}
+            </>
+          )}
+        </main>
+
+        {!focusMode && (
+          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+            <InfoPanel
+              currentDialogue={state.currentDialogue}
+              knownSecrets={state.knownSecrets}
+              turnNumber={state.turnNumber}
+              log={state.log}
+              world={state.world}
+              factions={state.factions}
+              pendingEncounter={state.pendingEncounter}
+              player={state.player}
+            />
+          </motion.aside>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GameScreen;
+oice={makeChoice}
+                  knownSecrets={state.knownSecrets}
+                  factions={state.factions}
+                  selectedChoiceIds={state.selectedChoiceIds}
+                  playerName={state.player.name}
+                  playerPortraitId={state.player.portraitId}
+                  lockedChoices={choiceLockedFlags}
+                  choiceUiHints={choiceUiHints}
+                />
+              )}
             </>
           )}
         </main>

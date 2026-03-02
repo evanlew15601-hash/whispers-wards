@@ -8,6 +8,7 @@ import { useAudio } from '@/audio/useAudio';
 import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
 import CommPortrait from '@/components/CommPortrait';
 import { getPortraitById, getSpeakerPortrait } from '@/game/portraits';
+import Tip from '@/ui/tips/Tip';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -250,7 +251,13 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
   const portrait = useMemo(() => getSpeakerPortrait(node.speaker, node.speakerFaction), [node.speaker, node.speakerFaction]);
 
-  const responseLabel = isRevealing ? 'Hold—listening…' : 'Your move';
+  const isEncounterNode = node.id.startsWith('encounter:');
+
+  const responseLabel = isRevealing
+    ? 'Hold—listening…'
+    : isEncounterNode
+      ? 'Choose an action'
+      : 'Choose a response';
 
   return (
     <AnimatePresence mode="wait">
@@ -282,7 +289,11 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 {node.speaker}
               </span>
               <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
-                {isRevealing ? 'Press Space to reveal' : 'Press 1–9 to answer'}
+                {isRevealing
+                  ? 'Press Space to reveal'
+                  : isEncounterNode
+                    ? 'Press 1–9 to choose'
+                    : 'Press 1–9 to respond'}
               </span>
             </div>
           </div>
@@ -380,9 +391,21 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
         {/* Choices */}
         <div className="flex flex-col gap-2">
-          <span className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
-            {responseLabel}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
+              {responseLabel}
+            </span>
+            <Tip
+              id="choices"
+              label="Tip: Choices"
+              content={
+                isEncounterNode
+                  ? 'Encounters often have mechanical outcomes. Some options may require reputation or proof to unlock.'
+                  : 'Some responses require reputation or proof to unlock. Locked options will explain what you need.'
+              }
+              kind="tooltip"
+            />
+          </div>
 
           <div className={`flex flex-col gap-2 transition-opacity ${isRevealing ? 'opacity-45 pointer-events-none' : 'opacity-100'}`}>
             {node.choices.map((choice, i) => {
