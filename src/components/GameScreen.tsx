@@ -281,17 +281,36 @@ const GameScreen = ({
                           : `A crisis is waiting in the hall.`}
 
                       {endTurnPreview && (
-                        <span className="mt-3 block space-y-1 text-[12px]">
-                          <span className="block text-muted-foreground">Deterministic preview:</span>
-                          <span className="block text-muted-foreground">• AP resets to {endTurnPreview.apResetTo}</span>
-                          <span className="block text-muted-foreground">
-                            • Income: +{endTurnPreview.coinIncome} coin, +{endTurnPreview.influenceIncome} influence, +{endTurnPreview.suppliesIncome} supplies
+                        <span className="mt-4 block rounded-sm border border-border bg-background/20 p-3 text-[12px]">
+                          <span className="block font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+                            Turn forecast (deterministic)
                           </span>
-                          <span className="block text-muted-foreground">• Projects tick: {endTurnPreview.activeProjects}</span>
+
+                          <span className="mt-2 grid grid-cols-[1fr,auto] gap-x-4 gap-y-1 text-muted-foreground">
+                            <span>AP</span>
+                            <span className="text-right">Resets to {endTurnPreview.apResetTo}</span>
+
+                            <span>Income</span>
+                            <span className="text-right">
+                              +{endTurnPreview.coinIncome} coin · +{endTurnPreview.influenceIncome} influence · +{endTurnPreview.suppliesIncome} supplies
+                            </span>
+
+                            <span>Trade routes</span>
+                            <span className="text-right">
+                              {endTurnPreview.openRoutes} open · {endTurnPreview.blockedRoutes} disrupted
+                            </span>
+
+                            <span>Projects</span>
+                            <span className="text-right">{endTurnPreview.activeProjects} tick</span>
+                          </span>
+
                           {endTurnPreview.crisisExpiresNow && endTurnPreview.crisisExpiryPreview && (
-                            <span className="block text-destructive">• {endTurnPreview.crisisExpiryPreview}</span>
+                            <span className="mt-3 block text-destructive">{endTurnPreview.crisisExpiryPreview}</span>
                           )}
-                          <span className="mt-2 block text-muted-foreground">World events will advance; outcomes are not fully predictable.</span>
+
+                          <span className="mt-3 block text-[11px] text-muted-foreground">
+                            World events will advance; outcomes are not fully predictable.
+                          </span>
                         </span>
                       )}
                     </AlertDialogDescription>
