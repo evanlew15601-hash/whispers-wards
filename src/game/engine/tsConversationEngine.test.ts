@@ -94,6 +94,37 @@ describe('tsConversationEngine', () => {
     expect(afterTurn.log.some(l => l.startsWith('🌍 '))).toBe(true);
   });
 
+  it('applies choice.gameEffects deterministically and suppresses them when repeating an already-decided choice', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const choice = {
+      id: 'qa-game-effects',
+      text: 'Apply some game effects',
+      effects: [{ factionId: 'iron-pact', reputationChange: 10 }],
+      gameEffects: [
+        { kind: 'resource', resourceId: 'coin', delta: 2 },
+        { kind: 'milestone:add', id: 'qa-milestone' },
+      ],
+      nextNodeId: null,
+    };
+
+    const repBefore = initial.factions.find(f => f.id === 'iron-pact')?.reputation ?? 0;
+
+    const afterFirst = tsConversationEngine.applyChoice(initial, choice);
+    expect(afterFirst.resources.coin).toBe(initial.resources.coin + 2);
+    expect(afterFirst.milestones).toContain('qa-milestone');
+
+    const repAfterFirst = afterFirst.factions.find(f => f.id === 'iron-pact')?.reputation ?? 0;
+    expect(repAfterFirst).toBe(repBefore + 10);
+
+    const afterRepeat = tsConversationEngine.applyChoice(afterFirst, choice);
+    expect(afterRepeat.resources.coin).toBe(afterFirst.resources.coin);
+    expect(afterRepeat.milestones).toEqual(afterFirst.milestones);
+
+    const repAfterRepeat = afterRepeat.factions.find(f => f.id === 'iron-pact')?.reputation ?? 0;
+    expect(repAfterRepeat).toBe(repAfterFirst);
+  });
+
   it('dedupes knownSecrets while preserving insertion order', () => {
     const initial = tsConversationEngine.startNewGame();
 

@@ -37,7 +37,11 @@ function collectEncodableSecrets(secretBitCapacity: number): Set<string> {
   // - then sort lexicographically and take the first N (N=64).
   const all = new Set<string>();
 
-  for (const node of Object.values(dialogueTree)) {
+  const nodeIds = Object.keys(dialogueTree).sort();
+
+  for (const nodeId of nodeIds) {
+    const node = dialogueTree[nodeId];
+
     for (const choice of node.choices) {
       if (choice.revealsInfo) all.add(choice.revealsInfo);
       for (const s of choice.requiresAllSecrets ?? []) all.add(s);

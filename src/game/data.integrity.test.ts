@@ -11,7 +11,11 @@ function collectWasmGraphSecrets(): { allSecretsSorted: string[]; requiredSecret
   const all = new Set<string>();
   const required = new Set<string>();
 
-  for (const node of Object.values(dialogueTree)) {
+  const nodeIds = Object.keys(dialogueTree).sort();
+
+  for (const nodeId of nodeIds) {
+    const node = dialogueTree[nodeId];
+
     for (const choice of node.choices) {
       if (choice.revealsInfo) all.add(choice.revealsInfo);
 

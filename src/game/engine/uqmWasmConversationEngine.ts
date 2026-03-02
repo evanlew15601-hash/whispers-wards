@@ -360,6 +360,10 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
     createInitialState: tsConversationEngine.createInitialState,
     startNewGame: tsConversationEngine.startNewGame,
     applyChoice(prev, choice) {
+      if (choice.gameEffects?.length) {
+        return tsConversationEngine.applyChoice(prev, choice);
+      }
+
       const next = applyChoiceUsingWasm(prev, choice, uqm, graph);
       if (next) return next;
       // Safe fallback (should be rare)

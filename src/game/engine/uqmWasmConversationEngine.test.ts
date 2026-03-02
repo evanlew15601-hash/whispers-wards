@@ -81,6 +81,26 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextWasm2.rngSeed).toBe(nextTs2.rngSeed);
   });
 
+  it('matches tsConversationEngine applyChoice when the choice includes gameEffects', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+    const seeded = { ...start, rngSeed: 123456789 };
+
+    const choice0 = seeded.currentDialogue!.choices[0];
+
+    const choiceWithGameEffects = {
+      ...choice0,
+      gameEffects: [{ kind: 'resource', resourceId: 'coin', delta: 2 }],
+    };
+
+    const nextTs = tsConversationEngine.applyChoice(seeded, choiceWithGameEffects);
+    const nextWasm = wasmEngine.applyChoice(seeded, choiceWithGameEffects);
+
+    expect(nextWasm).toEqual(nextTs);
+    expect(nextWasm.resources.coin).toBe(seeded.resources.coin + 2);
+  });
+
   it('matches tsConversationEngine lock bypass when knownSecrets includes override', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 

@@ -1,3 +1,5 @@
+import type { GameEffect } from './effects';
+
 export interface Faction {
   id: string;
   name: string;
@@ -15,6 +17,7 @@ export interface DialogueChoice {
     factionId: string;
     reputationChange: number;
   }[];
+  gameEffects?: GameEffect[];
   nextNodeId: string | null; // null = end scene (defaults to returning to the chapter hub)
 
   /**
