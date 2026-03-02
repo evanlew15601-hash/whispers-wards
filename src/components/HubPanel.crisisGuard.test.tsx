@@ -14,7 +14,7 @@ describe('HubPanel crisis guard', () => {
     ],
   };
 
-  it('confirms before leaving the Hall when a crisis is pending', async () => {
+  it('confirms before leaving the Hall when a crisis is urgent', async () => {
     const onChoice = vi.fn();
 
     render(
@@ -37,6 +37,24 @@ describe('HubPanel crisis guard', () => {
 
     expect(onChoice).toHaveBeenCalledTimes(1);
     expect(onChoice).toHaveBeenCalledWith(node.choices[0]);
+  });
+
+  it('does not confirm when a crisis is not urgent', () => {
+    const onChoice = vi.fn();
+
+    render(
+      <HubPanel
+        node={node}
+        onChoice={onChoice}
+        crisisPending={true}
+        crisisTurnsLeft={2}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /go to the docks/i }));
+
+    expect(onChoice).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
   it('does not confirm when no crisis is pending', () => {

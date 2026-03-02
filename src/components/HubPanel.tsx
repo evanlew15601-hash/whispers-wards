@@ -28,9 +28,10 @@ interface HubPanelProps {
   onChoice: (choice: DialogueChoice) => void;
   crisisPending?: boolean;
   crisisTurnsLeft?: number | null;
+  crisisConsequence?: string | null;
 }
 
-const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = null }: HubPanelProps) => {
+const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = null, crisisConsequence = null }: HubPanelProps) => {
   const paragraphs = node.text.split(/\n\n+/g).filter(Boolean);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -44,18 +45,21 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
         ? ` It expires in ${crisisTurnsLeft} turn${crisisTurnsLeft === 1 ? '' : 's'}.`
         : '';
 
-    return `A crisis is pending in the Hall. You can address it immediately without advancing time.${suffix}`;
-  }, [crisisPending, crisisTurnsLeft]);
+    const base = `A crisis is pending in the Hall. You can address it immediately without advancing time.${suffix}`;
+    return crisisConsequence ? `${base}\n\n${crisisConsequence}` : base;
+  }, [crisisConsequence, crisisPending, crisisTurnsLeft]);
+
+  const crisisUrgent = crisisPending && crisisTurnsLeft !== null && crisisTurnsLeft <= 1;
 
   const requestChoice = useCallback((choice: DialogueChoice) => {
-    if (!crisisPending) {
+    if (!crisisUrgent) {
       onChoice(choice);
       return;
     }
 
     setPendingChoice(choice);
     setConfirmOpen(true);
-  }, [crisisPending, onChoice]);
+  }, [crisisUrgent, onChoice]);
 
   const confirmChoice = useCallback(() => {
     if (pendingChoice) onChoice(pendingChoice);
@@ -142,6 +146,7 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
         {crisisPending && (
           <div className="text-xs text-muted-foreground">
             A crisis is pending in the Hall. You can still travel, but the crisis will remain unresolved.
+            {crisisUrgent && crisisConsequence ? ` ${crisisConsequence}` : ''}
           </div>
         )}
 
@@ -186,7 +191,7 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Leave the Hall?</AlertDialogTitle>
-            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
+            <AlertDialogDescription className="whitespace-pre-line">{confirmDescription}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Stay in Hall</AlertDialogCancel>

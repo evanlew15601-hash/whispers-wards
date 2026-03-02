@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DialogueNode, Faction, PlayerProfile, WorldState, SecondaryEncounter } from '@/game/types';
@@ -26,6 +27,40 @@ const InfoPanel = (
   const leadHints = getLeadHintsForCurrentDialogue(currentDialogue, knownSecrets);
 
   const pendingUrgent = encounterTurnsLeft !== null && encounterTurnsLeft <= 1;
+
+  const crisisExpiryPreview = useMemo(() => {
+    if (!pendingEncounter) return null;
+
+    const kind = pendingEncounter.kind ?? 'summit';
+    const routeId = pendingEncounter.routeId;
+    const regionId = pendingEncounter.regionId;
+
+    const aId = pendingEncounter.relatedFactions[0] ?? null;
+    const bId = pendingEncounter.relatedFactions[1] ?? null;
+
+    const nameOf = (id: string | null) => {
+      if (!id) return 'Unknown';
+      return factions.find(f => f.id === id)?.name ?? id;
+    };
+
+    const parts: string[] = [];
+    if (aId && bId) parts.push(`+5 tension (${nameOf(aId)} vs ${nameOf(bId)})`);
+    else parts.push('+5 tension');
+
+    if ((kind === 'embargo' || kind === 'raid') && routeId) {
+      const route = world.tradeRoutes[routeId];
+      if (route) {
+        parts.push(`Trade route: ${route.name} becomes ${kind === 'embargo' ? 'embargoed' : 'raided'}`);
+      }
+    }
+
+    if (kind === 'skirmish' && regionId) {
+      const region = world.regions[regionId];
+      if (region) parts.push(`Region: ${region.name} becomes contested`);
+    }
+
+    return `If ignored: ${parts.join(' · ')}`;
+  }, [factions, pendingEncounter, world.regions, world.tradeRoutes]);
 
   return (
     <Tabs defaultValue="chronicle" className="flex flex-col gap-4">
@@ -198,6 +233,12 @@ const InfoPanel = (
                       ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${pendingEncounter.expiresOnTurn})`
                       : `Expires on turn ${pendingEncounter.expiresOnTurn}`}
                   </div>
+
+                  {crisisExpiryPreview && (
+                    <div className="mt-2 text-[11px] text-muted-foreground">
+                      {crisisExpiryPreview}
+                    </div>
+                  )}
                 </div>
               </CollapsibleContent>
             </div>

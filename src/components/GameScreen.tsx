@@ -196,9 +196,9 @@ const GameScreen = ({
               variant={encounterBadgeVariant}
               className="font-display text-[10px] tracking-[0.22em] uppercase"
               title={
-                encounterTurnsLeft !== null && encounterTurnsLeft >= 0
+                (encounterTurnsLeft !== null && encounterTurnsLeft >= 0
                   ? `Crisis pending (expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'})`
-                  : 'Crisis pending'
+                  : 'Crisis pending') + (crisisExpiryPreview ? ` — ${crisisExpiryPreview}` : '')
               }
             >
               Crisis
@@ -240,7 +240,8 @@ const GameScreen = ({
           )}
 
           {isInHub ? (() => {
-            const needsConfirm = Boolean(state.pendingEncounter || state.management.apRemaining > 0);
+            const crisisUrgent = encounterTurnsLeft !== null && encounterTurnsLeft <= 1;
+            const needsConfirm = Boolean(state.management.apRemaining > 0 || (state.pendingEncounter && crisisUrgent));
 
             const button = (
               <Button
@@ -263,7 +264,7 @@ const GameScreen = ({
               );
             }
 
-            const warnEncounter = Boolean(state.pendingEncounter);
+            const warnEncounter = Boolean(state.pendingEncounter && crisisUrgent);
             const warnAp = state.management.apRemaining > 0;
 
             return (
@@ -438,6 +439,11 @@ const GameScreen = ({
                                   ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${state.pendingEncounter.expiresOnTurn})`
                                   : `Expires on turn ${state.pendingEncounter.expiresOnTurn}`}
                               </div>
+                              {crisisExpiryPreview && (
+                                <div className="mt-2 text-[11px] text-muted-foreground">
+                                  {crisisExpiryPreview}
+                                </div>
+                              )}
                             </>
                           ) : state.management.apRemaining > 0 ? (
                             <>
@@ -495,11 +501,46 @@ const GameScreen = ({
                   onChoice={makeChoice}
                   crisisPending={Boolean(state.pendingEncounter)}
                   crisisTurnsLeft={encounterTurnsLeft}
+                  crisisConsequence={crisisExpiryPreview}
                 />
               ) : (
                 <DialoguePanel
                   node={state.currentDialogue!}
                   onChoice={makeChoice}
+                  knownSecrets={state.knownSecrets}
+                  factions={state.factions}
+                  selectedChoiceIds={state.selectedChoiceIds}
+                  playerName={state.player.name}
+                  playerPortraitId={state.player.portraitId}
+                  lockedChoices={choiceLockedFlags}
+                  choiceUiHints={choiceUiHints}
+                />
+              )}
+            </>
+          )}
+        </main>
+
+        {!focusMode && (
+          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
+            <InfoPanel
+              currentDialogue={state.currentDialogue}
+              knownSecrets={state.knownSecrets}
+              turnNumber={state.turnNumber}
+              log={state.log}
+              world={state.world}
+              factions={state.factions}
+              pendingEncounter={state.pendingEncounter}
+              player={state.player}
+            />
+          </motion.aside>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GameScreen;
+oice={makeChoice}
                   knownSecrets={state.knownSecrets}
                   factions={state.factions}
                   selectedChoiceIds={state.selectedChoiceIds}
