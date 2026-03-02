@@ -1251,6 +1251,10 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'summit-compact',
         text: 'Propose joint stewardship of the Pass: a council with shared patrol rights, shared wards, and shared tolls.',
+        hideWhenHasAnySecrets: [
+          'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.',
+          'The archives confirm Greenmarch Pass was once neutral ground under a tripartite accord.',
+        ],
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'verdant-court', reputationChange: 10 },

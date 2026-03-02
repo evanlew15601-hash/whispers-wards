@@ -101,11 +101,16 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     if (knownSecrets.includes('override')) return node.choices;
 
     return node.choices.filter(choice => {
-      if (!choice.hideWhenLockedBySecrets) return true;
-
       // Preserve visibility if it was already selected; we still want “already decided” to show.
       const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
       if (alreadyDecided) return true;
+
+      if (choice.hideWhenHasAnySecrets?.length) {
+        const shouldHide = choice.hideWhenHasAnySecrets.some(s => knownSecrets.includes(s));
+        if (shouldHide) return false;
+      }
+
+      if (!choice.hideWhenLockedBySecrets) return true;
 
       // Only hide when the lock is due to missing secrets.
       return !isChoiceLockedBySecrets(choice, knownSecrets);
