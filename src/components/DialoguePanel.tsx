@@ -77,6 +77,41 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
   const visibleText = useMemo(() => fullText.slice(0, revealedChars), [fullText, revealedChars]);
 
+  const choiceUiHintById = useMemo(() => {
+    const map = new Map<string, ChoiceUiHint>();
+    if (!choiceUiHints?.length) return map;
+    node.choices.forEach((choice, idx) => {
+      const hint = choiceUiHints[idx];
+      if (hint) map.set(choice.id, hint);
+    });
+    return map;
+  }, [node.id, node.choices, choiceUiHints]);
+
+  const lockedChoiceFlagById = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (!lockedChoices?.length) return map;
+    node.choices.forEach((choice, idx) => {
+      const locked = lockedChoices[idx];
+      if (typeof locked === 'boolean') map.set(choice.id, locked);
+    });
+    return map;
+  }, [node.id, node.choices, lockedChoices]);
+
+  const visibleChoices = useMemo(() => {
+    if (knownSecrets.includes('override')) return node.choices;
+
+    return node.choices.filter(choice => {
+      if (!choice.hideWhenLockedBySecrets) return true;
+
+      // Preserve visibility if it was already selected; we still want “already decided” to show.
+      const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+      if (alreadyDecided) return true;
+
+      // Only hide when the lock is due to missing secrets.
+      return !isChoiceLockedBySecrets(choice, knownSecrets);
+    });
+  }, [knownSecrets, node.choices, selectedChoiceIds]);
+
   const skipReveal = useCallback(() => {
     playSfx('ui.skip');
 
@@ -220,15 +255,18 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
       if (key >= '1' && key <= '9') {
         const idx = Number(key) - 1;
-        const choice = node.choices[idx];
+        const choice = visibleChoices[idx];
         if (!choice) return;
 
         const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
 
+        const hint = choiceUiHintById.get(choice.id);
+        const lockedFlag = lockedChoiceFlagById.get(choice.id);
+
         const locked =
           alreadyDecided
             ? false
-            : choiceUiHints?.[idx]?.locked ?? lockedChoices?.[idx] ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+            : hint?.locked ?? lockedFlag ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
 
         if (locked) {
           nudgeLockedChoice(choice.id);
@@ -242,7 +280,19 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [isRevealing, skipReveal, node.choices, factions, knownSecrets, selectedChoiceIds, lockedChoices, choiceUiHints, onChoice, nudgeLockedChoice, playSfx]);
+  }, [
+    isRevealing,
+    skipReveal,
+    visibleChoices,
+    choiceUiHintById,
+    lockedChoiceFlagById,
+    factions,
+    knownSecrets,
+    selectedChoiceIds,
+    onChoice,
+    nudgeLockedChoice,
+    playSfx,
+  ]);
 
   const dialogueParagraphs = splitWrappedLinesIntoParagraphs(dialogueLines);
 
@@ -408,14 +458,14 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
           </div>
 
           <div className={`flex flex-col gap-2 transition-opacity ${isRevealing ? 'opacity-45 pointer-events-none' : 'opacity-100'}`}>
-            {node.choices.map((choice, i) => {
-              const hint = choiceUiHints?.[i];
+            {visibleChoices.map((choice, i) => {
+              const hint = choiceUiHintById.get(choice.id);
 
               const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
 
               const locked = alreadyDecided
                 ? false
-                : hint?.locked ?? lockedChoices?.[i] ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+                : hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
 
               const repReq = hint?.requiredReputation ?? choice.requiredReputation;
 

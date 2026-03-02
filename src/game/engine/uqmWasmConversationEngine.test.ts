@@ -184,7 +184,7 @@ describe('uqmWasmConversationEngine', () => {
       knownSecrets: [],
     };
 
-    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose');
+    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-ledger');
     expect(exposeIdx).toBeGreaterThanOrEqual(0);
 
     const exposeChoice = atSummit.currentDialogue!.choices[exposeIdx];
@@ -205,7 +205,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const next = wasmEngine.applyChoice(withProof, exposeChoice);
     expect(next).not.toBe(withProof);
-    expect(next.currentDialogue?.id).toBe('ending-embers-fall');
+    expect(next.currentDialogue?.id).toBe('ending-embers-fall-ledger');
   });
 
   it('keeps lock behavior aligned (UI/TS helper vs engine execution) for summit choices', () => {

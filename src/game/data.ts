@@ -1257,7 +1257,23 @@ export const dialogueTree: Record<string, DialogueNode> = {
           { factionId: 'ember-throne', reputationChange: -10 },
         ],
         nextNodeId: 'ending-greenmarch-compact',
-        revealsInfo: 'You forced a shared-wardenship solution based on the old Greenmarch accord.',
+        revealsInfo: 'You proposed a shared-wardenship compact at the summit.',
+      },
+      {
+        id: 'summit-compact-accord',
+        text: 'Present the old Greenmarch accord as precedent, and propose joint stewardship bound in ink and oath.',
+        hideWhenLockedBySecrets: true,
+        effects: [
+          { factionId: 'iron-pact', reputationChange: 12 },
+          { factionId: 'verdant-court', reputationChange: 12 },
+          { factionId: 'ember-throne', reputationChange: -12 },
+        ],
+        requiresAnySecrets: [
+          'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.',
+          'The archives confirm Greenmarch Pass was once neutral ground under a tripartite accord.',
+        ],
+        nextNodeId: 'ending-greenmarch-compact-accord',
+        revealsInfo: 'You forced a shared-wardenship solution by putting the old Greenmarch accord on the record.',
       },
       {
         id: 'summit-iron',
@@ -1293,8 +1309,42 @@ export const dialogueTree: Record<string, DialogueNode> = {
         requiredReputation: { factionId: 'ember-throne', min: 15 },
       },
       {
-        id: 'summit-expose',
-        text: 'Accuse the Ember Throne of fueling the conflict and demand sanctions.',
+        id: 'summit-expose-ledger',
+        text: 'Accuse the Ember Throne—cite the ledger entries and the mercenary payments hiding behind them.',
+        hideWhenLockedBySecrets: true,
+        effects: [
+          { factionId: 'iron-pact', reputationChange: 10 },
+          { factionId: 'verdant-court', reputationChange: 10 },
+          { factionId: 'ember-throne', reputationChange: -40 },
+        ],
+        requiresAnySecrets: [
+          'Renzo\'s ledger pages show coded payments tied to the border killings.',
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+        ],
+        nextNodeId: 'ending-embers-fall-ledger',
+        requiredReputation: { factionId: 'iron-pact', min: 5 },
+        revealsInfo: 'You publicly accused the Ember Throne, citing ledger entries that trace coin to violence.',
+      },
+      {
+        id: 'summit-expose-manifest',
+        text: 'Accuse the Ember Throne—cite the manifests and the docket trail that puts furnace salts on the road.',
+        hideWhenLockedBySecrets: true,
+        effects: [
+          { factionId: 'iron-pact', reputationChange: 10 },
+          { factionId: 'verdant-court', reputationChange: 10 },
+          { factionId: 'ember-throne', reputationChange: -40 },
+        ],
+        requiresAnySecrets: [
+          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+        ],
+        nextNodeId: 'ending-embers-fall-manifest',
+        requiredReputation: { factionId: 'iron-pact', min: 5 },
+        revealsInfo: 'You publicly accused the Ember Throne, citing manifests and a Hall docket trail.',
+      },
+      {
+        id: 'summit-expose-maps',
+        text: 'Accuse the Ember Throne—cite the forged maps and the way they nudged the border toward blood.',
+        hideWhenLockedBySecrets: true,
         effects: [
           { factionId: 'iron-pact', reputationChange: 10 },
           { factionId: 'verdant-court', reputationChange: 10 },
@@ -1302,13 +1352,10 @@ export const dialogueTree: Record<string, DialogueNode> = {
         ],
         requiresAnySecrets: [
           'The Ember Throne forged maps to manipulate the border dispute.',
-          'Renzo\'s ledger pages show coded payments tied to the border killings.',
-          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
-          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
         ],
-        nextNodeId: 'ending-embers-fall',
+        nextNodeId: 'ending-embers-fall-maps',
         requiredReputation: { factionId: 'iron-pact', min: 5 },
-        revealsInfo: 'You publicly accused the Ember Throne of engineering the conflict, citing maps, burns, and ledgers.',
+        revealsInfo: 'You publicly accused the Ember Throne, citing forged maps as the first lever of escalation.',
       },
       {
         id: 'summit-adjourn',
@@ -1325,10 +1372,23 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'ending-greenmarch-compact': {
     id: 'ending-greenmarch-compact',
     speaker: 'Narrator',
-    text: 'The argument is hard and public. Aldric demands patrol rights. Thessaly demands the binding remain untouched. Renzo demands that someone—anyone—pay Ember for its "troubles."\n\nYou hold to the old accord until it becomes a new one. The Pass is declared neutral hinge-ground once more. A joint council is formed: iron to keep bandits out, verdant to keep the binding intact, and ember merchants allowed passage under transparent tolls rather than private tariffs.\n\nNo one leaves satisfied. But the border quiets, and the agreement has a chance to survive the winter.',
+    text: 'The argument is hard and public. Aldric demands patrol rights. Thessaly demands the binding remain untouched. Renzo demands that someone—anyone—pay Ember for its "troubles."\n\nYou keep dragging them back to the same point: no one owns the Pass outright, and everyone pays when it becomes a proving ground. In the end, you get signatures on a compact of shared stewardship.\n\nA joint council is formed: iron to keep bandits out, verdant to keep the binding intact, and ember merchants allowed passage under transparent tolls rather than private tariffs.\n\nNo one leaves satisfied. But the border quiets, and the agreement has a chance to survive the winter.',
     choices: [
       {
         id: 'end-compact',
+        text: 'Let the ink dry.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'ending-greenmarch-compact-accord': {
+    id: 'ending-greenmarch-compact-accord',
+    speaker: 'Narrator',
+    text: 'The argument is hard and public. Aldric demands patrol rights. Thessaly demands the binding remain untouched. Renzo demands that someone—anyone—pay Ember for its "troubles."\n\nYou put the brittle accord on the table and make them read the same lines in the same light: neutral hinge-ground, shared tolls, and a warning in Verdant hand to keep the binding unbroken. The old precedent becomes a new pact.\n\nThe Pass is declared neutral hinge-ground once more. A joint council is formed: iron to keep bandits out, verdant to keep the binding intact, and ember merchants allowed passage under transparent tolls rather than private tariffs.\n\nNo one leaves satisfied. But the border quiets, and the agreement has a chance to survive the winter.',
+    choices: [
+      {
+        id: 'end-compact-accord',
         text: 'Let the ink dry.',
         effects: [],
         nextNodeId: null,
@@ -1374,10 +1434,49 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
     ],
   },
+  'ending-embers-fall-ledger': {
+    id: 'ending-embers-fall-ledger',
+    speaker: 'Narrator',
+    text: 'The room turns cold when you lay the ledger trail on the table—coded entries, repeated marks, dates that line up with the first deaths at the border. Coin moving where it should not. Coin moving toward blades without banners.\n\nRenzo\'s charm fails him for the first time; it cracks like lacquer. Aldric reaches for steel. Thessaly reaches for roots.\n\nYou stop it from becoming a murder. You turn it into a judgment. Ember\'s delegation is expelled, their trade privileges suspended until a full inquiry into the payments.\n\nThe Iron Pact and Verdant Court do not become friends. But they stop being used, and sometimes that\'s the first step toward peace.',
+    choices: [
+      {
+        id: 'end-embers-fall-ledger',
+        text: 'Watch the strings snap.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'ending-embers-fall-manifest': {
+    id: 'ending-embers-fall-manifest',
+    speaker: 'Narrator',
+    text: 'You put the manifests on the record: "road salt" that isn\'t salt, a Concord Hall docket number that should never have touched a battlefield, and a paper trail that ends in Ember hands.\n\nRenzo\'s smile thins. Aldric\'s knuckles whiten on the table edge. Thessaly\'s gaze goes distant, as if she\'s already listening for the next fire.\n\nYou stop it from becoming a murder. You turn it into a judgment. Ember\'s delegation is expelled, their trade privileges suspended until the Hall audits every shipment tied to the docket trail.\n\nThe Iron Pact and Verdant Court do not become friends. But they stop being used, and sometimes that\'s the first step toward peace.',
+    choices: [
+      {
+        id: 'end-embers-fall-manifest',
+        text: 'Let the auditors come.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'ending-embers-fall-maps': {
+    id: 'ending-embers-fall-maps',
+    speaker: 'Narrator',
+    text: 'You lay the maps down as if they\'re just paper—until you point to the seams where the ink lies. Borders shifted by a hand that never held a sword. Survey seals that don\'t match their own precedents. A dispute engineered, then fed.\n\nRenzo\'s charm doesn\'t break. It recalculates. Aldric leans forward like a man offered a target. Thessaly watches as if weighing whether truth will save the forest or burn it faster.\n\nYou stop it from becoming a murder. You turn it into a judgment. Ember\'s delegation is expelled, their trade privileges suspended until a full inquiry into the forged surveys and the chain of custody that carried them.\n\nThe Iron Pact and Verdant Court do not become friends. But they stop being used, and sometimes that\'s the first step toward peace.',
+    choices: [
+      {
+        id: 'end-embers-fall-maps',
+        text: 'Make them answer in daylight.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
   'ending-embers-fall': {
     id: 'ending-embers-fall',
     speaker: 'Narrator',
-    text: 'The room turns cold when you lay the proof on the table. Forged borders. Alchemical burns. Mercenary payments hidden behind coded entries.\n\nRenzo\'s charm fails him for the first time; it cracks like lacquer. Aldric reaches for steel. Thessaly reaches for roots.\n\nYou stop it from becoming a murder. You turn it into a judgment. Ember\'s delegation is expelled, their trade privileges suspended until a full inquiry.\n\nThe Iron Pact and Verdant Court do not become friends. But they stop being used, and sometimes that\'s the first step toward peace.',
+    text: 'The room turns cold when you lay the proof on the table. Documents. Dates. A trail that shouldn\'t exist if the Ember Throne were innocent.\n\nRenzo\'s charm fails him for the first time; it cracks like lacquer. Aldric reaches for steel. Thessaly reaches for roots.\n\nYou stop it from becoming a murder. You turn it into a judgment. Ember\'s delegation is expelled, their trade privileges suspended until a full inquiry.\n\nThe Iron Pact and Verdant Court do not become friends. But they stop being used, and sometimes that\'s the first step toward peace.',
     choices: [
       {
         id: 'end-embers-fall',

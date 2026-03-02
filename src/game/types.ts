@@ -28,6 +28,15 @@ export interface DialogueChoice {
   requiredReputation?: { factionId: string; min: number };
   requiresAllSecrets?: string[];
   requiresAnySecrets?: string[];
+
+  /**
+   * If true, the UI may omit this option entirely when it is locked due to missing secrets.
+   *
+   * Intended for “evidence-dependent” options where showing a locked button would be noisy.
+   * (Example: multiple summit accusations that only appear once you have a specific proof.)
+   */
+  hideWhenLockedBySecrets?: boolean;
+
   revealsInfo?: string;
 }
 
