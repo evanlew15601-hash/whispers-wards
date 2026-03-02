@@ -37,6 +37,7 @@ export interface DialogueChoice {
   exclusiveGroup?: string;
 
   requiredReputation?: { factionId: string; min: number };
+  requiredReputationMax?: { factionId: string; max: number };
   requiresAllSecrets?: string[];
   requiresAnySecrets?: string[];
 

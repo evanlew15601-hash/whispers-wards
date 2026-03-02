@@ -10,6 +10,7 @@ type LockableChoice = Pick<
     'revealsInfo' |
     'exclusiveGroup' |
     'requiredReputation' |
+    'requiredReputationMax' |
     'requiresAllSecrets' |
     'requiresAnySecrets'
 >;
@@ -159,8 +160,16 @@ export function isChoiceLocked(
   if (isChoiceLockedBySecrets(choice, knownSecrets)) return true;
 
   const repReq = choice.requiredReputation;
-  if (!repReq) return false;
+  if (repReq) {
+    const rep = factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity;
+    if (rep < repReq.min) return true;
+  }
 
-  const rep = factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity;
-  return rep < repReq.min;
+  const repReqMax = choice.requiredReputationMax;
+  if (repReqMax) {
+    const rep = factions.find(f => f.id === repReqMax.factionId)?.reputation ?? Infinity;
+    if (rep > repReqMax.max) return true;
+  }
+
+  return false;
 }

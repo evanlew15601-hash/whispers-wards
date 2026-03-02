@@ -475,15 +475,22 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 ? false
                 : hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
 
-              const repReq = hint?.requiredReputation ?? choice.requiredReputation;
+              const repReqMin = hint?.requiredReputationMin ?? choice.requiredReputation ?? null;
+              const repReqMax = hint?.requiredReputationMax ?? choice.requiredReputationMax ?? null;
 
-              const repLocked = Boolean(
-                !alreadyDecided && repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+              const repMinLocked = Boolean(
+                !alreadyDecided && repReqMin && (factions.find(f => f.id === repReqMin.factionId)?.reputation ?? -Infinity) < repReqMin.min
               );
 
-              const reqFactionName = repReq
-                ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
-                : null;
+              const repMaxLocked = Boolean(
+                !alreadyDecided && repReqMax && (factions.find(f => f.id === repReqMax.factionId)?.reputation ?? Infinity) > repReqMax.max
+              );
+
+              const reqFactionName = repReqMin
+                ? factions.find(f => f.id === repReqMin.factionId)?.name ?? repReqMin.factionId.replace('-', ' ')
+                : repReqMax
+                  ? factions.find(f => f.id === repReqMax.factionId)?.name ?? repReqMax.factionId.replace('-', ' ')
+                  : null;
 
               const lines = choiceLines[choice.id] ?? [choice.text];
               const hotkey = i < 9 ? String(i + 1) : null;
@@ -501,7 +508,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
               const secretsLocked = locked && (hint?.lockedBySecrets ?? isChoiceLockedBySecrets(choice, knownSecrets));
               const historyLocked = alreadyDecided;
 
-              const repLockedLabel = locked && (hint?.lockedByReputation ?? repLocked);
+              const repLockedLabel = locked && (hint?.lockedByReputation ?? (repMinLocked || repMaxLocked));
 
               const displayEffects = alreadyDecided
                 ? (hint?.effects ?? choice.effects).map(effect => ({ ...effect, reputationChange: 0 }))
@@ -513,7 +520,17 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   type="button"
                   aria-disabled={locked}
                   aria-keyshortcuts={hotkey ?? undefined}
-                  title={locked && repReq ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}` : undefined}
+                  title={
+                    locked && (repReqMin || repReqMax)
+                      ? repReqMin && repReqMax && repReqMin.factionId === repReqMax.factionId
+                        ? `Requires ${reqFactionName ?? repReqMin.factionId.replace('-', ' ')} reputation ${repReqMin.min}–${repReqMax.max}`
+                        : repReqMin
+                          ? `Requires ${reqFactionName ?? repReqMin.factionId.replace('-', ' ')} reputation ≥ ${repReqMin.min}`
+                          : repReqMax
+                            ? `Requires ${reqFactionName ?? repReqMax.factionId.replace('-', ' ')} reputation ≤ ${repReqMax.max}`
+                            : undefined
+                      : undefined
+                  }
                   onClick={onSelect}
                   className={`group relative overflow-hidden rounded-sm border border-border bg-secondary/45 p-4 text-left font-body text-sm transition-all sm:text-base
                     ${locked
@@ -553,10 +570,16 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                       </span>
 
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {repReq && repLockedLabel && (
+                        {(repReqMin || repReqMax) && repLockedLabel && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
                             <Lock className="h-3 w-3" />
-                            requires {reqFactionName ?? repReq.factionId.replace('-', ' ')} ≥ {repReq.min}
+                            {repReqMin && repReqMax && repReqMin.factionId === repReqMax.factionId
+                              ? `requires ${reqFactionName ?? repReqMin.factionId.replace('-', ' ')} ${repReqMin.min}–${repReqMax.max}`
+                              : repReqMin
+                                ? `requires ${reqFactionName ?? repReqMin.factionId.replace('-', ' ')} ≥ ${repReqMin.min}`
+                                : repReqMax
+                                  ? `requires ${reqFactionName ?? repReqMax.factionId.replace('-', ' ')} ≤ ${repReqMax.max}`
+                                  : null}
                           </span>
                         )}
 

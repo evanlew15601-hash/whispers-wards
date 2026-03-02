@@ -298,7 +298,8 @@ export const tsConversationEngine: ConversationEngine = {
           lockedBySecrets: false,
           lockedByReputation: false,
           lockedByExclusiveGroup: false,
-          requiredReputation: choice.requiredReputation ?? null,
+          requiredReputationMin: choice.requiredReputation ?? null,
+          requiredReputationMax: choice.requiredReputationMax ?? null,
           effects: choice.effects,
           revealsInfo: choice.revealsInfo ?? null,
         };
@@ -307,18 +308,25 @@ export const tsConversationEngine: ConversationEngine = {
       const lockedByExclusiveGroup = isChoiceLockedByExclusiveGroup(choice, state.selectedChoiceIds);
       const lockedBySecrets = isChoiceLockedBySecrets(choice, state.knownSecrets);
 
-      const repReq = choice.requiredReputation ?? null;
-      const lockedByReputation = Boolean(
-        repReq && (state.factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+      const repReqMin = choice.requiredReputation ?? null;
+      const repReqMax = choice.requiredReputationMax ?? null;
+
+      const repMinLocked = Boolean(
+        repReqMin && (state.factions.find(f => f.id === repReqMin.factionId)?.reputation ?? -Infinity) < repReqMin.min
+      );
+
+      const repMaxLocked = Boolean(
+        repReqMax && (state.factions.find(f => f.id === repReqMax.factionId)?.reputation ?? Infinity) > repReqMax.max
       );
 
       return {
         locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
         alreadyDecided: false,
         lockedBySecrets,
-        lockedByReputation,
+        lockedByReputation: repMinLocked || repMaxLocked,
         lockedByExclusiveGroup,
-        requiredReputation: repReq,
+        requiredReputationMin: repReqMin,
+        requiredReputationMax: repReqMax,
         effects: choice.effects,
         revealsInfo: choice.revealsInfo ?? null,
       };

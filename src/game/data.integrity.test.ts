@@ -34,6 +34,11 @@ describe('dialogueTree integrity', () => {
           expect(typeof choice.requiredReputation.min).toBe('number');
         }
 
+        if (choice.requiredReputationMax) {
+          expect(factionIds.has(choice.requiredReputationMax.factionId)).toBe(true);
+          expect(typeof choice.requiredReputationMax.max).toBe('number');
+        }
+
         if (choice.requiresAllSecrets) {
           expect(Array.isArray(choice.requiresAllSecrets)).toBe(true);
           expect(choice.requiresAllSecrets.length).toBeGreaterThan(0);

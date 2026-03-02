@@ -1,4 +1,6 @@
-import type { Faction, DialogueNode, GameEvent } from '../../types';
+import type { Faction, GameEvent } from '../../types';
+
+import { defineDialogueTree } from '../builders';
 
 export const initialFactions: Faction[] = [
   {
@@ -30,7 +32,7 @@ export const initialFactions: Faction[] = [
   },
 ];
 
-export const dialogueTree: Record<string, DialogueNode> = {
+export const dialogueTree = defineDialogueTree({
   'opening': {
     id: 'opening',
     speaker: 'Commander Aldric Vane',
@@ -1499,7 +1501,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
     ],
   },
-};
+});
 
 export const initialEvents: GameEvent[] = [
   {

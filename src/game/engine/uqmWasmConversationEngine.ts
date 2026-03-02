@@ -474,12 +474,21 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       return state.currentDialogue.choices.map((choice, i) => {
         const alreadyDecided = isChoiceLockedByHistory(choice, state.selectedChoiceIds, state.knownSecrets, state.log);
 
-        const repReqFromChoice = choice.requiredReputation ?? null;
+        const repReqMinFromChoice = choice.requiredReputation ?? null;
+        const repReqMaxFromChoice = choice.requiredReputationMax ?? null;
+
         const lockedByExclusiveGroup = alreadyDecided ? false : isChoiceLockedByExclusiveGroup(choice, state.selectedChoiceIds);
         const lockedBySecrets = alreadyDecided ? false : isChoiceLockedBySecrets(choice, state.knownSecrets);
-        const lockedByReputation = Boolean(
-          !alreadyDecided && repReqFromChoice && (state.factions.find(f => f.id === repReqFromChoice.factionId)?.reputation ?? -Infinity) < repReqFromChoice.min
+
+        const lockedByReputationMin = Boolean(
+          !alreadyDecided && repReqMinFromChoice && (state.factions.find(f => f.id === repReqMinFromChoice.factionId)?.reputation ?? -Infinity) < repReqMinFromChoice.min
         );
+
+        const lockedByReputationMax = Boolean(
+          !alreadyDecided && repReqMaxFromChoice && (state.factions.find(f => f.id === repReqMaxFromChoice.factionId)?.reputation ?? Infinity) > repReqMaxFromChoice.max
+        );
+
+        const lockedByReputation = lockedByReputationMin || lockedByReputationMax;
 
         const locked = alreadyDecided
           ? false
@@ -492,7 +501,8 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
             lockedBySecrets,
             lockedByReputation,
             lockedByExclusiveGroup,
-            requiredReputation: repReqFromChoice,
+            requiredReputationMin: repReqMinFromChoice,
+            requiredReputationMax: repReqMaxFromChoice,
             effects: choice.effects,
             revealsInfo: choice.revealsInfo ?? null,
           };
@@ -523,19 +533,25 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
           }
         }
 
-        const requiredReputation = reqFactionId ? { factionId: reqFactionId, min: reqMin } : null;
+        const requiredReputationMin = reqFactionId ? { factionId: reqFactionId, min: reqMin } : repReqMinFromChoice;
+        const requiredReputationMax = repReqMaxFromChoice;
 
-        const lockedByReputationMeta = Boolean(
-          !alreadyDecided && requiredReputation && (state.factions.find(f => f.id === requiredReputation.factionId)?.reputation ?? -Infinity) < requiredReputation.min
+        const lockedByReputationMinMeta = Boolean(
+          !alreadyDecided && requiredReputationMin && (state.factions.find(f => f.id === requiredReputationMin.factionId)?.reputation ?? -Infinity) < requiredReputationMin.min
+        );
+
+        const lockedByReputationMaxMeta = Boolean(
+          !alreadyDecided && requiredReputationMax && (state.factions.find(f => f.id === requiredReputationMax.factionId)?.reputation ?? Infinity) > requiredReputationMax.max
         );
 
         return {
           locked,
           alreadyDecided,
           lockedBySecrets,
-          lockedByReputation: lockedByReputationMeta,
+          lockedByReputation: lockedByReputationMinMeta || lockedByReputationMaxMeta,
           lockedByExclusiveGroup,
-          requiredReputation,
+          requiredReputationMin,
+          requiredReputationMax,
           effects,
           revealsInfo: revealInfo ?? choice.revealsInfo ?? null,
         };

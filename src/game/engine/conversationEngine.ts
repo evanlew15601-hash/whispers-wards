@@ -6,7 +6,8 @@ export type ChoiceUiHint = {
   lockedBySecrets: boolean;
   lockedByReputation: boolean;
   lockedByExclusiveGroup: boolean;
-  requiredReputation: { factionId: string; min: number } | null;
+  requiredReputationMin: { factionId: string; min: number } | null;
+  requiredReputationMax: { factionId: string; max: number } | null;
   effects: { factionId: string; reputationChange: number }[];
   revealsInfo: string | null;
 };

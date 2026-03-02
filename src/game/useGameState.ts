@@ -13,9 +13,7 @@ import {
 import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
-import { buildEncounterDialogueNode } from './encounters';
-import { applyManagementAction } from './management/applyManagementAction';
-import { getChapter } from './chapters';
+import { applyGameFlowEvent } from './flow/gameFlow';
 
 const uniqueRepChoiceIdByText = (() => {
   const seen = new Map<string, string | null>();
@@ -258,15 +256,15 @@ export function useGameState() {
   const listSlots = useCallback(() => saveSlots, [saveSlots]);
 
   const makeChoice = useCallback((choice: DialogueChoice) => {
-    setState(prev => engineRef.current.applyChoice(prev, choice));
+    setState(prev => applyGameFlowEvent(prev, { type: 'choice', choice }, engineRef.current));
   }, []);
 
   const endTurn = useCallback(() => {
-    setState(prev => engineRef.current.endTurn(prev));
+    setState(prev => applyGameFlowEvent(prev, { type: 'endTurn' }, engineRef.current));
   }, []);
 
   const takeManagementAction = useCallback((actionId: string) => {
-    setState(prev => applyManagementAction(prev, actionId));
+    setState(prev => applyGameFlowEvent(prev, { type: 'takeManagementAction', actionId }, engineRef.current));
   }, []);
 
   const resetGame = useCallback(() => {
@@ -274,31 +272,11 @@ export function useGameState() {
   }, []);
 
   const enterPendingEncounter = useCallback(() => {
-    setState(prev => {
-      if (!prev.pendingEncounter) return prev;
-      return {
-        ...prev,
-        currentDialogue: buildEncounterDialogueNode(prev.pendingEncounter),
-      };
-    });
+    setState(prev => applyGameFlowEvent(prev, { type: 'enterPendingEncounter' }, engineRef.current));
   }, []);
 
   const returnToHub = useCallback(() => {
-    setState(prev => {
-      if (prev.currentScene !== 'game') return prev;
-      const chapter = getChapter(prev.chapterId);
-      const hub = dialogueTree[chapter.hubNodeId] ?? null;
-      if (!hub) return prev;
-
-      if (prev.currentDialogue?.id === hub.id) return prev;
-
-      return {
-        ...prev,
-        stepNumber: prev.stepNumber + 1,
-        currentDialogue: hub,
-        log: [...prev.log, '↩ Returned to Concord Hall'],
-      };
-    });
+    setState(prev => applyGameFlowEvent(prev, { type: 'returnToHub' }, engineRef.current));
   }, []);
 
   const choiceLockedFlags = engineRef.current.getChoiceLockedFlags?.(state) ?? null;
