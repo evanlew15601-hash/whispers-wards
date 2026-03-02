@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { SaveSlotInfo } from '@/game/storage';
 import { useAudio } from '@/audio/useAudio';
+import { useTips } from '@/ui/tips/useTips';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -62,6 +63,7 @@ const GameMenu = ({
   onActiveTabChange: onActiveTabChangeProp,
 }: GameMenuProps) => {
   const { settings: audioSettings, patchSettings, playSfx } = useAudio();
+  const { settings: tipSettings, setEnabled: setTipsEnabled } = useTips();
 
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = openProp ?? uncontrolledOpen;
@@ -418,6 +420,26 @@ const GameMenu = ({
                       Procedural ambience plays by default. Authored loops are used when available.
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="parchment-border rounded-sm bg-card p-4">
+                <div className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">Interface</div>
+
+                <div className="mt-3 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-sm text-card-foreground">Tips</div>
+                    <div className="text-[11px] text-muted-foreground">Context help icons for core systems.</div>
+                  </div>
+
+                  <Switch
+                    checked={tipSettings.enabled}
+                    onCheckedChange={checked => {
+                      setTipsEnabled(checked);
+                      if (audioSettings.enabled) playSfx('ui.select');
+                    }}
+                    aria-label="Enable tips"
+                  />
                 </div>
               </div>
 

@@ -123,7 +123,7 @@ describe('GameScreen pending encounter controls', () => {
     });
 
     expect(screen.queryByRole('button', { name: /end turn/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /concord hall/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /return to hall/i })).toBeInTheDocument();
 
     convo.unmount();
   });

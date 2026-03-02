@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DialogueNode, Faction, PlayerProfile, WorldState, SecondaryEncounter } from '@/game/types';
 import { getPortraitById } from '@/game/portraits';
 import { getLeadHintsForCurrentDialogue } from '@/game/leads';
 import WorldMap from '@/components/WorldMap';
-import { Compass, Eye, Swords } from 'lucide-react';
+import Tip from '@/ui/tips/Tip';
+import { ChevronDown, Compass, Eye, Swords } from 'lucide-react';
 
 interface InfoPanelProps {
   currentDialogue: DialogueNode | null;
@@ -22,6 +24,8 @@ const InfoPanel = (
 ) => {
   const encounterTurnsLeft = pendingEncounter ? pendingEncounter.expiresOnTurn - turnNumber : null;
   const leadHints = getLeadHintsForCurrentDialogue(currentDialogue, knownSecrets);
+
+  const pendingUrgent = encounterTurnsLeft !== null && encounterTurnsLeft <= 1;
 
   return (
     <Tabs defaultValue="chronicle" className="flex flex-col gap-4">
@@ -75,106 +79,169 @@ const InfoPanel = (
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="chronicle" className="mt-0 flex flex-col gap-6">
+      <TabsContent value="chronicle" className="mt-0 flex flex-col gap-4">
         {/* Leads */}
         {leadHints.length > 0 && (
-          <div className="parchment-border rounded-sm bg-card p-4">
-            <h3 className="mb-2 flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
-              <Compass className="h-4 w-4" aria-hidden="true" />
-              Leads
-            </h3>
-            <p className="font-body text-xs text-muted-foreground">
-              Some arguments will land better with documentation. These are plausible threads—not instructions.
-            </p>
-            <div className="mt-3 flex flex-col gap-2">
-              {leadHints.map((hint, i) => (
-                <motion.p
-                  key={hint}
-                  className="font-body text-xs italic text-card-foreground/80"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.08 }}
+          <Collapsible defaultOpen={true}>
+            <div className="parchment-border rounded-sm bg-card p-4">
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="group flex w-full items-center justify-between gap-3"
+                  aria-label="Toggle leads"
                 >
-                  • {hint}
-                </motion.p>
-              ))}
+                  <h3 className="flex items-center gap-2 font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                    <Compass className="h-4 w-4" aria-hidden="true" />
+                    Leads
+                  </h3>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                </button>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <p className="mt-2 font-body text-xs text-muted-foreground">
+                  Some arguments will land better with documentation. These are plausible threads—not instructions.
+                </p>
+                <div className="mt-3 flex flex-col gap-2">
+                  {leadHints.map((hint, i) => (
+                    <motion.p
+                      key={hint}
+                      className="font-body text-xs italic text-card-foreground/80"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.06 }}
+                    >
+                      • {hint}
+                    </motion.p>
+                  ))}
+                </div>
+              </CollapsibleContent>
             </div>
-          </div>
+          </Collapsible>
         )}
 
-        {/* Secrets */}
+        {/* Intelligence */}
         {knownSecrets.length > 0 && (
-          <div className="parchment-border rounded-sm bg-card p-4">
-            <h3 className="mb-3 flex items-center gap-2 font-display text-xs tracking-[0.2em] text-accent uppercase">
-              <Eye className="h-4 w-4" aria-hidden="true" />
-              Intelligence ({knownSecrets.length})
-            </h3>
-            <div className="flex flex-col gap-2">
-              {knownSecrets.map((secret, i) => (
-                <motion.p
-                  key={i}
-                  className="font-body text-xs italic text-card-foreground/80"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.1 }}
+          <Collapsible defaultOpen={false}>
+            <div className="parchment-border rounded-sm bg-card p-4">
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="group flex w-full items-center justify-between gap-3"
+                  aria-label="Toggle intelligence"
                 >
-                  • {secret}
-                </motion.p>
-              ))}
+                  <h3 className="flex items-center gap-2 font-display text-xs tracking-[0.2em] text-accent uppercase">
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                    Intelligence ({knownSecrets.length})
+                  </h3>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                </button>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <div className="mt-3 flex flex-col gap-2">
+                  {knownSecrets.map((secret, i) => (
+                    <motion.p
+                      key={i}
+                      className="font-body text-xs italic text-card-foreground/80"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.08 }}
+                    >
+                      • {secret}
+                    </motion.p>
+                  ))}
+                </div>
+              </CollapsibleContent>
             </div>
-          </div>
+          </Collapsible>
         )}
 
         {/* Pending encounter */}
         {pendingEncounter && (
-          <div className="parchment-border rounded-sm bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="mb-2 flex items-center gap-2 font-display text-xs tracking-[0.2em] text-primary uppercase">
-                  <Swords className="h-4 w-4" aria-hidden="true" />
-                  Pending Encounter
-                </h3>
-                <div className="text-sm text-card-foreground">{pendingEncounter.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{pendingEncounter.description}</div>
-
-                <div
-                  className={`mt-2 text-[11px] ${
-                    encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'text-destructive' : 'text-muted-foreground'
-                  }`}
+          <Collapsible defaultOpen={pendingUrgent}>
+            <div className={`parchment-border rounded-sm bg-card p-4 ${pendingUrgent ? 'ring-1 ring-destructive/20' : ''}`}>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="group flex w-full items-center justify-between gap-3"
+                  aria-label="Toggle pending encounter"
                 >
-                  {encounterTurnsLeft !== null && encounterTurnsLeft >= 0
-                    ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${pendingEncounter.expiresOnTurn})`
-                    : `Expires on turn ${pendingEncounter.expiresOnTurn}`}
+                  <div className="flex items-center gap-2">
+                    <h3 className="flex items-center gap-2 font-display text-xs tracking-[0.2em] text-primary uppercase">
+                      <Swords className="h-4 w-4" aria-hidden="true" />
+                      Pending Encounter
+                    </h3>
+                    <Tip
+                      id="pending-encounter"
+                      label="Tip: Pending encounter"
+                      content={
+                        'Pending encounters can be addressed immediately from the Hall without advancing time. If they expire, tensions rise and the situation may worsen.'
+                      }
+                    />
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                </button>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <div className="mt-2">
+                  <div className="text-sm text-card-foreground">{pendingEncounter.title}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{pendingEncounter.description}</div>
+
+                  <div
+                    className={`mt-2 text-[11px] ${
+                      encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'text-destructive' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {encounterTurnsLeft !== null && encounterTurnsLeft >= 0
+                      ? `Expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'} (turn ${pendingEncounter.expiresOnTurn})`
+                      : `Expires on turn ${pendingEncounter.expiresOnTurn}`}
+                  </div>
                 </div>
-              </div>
+              </CollapsibleContent>
             </div>
-          </div>
+          </Collapsible>
         )}
 
         {/* Event log */}
-        <div className="parchment-border rounded-sm bg-card p-4">
-          <h3 className="mb-3 font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
-            Event Log
-          </h3>
-          <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
-            {log.map((entry, i) => (
-              <p
-                key={i}
-                className={`font-body text-xs ${
-                  entry.startsWith('>')
-                    ? 'text-primary/80 italic'
-                    : entry.startsWith('⚡')
-                    ? 'text-accent font-semibold'
-                    : entry.startsWith('🔍')
-                    ? 'text-accent/80'
-                    : 'text-muted-foreground'
-                }`}
+        <Collapsible defaultOpen={true}>
+          <div className="parchment-border rounded-sm bg-card p-4">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="group flex w-full items-center justify-between gap-3"
+                aria-label="Toggle event log"
               >
-                {entry}
-              </p>
-            ))}
+                <h3 className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Event Log
+                </h3>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+              </button>
+            </CollapsibleTrigger>
+
+            <CollapsibleContent>
+              <div className="mt-3 flex max-h-48 flex-col gap-1.5 overflow-y-auto">
+                {log.map((entry, i) => (
+                  <p
+                    key={i}
+                    className={`font-body text-xs ${
+                      entry.startsWith('>')
+                        ? 'text-primary/80 italic'
+                        : entry.startsWith('⚡')
+                        ? 'text-accent font-semibold'
+                        : entry.startsWith('🔍')
+                        ? 'text-accent/80'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    {entry}
+                  </p>
+                ))}
+              </div>
+            </CollapsibleContent>
           </div>
-        </div>
+        </Collapsible>
       </TabsContent>
 
       <TabsContent value="world" className="mt-0">
