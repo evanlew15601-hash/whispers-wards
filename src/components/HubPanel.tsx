@@ -54,7 +54,7 @@ const HubPanel = ({ node, onChoice }: HubPanelProps) => {
             Concord Hall
           </div>
           <div className="mt-1 text-[11px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
-            Plan your turn • Choose a destination
+            Hall agenda • Choose a destination
           </div>
         </div>
 
@@ -91,7 +91,7 @@ const HubPanel = ({ node, onChoice }: HubPanelProps) => {
             Destinations
           </span>
           <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
-            Press 1–9
+            Select 1–9
           </span>
         </div>
 

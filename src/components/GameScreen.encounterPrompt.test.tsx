@@ -160,7 +160,7 @@ describe('GameScreen pending encounter controls', () => {
     );
 
     expect(screen.queryByRole('button', { name: /^address$/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/encounter/i)).toBeInTheDocument();
+    expect(screen.getByText(/crisis/i)).toBeInTheDocument();
   });
 
   it('hides Address while already in an encounter dialogue (focus mode)', () => {

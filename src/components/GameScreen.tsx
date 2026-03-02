@@ -177,17 +177,17 @@ const GameScreen = ({
             </span>
           )}
 
-          {state.pendingEncounter && (
+          {state.pendingEncounter && !isEncounter && (
             <Badge
               variant={encounterBadgeVariant}
               className="font-display text-[10px] tracking-[0.22em] uppercase"
               title={
                 encounterTurnsLeft !== null && encounterTurnsLeft >= 0
-                  ? `Pending encounter (expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'})`
-                  : 'Pending encounter'
+                  ? `Crisis pending (expires in ${encounterTurnsLeft} turn${encounterTurnsLeft === 1 ? '' : 's'})`
+                  : 'Crisis pending'
               }
             >
-              Encounter
+              Crisis
               {encounterTurnsLeft !== null && encounterTurnsLeft >= 0 ? ` ${encounterTurnsLeft}T` : ''}
             </Badge>
           )}
