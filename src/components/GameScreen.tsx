@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAmbience } from '@/audio/useAmbience';
 import { GameState, DialogueChoice } from '@/game/types';
 import { SaveSlotInfo } from '@/game/storage';
@@ -34,6 +34,10 @@ import {
 import Tip from '@/ui/tips/Tip';
 import { BUILD_ID } from '@/lib/buildInfo';
 import { getChapter } from '@/game/chapters';
+import { describeExpiredEncounterConsequence } from '@/game/encounters';
+import { previewEndTurn } from '@/game/engine/endTurnPreview';
+import { getGameMode, isFocusMode } from '@/game/mode';
+import { useGlobalHotkeys } from '@/hooks/useGlobalHotkeys';
 
 import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
@@ -56,16 +60,6 @@ interface GameScreenProps {
 }
 
 type GameMenuTab = 'save' | 'load' | 'campaign' | 'about';
-
-const isUserTyping = () => {
-  const el = document.activeElement as HTMLElement | null;
-  if (!el) return false;
-
-  const tag = el.tagName.toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
-
-  return el.isContentEditable;
-};
 
 const GameScreen = ({
   state,
@@ -92,13 +86,27 @@ const GameScreen = ({
   const [infoOpen, setInfoOpen] = useState(false);
 
   const chapter = getChapter(state.chapterId);
-  const currentDialogueId = state.currentDialogue?.id ?? null;
+  const mode = getGameMode(state, chapter.hubNodeId);
 
-  const isEncounter = Boolean(currentDialogueId && currentDialogueId.startsWith('encounter:'));
-  const isInHub = currentDialogueId === chapter.hubNodeId;
-  const focusMode = !conversationEnded && !isInHub;
+  const isEncounter = mode === 'encounter';
+  const isInHub = mode === 'hall';
+  const focusMode = !conversationEnded && isFocusMode(mode);
 
   const canAddressEncounter = Boolean(state.pendingEncounter && isInHub);
+
+  const crisisExpiryPreview = (() => {
+    if (!state.pendingEncounter) return null;
+
+    const factionNameById = Object.fromEntries(state.factions.map(f => [f.id, f.name] as const));
+
+    return describeExpiredEncounterConsequence({
+      world: state.world,
+      encounter: state.pendingEncounter,
+      // Deterministic preview only; this value only affects duration bookkeeping for route effects.
+      turnNumber: state.turnNumber + 1,
+      factionNameById,
+    });
+  })();
 
   const encounterTurnsLeft = state.pendingEncounter ? state.pendingEncounter.expiresOnTurn - state.turnNumber : null;
   const encounterBadgeVariant: 'default' | 'secondary' | 'destructive' =
@@ -111,42 +119,33 @@ const GameScreen = ({
     document.getElementById('cc-management-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return;
+  const menuHotkeys = useMemo(
+    () => [
+      {
+        keys: ['escape'],
+        handler: () => setMenuOpen(prev => !prev),
+      },
+      {
+        keys: ['mod+s'],
+        handler: event => {
+          event.preventDefault();
+          setMenuTab('save');
+          setMenuOpen(true);
+        },
+      },
+      {
+        keys: ['mod+o'],
+        handler: event => {
+          event.preventDefault();
+          setMenuTab('load');
+          setMenuOpen(true);
+        },
+      },
+    ],
+    [setMenuOpen, setMenuTab],
+  );
 
-      const key = e.key?.toLowerCase();
-      if (!key) return;
-
-      if (isUserTyping()) return;
-
-      const mod = e.ctrlKey || e.metaKey;
-
-      if (key === 'escape') {
-        const openDialog = document.querySelector('[role="dialog"],[role="alertdialog"]');
-        if (openDialog) return;
-
-        setMenuOpen(prev => !prev);
-        return;
-      }
-
-      if (mod && key === 's') {
-        e.preventDefault();
-        setMenuTab('save');
-        setMenuOpen(true);
-        return;
-      }
-
-      if (mod && key === 'o') {
-        e.preventDefault();
-        setMenuTab('load');
-        setMenuOpen(true);
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown, true);
-    return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, []);
+  useGlobalHotkeys(menuHotkeys);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -242,6 +241,7 @@ const GameScreen = ({
           {isInHub ? (() => {
             const crisisUrgent = encounterTurnsLeft !== null && encounterTurnsLeft <= 1;
             const needsConfirm = Boolean(state.management.apRemaining > 0 || (state.pendingEncounter && crisisUrgent));
+            const endTurnPreview = previewEndTurn(state);
 
             const button = (
               <Button
@@ -279,6 +279,40 @@ const GameScreen = ({
                         : warnAp
                           ? `You still have ${state.management.apRemaining} AP remaining.`
                           : `A crisis is waiting in the hall.`}
+
+                      {endTurnPreview && (
+                        <span className="mt-4 block rounded-sm border border-border bg-background/20 p-3 text-[12px]">
+                          <span className="block font-display text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+                            Turn forecast (deterministic)
+                          </span>
+
+                          <span className="mt-2 grid grid-cols-[1fr,auto] gap-x-4 gap-y-1 text-muted-foreground">
+                            <span>AP</span>
+                            <span className="text-right">Resets to {endTurnPreview.apResetTo}</span>
+
+                            <span>Income</span>
+                            <span className="text-right">
+                              +{endTurnPreview.coinIncome} coin · +{endTurnPreview.influenceIncome} influence · +{endTurnPreview.suppliesIncome} supplies
+                            </span>
+
+                            <span>Trade routes</span>
+                            <span className="text-right">
+                              {endTurnPreview.openRoutes} open · {endTurnPreview.blockedRoutes} disrupted
+                            </span>
+
+                            <span>Projects</span>
+                            <span className="text-right">{endTurnPreview.activeProjects} tick</span>
+                          </span>
+
+                          {endTurnPreview.crisisExpiresNow && endTurnPreview.crisisExpiryPreview && (
+                            <span className="mt-3 block text-destructive">{endTurnPreview.crisisExpiryPreview}</span>
+                          )}
+
+                          <span className="mt-3 block text-[11px] text-muted-foreground">
+                            World events will advance; outcomes are not fully predictable.
+                          </span>
+                        </span>
+                      )}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -507,40 +541,6 @@ const GameScreen = ({
                 <DialoguePanel
                   node={state.currentDialogue!}
                   onChoice={makeChoice}
-                  knownSecrets={state.knownSecrets}
-                  factions={state.factions}
-                  selectedChoiceIds={state.selectedChoiceIds}
-                  playerName={state.player.name}
-                  playerPortraitId={state.player.portraitId}
-                  lockedChoices={choiceLockedFlags}
-                  choiceUiHints={choiceUiHints}
-                />
-              )}
-            </>
-          )}
-        </main>
-
-        {!focusMode && (
-          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-            <InfoPanel
-              currentDialogue={state.currentDialogue}
-              knownSecrets={state.knownSecrets}
-              turnNumber={state.turnNumber}
-              log={state.log}
-              world={state.world}
-              factions={state.factions}
-              pendingEncounter={state.pendingEncounter}
-              player={state.player}
-            />
-          </motion.aside>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default GameScreen;
-oice={makeChoice}
                   knownSecrets={state.knownSecrets}
                   factions={state.factions}
                   selectedChoiceIds={state.selectedChoiceIds}

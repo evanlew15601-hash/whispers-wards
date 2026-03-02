@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 import type { DialogueChoice, DialogueNode } from '@/game/types';
+import { useGlobalHotkeys } from '@/hooks/useGlobalHotkeys';
 import Tip from '@/ui/tips/Tip';
 import {
   AlertDialog,
@@ -13,15 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const isUserTyping = () => {
-  const el = document.activeElement as HTMLElement | null;
-  if (!el) return false;
 
-  const tag = el.tagName.toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
-
-  return el.isContentEditable;
-};
 
 interface HubPanelProps {
   node: DialogueNode;
@@ -67,26 +60,28 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
     setPendingChoice(null);
   }, [onChoice, pendingChoice]);
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return;
-      if (isUserTyping()) return;
+  const hubHotkeys = useMemo(
+    () => [
+      {
+        keys: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        enabled: !confirmOpen,
+        handler: (event: KeyboardEvent) => {
+          const key = event.key;
+          if (key < '1' || key > '9') return;
 
-      if (confirmOpen) return;
+          const idx = Number(key) - 1;
+          const choice = node.choices[idx];
+          if (!choice) return;
 
-      const key = e.key;
-      if (key >= '1' && key <= '9') {
-        const idx = Number(key) - 1;
-        const choice = node.choices[idx];
-        if (!choice) return;
-        e.preventDefault();
-        requestChoice(choice);
-      }
-    };
+          event.preventDefault();
+          requestChoice(choice);
+        },
+      },
+    ],
+    [confirmOpen, node.choices, requestChoice],
+  );
 
-    window.addEventListener('keydown', onKeyDown, true);
-    return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [confirmOpen, node.id, node.choices, requestChoice]);
+  useGlobalHotkeys(hubHotkeys);
 
   return (
     <motion.div
