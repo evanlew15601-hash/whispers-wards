@@ -15,6 +15,8 @@ import { initialEvents as chapter12Events, initialFactions as chapter12Factions,
 import { initialEvents as chapter13Events, initialFactions as chapter13Factions, dialogueTree as chapter13Tree } from './chapter-13';
 import { initialEvents as chapter14Events, initialFactions as chapter14Factions, dialogueTree as chapter14Tree } from './chapter-14';
 import { initialEvents as chapter15Events, initialFactions as chapter15Factions, dialogueTree as chapter15Tree } from './chapter-15';
+import { initialEvents as chapter16Events, initialFactions as chapter16Factions, dialogueTree as chapter16Tree } from './chapter-16';
+import { initialEvents as chapter17Events, initialFactions as chapter17Factions, dialogueTree as chapter17Tree } from './chapter-17';
 
 export type DialogueTree = Record<string, DialogueNode>;
 
@@ -115,6 +117,18 @@ export const CHAPTER_CONTENT_BY_ID: Record<string, ChapterContent> = {
     initialFactions: chapter15Factions,
     initialEvents: chapter15Events,
     dialogueTree: chapter15Tree,
+  },
+  'chapter-16': {
+    id: 'chapter-16',
+    initialFactions: chapter16Factions,
+    initialEvents: chapter16Events,
+    dialogueTree: chapter16Tree,
+  },
+  'chapter-17': {
+    id: 'chapter-17',
+    initialFactions: chapter17Factions,
+    initialEvents: chapter17Events,
+    dialogueTree: chapter17Tree,
   },
 };
 

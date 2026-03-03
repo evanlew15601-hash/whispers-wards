@@ -240,6 +240,40 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch14:proof:second': [
     'Follow the next corrected bundle to its second address. Corridors survive by choosing their audience.',
   ],
+
+  // Chapter XV — Third Address
+  'tok:ch15:proof:pattern': [
+    'Start from your last intervention and follow where the corridor had to adapt. Adaptation reveals intent.',
+  ],
+  'tok:ch15:proof:templates': [
+    'Enter the form library. If the corridor survives, it survives by standardizing.',
+  ],
+  'tok:ch15:proof:minutes': [
+    'Find the coordination minutes. Outcomes written like weather hide who chose them.',
+  ],
+  'tok:ch15:proof:signatories': [
+    'Check the signing registry for repeating initials and “temporary” titles used like functions.',
+  ],
+  'tok:ch15:proof:cabinet': [
+    'Inspect the template cabinet. Repeating clause clusters are how ownership gets erased.',
+  ],
+
+  // Chapter XVI — The Approval Loop
+  'tok:ch16:proof:pressure': [
+    'Follow how the corridor adjusted after your template decision. Adaptation reveals where approval really happens.',
+  ],
+  'tok:ch16:proof:approvers': [
+    'Find the coordination room. Listen to how approval is spoken as continuity until it sounds inevitable.',
+  ],
+  'tok:ch16:proof:stamp': [
+    'Inspect the approval seal. Routine emergency marks are how permanent systems are built.',
+  ],
+  'tok:ch16:proof:witness': [
+    'Ask the witness desk how decisions are moved across the line into “routine.”',
+  ],
+  'tok:ch16:proof:routes': [
+    'Track which hands touch forms before they are allowed to be called ordinary.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {

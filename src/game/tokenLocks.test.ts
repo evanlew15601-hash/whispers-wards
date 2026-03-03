@@ -367,4 +367,70 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-14:resolved:iron');
     expect(next.knownTokens).toContain('tok:ch14:outcome:iron');
   });
+
+  it('locks chapter-15 expose option behind cabinet + signatory proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-15');
+
+    const decision = tree['ch15-decision'];
+    if (!decision) throw new Error('Expected ch15-decision');
+
+    const expose = decision.choices.find(c => c.id === 'ch15-decision-expose');
+    if (!expose) throw new Error('Expected ch15-decision-expose');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-15',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, expose)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch15:proof:cabinet', 'tok:ch15:proof:signatories'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, expose);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch15-ending-expose');
+    expect(next.milestones).toContain('chapter-15:resolved');
+    expect(next.milestones).toContain('chapter-15:resolved:expose');
+    expect(next.knownTokens).toContain('tok:ch15:outcome:expose');
+  });
+
+  it('locks chapter-16 expose option behind approver + stamp proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-16');
+
+    const decision = tree['ch16-decision'];
+    if (!decision) throw new Error('Expected ch16-decision');
+
+    const expose = decision.choices.find(c => c.id === 'ch16-decision-expose');
+    if (!expose) throw new Error('Expected ch16-decision-expose');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-16',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, expose)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch16:proof:approvers', 'tok:ch16:proof:stamp'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, expose);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch16-ending-expose');
+    expect(next.milestones).toContain('chapter-16:resolved');
+    expect(next.milestones).toContain('chapter-16:resolved:expose');
+    expect(next.knownTokens).toContain('tok:ch16:outcome:expose');
+  });
 });
