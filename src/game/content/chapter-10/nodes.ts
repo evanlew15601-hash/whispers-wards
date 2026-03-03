@@ -15,6 +15,12 @@ export const dialogueTree = defineDialogueTree({
 
 It is narrower near the top. The air smells of paper dust and varnish.
 
+It is the kind of place that only exists because Concord exists: a realm held together by witnessed oaths and repeated precedent, not by a crown.
+
+Iron built fortress cities by swearing supply lines into discipline. Verdant built patience into wards and called it stewardship. Ember built empires out of routes and debt.
+
+Concord tried to make those foundations share a room.
+
 Somewhere above, someone is deciding which delays count as emergencies and which people count as collateral.
 
 You have been an envoy long enough to recognize a simple truth: corridors have owners.',

@@ -15,6 +15,10 @@ export const dialogueTree = defineDialogueTree({
 
 There is a stairwell behind the records rooms that clerks call the docket stair. It is not grand. It is simply always in use.
 
+People say it was cut after an earlier Concord crisis, when delegations agreed on a settlement and then spent a year arguing about what the settlement meant.
+
+The stair is the answer to that failure: a place to turn politics into docket ranges and call it procedure.
+
 If continuity is a corridor, this is the place where the corridor gets built.',
     choices: [
       {

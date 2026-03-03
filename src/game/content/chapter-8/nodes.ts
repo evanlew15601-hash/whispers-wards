@@ -13,6 +13,10 @@ export const dialogueTree = defineDialogueTree({
     speaker: 'Narrator',
     text: 'The River Gate did not end the argument. It moved it.
 
+You have read Iron oath-lines scratched into ration boards after a winter the roads failed. You have watched Verdant warders press living fiber into paper so a promise could outlast a speaker. You have watched Ember factors turn a ruined route into a new contract before the ash cooled.
+
+Concord was supposed to be the place where those instincts could argue in daylight.
+
 Someone is keeping a ledger on the quay. Someone is balancing losses against obedience.
 
 If you want to understand how continuity feeds itself, you start by finding who is doing the counting.',
@@ -256,6 +260,8 @@ The method kept moving. You kept watching. Both choices will come due.',
 
 Pages of tallies. Delays. Fees. Names reissued under new names.
 
+The layout is Ember-clean: columns balanced, totals aligned, the kind of neatness that makes theft look like accounting.
+
 Along the margin is a column with no label. The numbers there do not match coin.
 
 They match compliance.',
@@ -304,6 +310,14 @@ Mercy is being treated as a temporary defect that the method will correct.',
 The slips do not say "committee." They do not say "continuity." They do not say any word that could be argued with.
 
 They use formats. Docket spacing. A particular kind of wax.
+
+It is not Iron language. Iron writes rank.
+
+It is not Verdant language. Verdant writes permanence.
+
+It is not Ember language. Ember writes who pays.
+
+It is Concord language: neutral enough to be treated as inevitable.
 
 The paper is teaching the clerks what to obey.',
     choices: [

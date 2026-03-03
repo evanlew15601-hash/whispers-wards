@@ -98,6 +98,8 @@ You are here to decide what kind of writing people will obey.',
 
 "Iron does not trust feelings," he says. "We trust what outlives the signer."
 
+You have heard the story in a dozen fortress halls: a famine winter, a garrison that tried to be merciful, a road that never reopened. The moral is always the same. Mercy without a plan is a breach.
+
 The log is a list of names and clauses. It is also a list of punishments.
 
 Every breach has a consequence written beside it, not to be cruel, but to prevent bargaining after the fact.
@@ -124,6 +126,8 @@ Thessaly touches the page lightly. "We measure what lasts," she says.
 
 The folio contains ward schematics. Not spells as spectacle. Constraints. Redirects. Delays. The art of making a harm expensive.
 
+You have heard the Court’s oldest justification in the same calm voice: a burned forest does not argue back. A burned forest simply stops feeding people.
+
 A margin note repeats in several hands: “Fire is permanent.”
 
 "To Verdant," Thessaly adds, "a policy that burns the future for a clean week is not efficient. It is contempt."',
@@ -146,6 +150,8 @@ A margin note repeats in several hands: “Fire is permanent.”
 
 "Charters are not promises," he says. "They are enforcement plans." He taps the line about reporting.
 
+You have seen Ember’s founding instinct on routes like Ash Road: turn a hazard into a fee, turn the fee into a charter, turn the charter into leverage.
+
 The annex lists permissions and penalties. It assumes someone will break it. It is prepared for that.
 
 "The Ember Throne does not fear instability," Renzo adds. "We fear unpriced instability. If you can price it, you can survive it."',
@@ -166,6 +172,8 @@ The annex lists permissions and penalties. It assumes someone will break it. It 
     text: 'The precedent note is plain.
 
 It explains legitimacy the way a clerk explains gravity: witnessed oaths, recorded clauses, and other people treating a title as binding.
+
+You have seen the founding wound it was built for: delegations who could all win a battle and still lose a peace because nobody agreed on what “lawful” meant.
 
 "Concord is not a crown," Marrow says. "It is a memory system." They tap the line about witnesses.
 
