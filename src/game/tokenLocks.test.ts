@@ -433,4 +433,37 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-16:resolved:expose');
     expect(next.knownTokens).toContain('tok:ch16:outcome:expose');
   });
+
+  it('locks chapter-17 expose option behind distribution + seal log proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-17');
+
+    const decision = tree['ch17-decision'];
+    if (!decision) throw new Error('Expected ch17-decision');
+
+    const expose = decision.choices.find(c => c.id === 'ch17-decision-expose');
+    if (!expose) throw new Error('Expected ch17-decision-expose');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-17',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, expose)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch17:proof:distribution', 'tok:ch17:proof:seallog'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, expose);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch17-ending-expose');
+    expect(next.milestones).toContain('chapter-17:resolved');
+    expect(next.milestones).toContain('chapter-17:resolved:expose');
+    expect(next.knownTokens).toContain('tok:ch17:outcome:expose');
+  });
 });

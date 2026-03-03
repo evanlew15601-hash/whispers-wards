@@ -274,6 +274,20 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch16:proof:routes': [
     'Track which hands touch forms before they are allowed to be called ordinary.',
   ],
+
+  // Chapter XVII — The First Beneficiary
+  'tok:ch17:proof:distribution': [
+    'Find the distribution schedule. Who receives tomorrow first is who the corridor serves first.',
+  ],
+  'tok:ch17:proof:seallog': [
+    'Follow the approval seal’s “custody” column. Approvals hide inside holding, not signing.',
+  ],
+  'tok:ch17:proof:queue': [
+    'Check the fast-track queue. The corridor exists to spare principals from saying yes out loud.',
+  ],
+  'tok:ch17:proof:beneficiary': [
+    'Compare who gets first delivery to what they fear. The first beneficiary is whoever needs deniability most.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {
