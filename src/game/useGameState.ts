@@ -1,57 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { GameState, DialogueChoice, PlayerProfile } from './types';
-import { dialogueTree } from './data';
-import { normalizePlayerProfile } from './player';
-import {
-  SaveSlotInfo,
-  listSaveSlots,
-  saveGameToSlot,
-  loadGameFromSlot,
-  deleteSaveSlot,
-} from './storage';
+import { SaveSlotInfo, listSaveSlots } from './storage';
 import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
-import { buildEncounterDialogueNode } from './encounters';
 import { applyGameFlowEvent } from './flow/gameFlow';
 import { applyAppFlowEvent } from './flow/appFlow';
-
-const uniqueRepChoiceIdByText = (() => {
-  const seen = new Map<string, string | null>();
-
-  for (const node of Object.values(dialogueTree)) {
-    for (const c of node.choices) {
-      if (!c.exclusiveGroup && !c.effects.some(e => e.reputationChange !== 0)) continue;
-
-      const existing = seen.get(c.text);
-      if (existing === undefined) seen.set(c.text, c.id);
-      else if (existing !== c.id) seen.set(c.text, null);
-    }
-  }
-
-  const out = new Map<string, string>();
-  for (const [text, id] of seen.entries()) {
-    if (id) out.set(text, id);
-  }
-
-  return out;
-})();
-
-const inferSelectedChoiceIdsFromLog = (selectedChoiceIds: string[], log: string[] | undefined) => {
-  if (!log?.length) return selectedChoiceIds;
-
-  const out = new Set(selectedChoiceIds);
-  for (const entry of log) {
-    if (!entry.startsWith('> ')) continue;
-
-    const text = entry.slice(2);
-    const id = uniqueRepChoiceIdByText.get(text) ?? null;
-    if (id) out.add(id);
-  }
-
-  return [...out];
-};
+import { applyStorageFlowEvent, type StorageFlowEvent } from './flow/storageFlow';
 
 export function useGameState() {
   const engineRef = useRef(tsConversationEngine);
@@ -103,9 +59,23 @@ export function useGameState() {
     };
   }, []);
 
+  const dispatchStorageEvent = useCallback((event: StorageFlowEvent) => {
+    const out = applyStorageFlowEvent(state, event, engineRef.current);
+
+    setSaveSlots(out.saveSlots);
+
+    if (out.toast) {
+      if (out.toast.kind === 'success') toast.success(out.toast.message);
+      else toast.error(out.toast.message);
+    }
+
+    if (out.suppressEncounterToast) suppressEncounterToastRef.current = true;
+    if (out.state) setState(out.state);
+  }, [state]);
+
   const refreshSlots = useCallback(() => {
-    setSaveSlots(listSaveSlots());
-  }, []);
+    dispatchStorageEvent({ type: 'refreshSlots' });
+  }, [dispatchStorageEvent]);
 
   const startGame = useCallback(() => {
     setState(prev => applyAppFlowEvent(prev, { type: 'startGame' }, engineRef.current));
@@ -126,118 +96,16 @@ export function useGameState() {
   }, [refreshSlots]);
 
   const saveToSlot = useCallback((slotId: number) => {
-    const ok = saveGameToSlot(slotId, state);
-    refreshSlots();
-
-    if (ok) {
-      toast.success(`Saved to Slot ${slotId}`);
-    } else {
-      toast.error(`Failed to save Slot ${slotId}`);
-    }
-  }, [state, refreshSlots]);
+    dispatchStorageEvent({ type: 'saveToSlot', slotId });
+  }, [dispatchStorageEvent]);
 
   const loadFromSlot = useCallback((slotId: number) => {
-    const loaded = loadGameFromSlot(slotId);
-    if (!loaded) {
-      toast.error(`Slot ${slotId} is empty.`);
-      return;
-    }
-
-    // Back/forward compatibility: hydrate missing fields and refresh dialogue from the current tree when possible.
-    const base = engineRef.current.createInitialState();
-    const loadedAny = loaded as unknown as Partial<GameState> & {
-      currentDialogue?: { id?: string } | null;
-      currentDialogueId?: string | null;
-    };
-
-    const pendingEncounter = loadedAny.pendingEncounter ?? null;
-
-    const loadedDialogueId =
-      typeof loadedAny.currentDialogueId === 'string'
-        ? loadedAny.currentDialogueId
-        : loadedAny.currentDialogue && typeof loadedAny.currentDialogue === 'object'
-          ? (loadedAny.currentDialogue as { id?: string }).id ?? null
-          : null;
-
-    const hydratedLog = loadedAny.log ?? base.log;
-
-    const selectedChoiceIdsFromSave = Array.isArray((loadedAny as any).selectedChoiceIds)
-      ? ((loadedAny as any).selectedChoiceIds as string[])
-      : base.selectedChoiceIds;
-
-    const loadedTurnNumber = typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber;
-
-    const hydrated: GameState = {
-      ...base,
-      ...loadedAny,
-      player: normalizePlayerProfile(loadedAny.player ?? base.player),
-      factions: loadedAny.factions ?? base.factions,
-      events: loadedAny.events ?? base.events,
-      knownSecrets: loadedAny.knownSecrets ?? base.knownSecrets,
-      selectedChoiceIds: inferSelectedChoiceIdsFromLog(selectedChoiceIdsFromSave, hydratedLog),
-      log: hydratedLog,
-      stepNumber:
-        typeof (loadedAny as any).stepNumber === 'number'
-          ? ((loadedAny as any).stepNumber as number)
-          : loadedTurnNumber,
-      turnNumber: loadedTurnNumber,
-      chapterId: typeof (loadedAny as any).chapterId === 'string' ? ((loadedAny as any).chapterId as string) : base.chapterId,
-      chapterTurn: typeof (loadedAny as any).chapterTurn === 'number' ? ((loadedAny as any).chapterTurn as number) : base.chapterTurn,
-      milestones: Array.isArray((loadedAny as any).milestones) ? ((loadedAny as any).milestones as string[]) : base.milestones,
-      resources:
-        (loadedAny as any).resources && typeof (loadedAny as any).resources === 'object'
-          ? ({ ...base.resources, ...(loadedAny as any).resources } as GameState['resources'])
-          : base.resources,
-      projects: Array.isArray((loadedAny as any).projects) ? ((loadedAny as any).projects as GameState['projects']) : base.projects,
-      management:
-        (loadedAny as any).management && typeof (loadedAny as any).management === 'object'
-          ? {
-              ...base.management,
-              ...(loadedAny as any).management,
-            }
-          : base.management,
-      rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
-      world:
-        loadedAny.world && typeof loadedAny.world === 'object'
-          ? {
-              ...base.world,
-              ...(loadedAny.world as any),
-              aiMemory: {
-                ...base.world.aiMemory,
-                ...((loadedAny.world as any).aiMemory ?? {}),
-              },
-              encounterMemory: {
-                ...(base.world.encounterMemory ?? { lastSeenTurnByTemplateId: {}, seenThisChapter: {} }),
-                ...((loadedAny.world as any).encounterMemory ?? {}),
-              },
-            }
-          : base.world,
-      pendingEncounter,
-      currentDialogue: loadedDialogueId
-        ? loadedDialogueId.startsWith('encounter:') && pendingEncounter
-          ? buildEncounterDialogueNode(pendingEncounter)
-          : dialogueTree[loadedDialogueId] ?? (loadedAny.currentDialogue as GameState['currentDialogue'])
-        : (loadedAny.currentDialogue as GameState['currentDialogue']) ?? null,
-      // Always resume gameplay after loading a save.
-      currentScene: 'game',
-    };
-
-    suppressEncounterToastRef.current = true;
-    setState(hydrated);
-    refreshSlots();
-    toast.success(`Loaded Slot ${slotId}`);
-  }, [refreshSlots]);
+    dispatchStorageEvent({ type: 'loadFromSlot', slotId });
+  }, [dispatchStorageEvent]);
 
   const deleteSlot = useCallback((slotId: number) => {
-    const ok = deleteSaveSlot(slotId);
-    refreshSlots();
-
-    if (ok) {
-      toast.success(`Deleted Slot ${slotId}`);
-    } else {
-      toast.error(`Failed to delete Slot ${slotId}`);
-    }
-  }, [refreshSlots]);
+    dispatchStorageEvent({ type: 'deleteSlot', slotId });
+  }, [dispatchStorageEvent]);
 
   const listSlots = useCallback(() => saveSlots, [saveSlots]);
 
