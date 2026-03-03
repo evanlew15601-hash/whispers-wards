@@ -77,4 +77,46 @@ describe('chapter transitions', () => {
     expect(after.chapterId).toBe('chapter-4');
     expect(after.currentDialogue?.id).toBe('chapter-4-hub');
   });
+
+  it('moves into chapter-5 once chapter-4 is resolved', () => {
+    const base = tsConversationEngine.startNewGame();
+
+    const chapter4Hub = getDialogueTree('chapter-4')['chapter-4-hub'];
+    if (!chapter4Hub) throw new Error('Expected chapter-4-hub');
+
+    const resolved = {
+      ...base,
+      chapterId: 'chapter-4',
+      chapterTurn: 1,
+      currentDialogue: chapter4Hub,
+      milestones: [...base.milestones, 'chapter-4:resolved'],
+      rngSeed: 1,
+    };
+
+    const after = tsConversationEngine.endTurn(resolved);
+
+    expect(after.chapterId).toBe('chapter-5');
+    expect(after.currentDialogue?.id).toBe('chapter-5-hub');
+  });
+
+  it('moves into chapter-6 once chapter-5 is resolved', () => {
+    const base = tsConversationEngine.startNewGame();
+
+    const chapter5Hub = getDialogueTree('chapter-5')['chapter-5-hub'];
+    if (!chapter5Hub) throw new Error('Expected chapter-5-hub');
+
+    const resolved = {
+      ...base,
+      chapterId: 'chapter-5',
+      chapterTurn: 1,
+      currentDialogue: chapter5Hub,
+      milestones: [...base.milestones, 'chapter-5:resolved'],
+      rngSeed: 1,
+    };
+
+    const after = tsConversationEngine.endTurn(resolved);
+
+    expect(after.chapterId).toBe('chapter-6');
+    expect(after.currentDialogue?.id).toBe('chapter-6-hub');
+  });
 });

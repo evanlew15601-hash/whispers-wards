@@ -56,6 +56,37 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch03:clue:stamps': [
     'Push the curator for stamp lineage and docket formats that exist outside the three delegations.',
   ],
+
+  // Chapter IV — The Counting-House
+  'tok:ch04:proof:authority': [
+    'Demand the annex authority letter and inspect who signed it. Emergency authority leaves a signature somewhere.',
+  ],
+  'tok:ch04:proof:missing-lines': [
+    'Walk the annex floor and look for what never makes it onto paper. Missing denials are a policy, not a mistake.',
+  ],
+  'tok:ch04:proof:petitions': [
+    'Read the unstamped petitions. If people are appealing to the annex directly, it has become a shadow delegation.',
+  ],
+  'tok:ch04:proof:cutouts': [
+    'Ask to see the annex ledgers and fee schedules. Repeated intermediaries point to coordination.',
+  ],
+
+  // Chapter V — Oathline
+  'tok:ch05:proof:draft': [
+    'Inspect the oath draft for new emergency clauses. If it names a method instead of a person, it is hiding an office.',
+  ],
+  'tok:ch05:proof:oathkeeper': [
+    'Speak to the oathkeeper about where the clause came from and what seal arrived with it.',
+  ],
+  'tok:ch05:proof:iron-order': [
+    'Ask Aldric what enforcement looks like when authority is anonymous. He will tell you what can be made to sign.',
+  ],
+  'tok:ch05:proof:verdant-seal': [
+    'Ask Thessaly about a counterseal ward that makes emergency authority leave visible marks.',
+  ],
+  'tok:ch05:proof:ember-price': [
+    'Ask Renzo how to fund restraint: bonds, escrow, and compensation for legal harms.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {

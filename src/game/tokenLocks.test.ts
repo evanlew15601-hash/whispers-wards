@@ -37,4 +37,37 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-2:resolved');
     expect(next.milestones).toContain('chapter-2:resolved:iron');
   });
+
+  it('locks chapter-4 session outcomes behind proof tokens', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-4');
+
+    const session = tree['ch4-session'];
+    if (!session) throw new Error('Expected ch4-session');
+
+    const publish = session.choices.find(c => c.id === 'ch4-session-publish');
+    if (!publish) throw new Error('Expected ch4-session-publish');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-4',
+      chapterTurn: 1,
+      currentDialogue: session,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, publish)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch04:proof:cutouts', 'tok:ch04:proof:missing-lines'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, publish);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch4-ending-publish');
+    expect(next.milestones).toContain('chapter-4:resolved');
+    expect(next.milestones).toContain('chapter-4:resolved:publish');
+    expect(next.knownTokens).toContain('tok:ch04:outcome:publish');
+  });
 });
