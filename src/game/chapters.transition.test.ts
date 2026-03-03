@@ -140,4 +140,25 @@ describe('chapter transitions', () => {
     expect(after.chapterId).toBe('chapter-7');
     expect(after.currentDialogue?.id).toBe('chapter-7-hub');
   });
+
+  it('moves into chapter-8 once chapter-7 is resolved', () => {
+    const base = tsConversationEngine.startNewGame();
+
+    const chapter7Hub = getDialogueTree('chapter-7')['chapter-7-hub'];
+    if (!chapter7Hub) throw new Error('Expected chapter-7-hub');
+
+    const resolved = {
+      ...base,
+      chapterId: 'chapter-7',
+      chapterTurn: 1,
+      currentDialogue: chapter7Hub,
+      milestones: [...base.milestones, 'chapter-7:resolved'],
+      rngSeed: 1,
+    };
+
+    const after = tsConversationEngine.endTurn(resolved);
+
+    expect(after.chapterId).toBe('chapter-8');
+    expect(after.currentDialogue?.id).toBe('chapter-8-hub');
+  });
 });

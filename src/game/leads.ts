@@ -104,6 +104,23 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch06:proof:confession': [
     'Press the registrar to admit what continuity means: authority that does not ask.',
   ],
+
+  // Chapter VII — The River Gate
+  'tok:ch07:proof:gate-order': [
+    'Demand the seizure order at the River Gate. If it names a method instead of a signer, it is the office at work again.',
+  ],
+  'tok:ch07:proof:manifest': [
+    'Inspect the manifests for reissued names and repeated weights. Paper reroutes leave patterns.',
+  ],
+  'tok:ch07:proof:witness': [
+    'Find a bargemaster willing to speak. A witness makes paperwork feel less clean.',
+  ],
+  'tok:ch07:proof:fees': [
+    'Ask the Ember factor for the fee sheet. Emergency authority loves to hide behind "costs."',
+  ],
+  'tok:ch07:proof:ward': [
+    'Ask the Verdant warder what marks emergency authority leaves on lock-gates and stampwork.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {

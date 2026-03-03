@@ -126,6 +126,12 @@ If you have been looking for the committee, this is the kind of place it would c
         nextNodeId: 'ch6-react-expose',
       },
       {
+        id: 'ch6-registrar-prior',
+        text: 'Tell Hale what you have already forced the Hall to do, and see what they admit in response.',
+        effects: [],
+        nextNodeId: 'ch6-prior',
+      },
+      {
         id: 'ch6-registrar-back',
         text: 'Return to the corridor.',
         effects: [],
@@ -233,6 +239,216 @@ If you have been looking for the committee, this is the kind of place it would c
         text: 'Return to the corridor.',
         effects: [],
         nextNodeId: 'chapter-6-hub',
+      },
+    ],
+  },
+
+  'ch6-prior': {
+    id: 'ch6-prior',
+    speaker: 'Registrar Corven Hale',
+    text: 'Hale listens without interrupting.
+
+The office is not offended by your reforms. It is curious about them.
+
+"You keep choosing scars," Hale says. "Tell me which ones you think are permanent."',
+    choices: [
+      {
+        id: 'ch6-prior-publish',
+        text: 'Tell Hale you published the counting-house patterns and dragged denials onto paper.',
+        effects: [],
+        requiresAllTokens: ['tok:ch04:outcome:publish'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch6-prior-publish-node',
+      },
+      {
+        id: 'ch6-prior-suspend',
+        text: 'Tell Hale you suspended the annex authority letter and forced orders back to delegations.',
+        effects: [],
+        requiresAllTokens: ['tok:ch04:outcome:suspend'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch6-prior-suspend-node',
+      },
+      {
+        id: 'ch6-prior-appeals',
+        text: 'Tell Hale you built an appeals channel that forces seizures to answer petitions.',
+        effects: [],
+        requiresAllTokens: ['tok:ch04:outcome:appeals'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch6-prior-appeals-node',
+      },
+      {
+        id: 'ch6-prior-liability',
+        text: 'Tell Hale you bound anonymous orders to liability and forced names onto risk.',
+        effects: [],
+        requiresAllTokens: ['tok:ch04:outcome:liability'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch6-prior-liability-node',
+      },
+      {
+        id: 'ch6-prior-quiet',
+        text: 'Tell Hale you made a quiet correction and left the Hall a machine that still looks calm.',
+        effects: [],
+        requiresAllTokens: ['tok:ch04:outcome:quiet'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch6-prior-quiet-node',
+      },
+      {
+        id: 'ch6-prior-enforce',
+        text: 'Tell Hale you assigned Iron to enforce signatures and punish anonymous authority.',
+        effects: [],
+        requiresAllTokens: ['tok:ch05:outcome:enforce'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch6-prior-enforce-node',
+      },
+      {
+        id: 'ch6-prior-fund',
+        text: 'Tell Hale you created a compensation bond to price emergency authority.',
+        effects: [],
+        requiresAllTokens: ['tok:ch05:outcome:fund'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch6-prior-fund-node',
+      },
+      {
+        id: 'ch6-prior-delay',
+        text: 'Tell Hale you delayed the oath renewal rather than sign a clause you did not understand.',
+        effects: [],
+        requiresAllTokens: ['tok:ch05:outcome:delay'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch6-prior-delay-node',
+      },
+      {
+        id: 'ch6-prior-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
+      },
+    ],
+  },
+
+  'ch6-prior-publish-node': {
+    id: 'ch6-prior-publish-node',
+    speaker: 'Registrar Corven Hale',
+    text: '"So you learned the value of noise," Hale says.
+
+"When the Hall is watched, it reaches for procedure. Procedure is a fence. Fences can be climbed, but they keep people honest about where they are."',
+    choices: [
+      {
+        id: 'ch6-prior-publish-node-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
+      },
+    ],
+  },
+
+  'ch6-prior-suspend-node': {
+    id: 'ch6-prior-suspend-node',
+    speaker: 'Registrar Corven Hale',
+    text: '"Visible authority," Hale says.
+
+"People love it. They can point at it. They can threaten it. They can replace it. Then they can pretend the replacement was always the plan."',
+    choices: [
+      {
+        id: 'ch6-prior-suspend-node-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
+      },
+    ],
+  },
+
+  'ch6-prior-appeals-node': {
+    id: 'ch6-prior-appeals-node',
+    speaker: 'Registrar Corven Hale',
+    text: '"Appeals," Hale repeats.
+
+"You put suffering in a queue and call the queue fairness." They shrug. "That may still be an improvement. A queue leaves a record, and records can be used."',
+    choices: [
+      {
+        id: 'ch6-prior-appeals-node-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
+      },
+    ],
+  },
+
+  'ch6-prior-liability-node': {
+    id: 'ch6-prior-liability-node',
+    speaker: 'Registrar Corven Hale',
+    text: '"Liability makes paper heavy," Hale says.
+
+"It also teaches the clever where to hide. If a signature is dangerous, someone will find a hand they can afford to burn."',
+    choices: [
+      {
+        id: 'ch6-prior-liability-node-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
+      },
+    ],
+  },
+
+  'ch6-prior-quiet-node': {
+    id: 'ch6-prior-quiet-node',
+    speaker: 'Registrar Corven Hale',
+    text: 'Hale nods.
+
+"Quiet corrections keep the Hall stable," they say. "They also keep the Hall comfortable. Comfort is how bad habits become permanent."',
+    choices: [
+      {
+        id: 'ch6-prior-quiet-node-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
+      },
+    ],
+  },
+
+  'ch6-prior-enforce-node': {
+    id: 'ch6-prior-enforce-node',
+    speaker: 'Registrar Corven Hale',
+    text: '"A hammer," Hale says, without judgment.
+
+"Hammers solve problems. Hammers also create new rules: whoever holds one gets to define what looks like a nail."',
+    choices: [
+      {
+        id: 'ch6-prior-enforce-node-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
+      },
+    ],
+  },
+
+  'ch6-prior-fund-node': {
+    id: 'ch6-prior-fund-node',
+    speaker: 'Registrar Corven Hale',
+    text: '"You paid for restraint," Hale says.
+
+"That means you believe restraint is possible. It also means you have created a budget for harm. Budgets are easier to renew than vows."',
+    choices: [
+      {
+        id: 'ch6-prior-fund-node-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
+      },
+    ],
+  },
+
+  'ch6-prior-delay-node': {
+    id: 'ch6-prior-delay-node',
+    speaker: 'Registrar Corven Hale',
+    text: '"Delay," Hale says.
+
+"The Hall loves delay. Delay is how it survives consequences. If you want to win against a habit, you do not ask it to wait."',
+    choices: [
+      {
+        id: 'ch6-prior-delay-node-back',
+        text: 'Return to the desk.',
+        effects: [],
+        nextNodeId: 'ch6-registrar',
       },
     ],
   },

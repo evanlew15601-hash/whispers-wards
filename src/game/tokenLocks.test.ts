@@ -103,4 +103,37 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-6:resolved:raid');
     expect(next.knownTokens).toContain('tok:ch06:outcome:raid');
   });
+
+  it('locks chapter-7 scandal option behind manifest + witness proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-7');
+
+    const decision = tree['ch7-decision'];
+    if (!decision) throw new Error('Expected ch7-decision');
+
+    const expose = decision.choices.find(c => c.id === 'ch7-decision-expose');
+    if (!expose) throw new Error('Expected ch7-decision-expose');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-7',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, expose)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch07:proof:manifest', 'tok:ch07:proof:witness'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, expose);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch7-ending-expose');
+    expect(next.milestones).toContain('chapter-7:resolved');
+    expect(next.milestones).toContain('chapter-7:resolved:expose');
+    expect(next.knownTokens).toContain('tok:ch07:outcome:expose');
+  });
 });
