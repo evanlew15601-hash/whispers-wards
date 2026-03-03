@@ -98,6 +98,28 @@ describe('useGameState', () => {
     expect(result.current.state.currentScene).toBe('title');
   });
 
+  it('startGame/confirmNewGame are guarded by app flow rules', async () => {
+    const { useGameState } = await import('./useGameState');
+    const { result } = renderHook(() => useGameState());
+
+    // confirmNewGame should do nothing unless in create.
+    await act(async () => {
+      result.current.confirmNewGame({ name: 'Envoy', pronouns: 'they/them', portraitId: 'envoy-default' });
+    });
+    expect(result.current.state.currentScene).toBe('title');
+
+    await act(async () => {
+      result.current.startGame();
+    });
+    expect(result.current.state.currentScene).toBe('create');
+
+    await act(async () => {
+      result.current.confirmNewGame({ name: 'Envoy', pronouns: 'they/them', portraitId: 'envoy-default' });
+    });
+    expect(result.current.state.currentScene).toBe('game');
+    expect(result.current.state.currentDialogue?.id).toBeTruthy();
+  });
+
   it('enterPendingEncounter swaps dialogue to a generated encounter node when pendingEncounter exists', async () => {
     const partialState = {
       currentScene: 'game',

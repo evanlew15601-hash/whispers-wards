@@ -15,6 +15,7 @@ import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 import { buildEncounterDialogueNode } from './encounters';
 import { applyGameFlowEvent } from './flow/gameFlow';
+import { applyAppFlowEvent } from './flow/appFlow';
 
 const uniqueRepChoiceIdByText = (() => {
   const seen = new Map<string, string | null>();
@@ -107,37 +108,21 @@ export function useGameState() {
   }, []);
 
   const startGame = useCallback(() => {
-    // Route new games through the character creator.
-    const base = engineRef.current.createInitialState();
-    setState({
-      ...base,
-      currentScene: 'create',
-    });
+    setState(prev => applyAppFlowEvent(prev, { type: 'startGame' }, engineRef.current));
   }, []);
 
   const confirmNewGame = useCallback((player: PlayerProfile) => {
-    const started = engineRef.current.startNewGame();
-    setState({
-      ...started,
-      player: normalizePlayerProfile(player),
-      currentScene: 'game',
-    });
+    setState(prev => applyAppFlowEvent(prev, { type: 'confirmNewGame', player }, engineRef.current));
   }, []);
 
   const openLoadScreen = useCallback(() => {
     refreshSlots();
-    setState(prev => ({
-      ...prev,
-      currentScene: 'load',
-    }));
+    setState(prev => applyAppFlowEvent(prev, { type: 'openLoadScreen' }, engineRef.current));
   }, [refreshSlots]);
 
   const backToTitle = useCallback(() => {
     refreshSlots();
-    setState(prev => ({
-      ...prev,
-      currentScene: 'title',
-    }));
+    setState(prev => applyAppFlowEvent(prev, { type: 'backToTitle' }, engineRef.current));
   }, [refreshSlots]);
 
   const saveToSlot = useCallback((slotId: number) => {
@@ -269,7 +254,7 @@ export function useGameState() {
   }, []);
 
   const resetGame = useCallback(() => {
-    setState(engineRef.current.createInitialState());
+    setState(prev => applyAppFlowEvent(prev, { type: 'resetGame' }, engineRef.current));
   }, []);
 
   const enterPendingEncounter = useCallback(() => {
@@ -303,4 +288,6 @@ export function useGameState() {
     enterPendingEncounter,
     returnToHub,
   };
+}
+
 }
