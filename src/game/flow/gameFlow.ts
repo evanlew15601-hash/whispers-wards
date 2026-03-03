@@ -2,7 +2,7 @@ import type { DialogueChoice, GameState } from '../types';
 import type { ConversationEngine } from '../engine/conversationEngine';
 
 import { buildEncounterDialogueNode } from '../encounters';
-import { dialogueTree } from '../data';
+import { getDialogueTree } from '../data';
 import { getChapter } from '../chapters';
 import { applyManagementAction } from '../management/applyManagementAction';
 import { canEndTurn, canEnterPendingEncounter, canMakeChoice, canReturnToHub } from './gameMode';
@@ -45,7 +45,7 @@ export function applyGameFlowEvent(prev: GameState, event: GameFlowEvent, engine
     if (!canReturnToHub(prev)) return prev;
 
     const chapter = getChapter(prev.chapterId);
-    const hub = dialogueTree[chapter.hubNodeId] ?? null;
+    const hub = getDialogueTree(prev.chapterId)[chapter.hubNodeId] ?? null;
     if (!hub) return prev;
 
     if (prev.currentDialogue?.id === hub.id) return prev;

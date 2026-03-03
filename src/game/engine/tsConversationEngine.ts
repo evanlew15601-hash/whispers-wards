@@ -1,11 +1,17 @@
 import type { ConversationEngine } from './conversationEngine';
 import type { DialogueChoice, GameState } from '../types';
 
-import { dialogueTree, initialEvents, initialFactions } from '../data';
+import { getDialogueTree, getInitialEvents, getInitialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '../choiceLocks';
+import {
+  isChoiceLocked,
+  isChoiceLockedByExclusiveGroup,
+  isChoiceLockedByHistory,
+  isChoiceLockedBySecrets,
+  isChoiceLockedByTokens,
+} from '../choiceLocks';
 import { applyEffects, type GameEffect } from '../effects';
 import { evaluateChapterTransition, getChapter } from '../chapters';
 import { advanceProjectsOneTurn } from '../projects';
@@ -16,10 +22,11 @@ const OPENING_LOG_LINE = 'You arrive at the Concord Hall as envoy to the fractur
 const createInitialState = (): GameState => ({
   currentScene: 'title',
   player: { ...DEFAULT_PLAYER_PROFILE },
-  factions: initialFactions.map(f => ({ ...f })),
+  factions: getInitialFactions().map(f => ({ ...f })),
   currentDialogue: null,
-  events: initialEvents.map(e => ({ ...e })),
+  events: getInitialEvents().map(e => ({ ...e })),
   knownSecrets: [],
+  knownTokens: [],
   selectedChoiceIds: [],
   stepNumber: 0,
   turnNumber: 1,
@@ -42,21 +49,33 @@ const createInitialState = (): GameState => ({
   },
   log: [],
   rngSeed: createInitialRngSeed(),
-  world: createInitialWorldState(initialFactions),
+  world: createInitialWorldState(getInitialFactions()),
   pendingEncounter: null,
 });
 
 const startNewGame = (): GameState => {
   const base = createInitialState();
+  const tree = getDialogueTree(base.chapterId);
+
   return {
     ...base,
     currentScene: 'game',
-    currentDialogue: dialogueTree['opening'],
+    currentDialogue: tree['opening'],
     log: [OPENING_LOG_LINE],
   };
 };
 
 const addChoiceId = (prevIds: string[], id: string) => (prevIds.includes(id) ? prevIds : [...prevIds, id]);
+
+const addTokens = (prevTokens: string[], tokens: readonly string[] | undefined) => {
+  if (!tokens?.length) return prevTokens;
+
+  const out = [...prevTokens];
+  for (const t of tokens) {
+    if (!out.includes(t)) out.push(t);
+  }
+  return out;
+};
 
 const suppressReputationEffects = (choice: DialogueChoice): DialogueChoice => {
   return {
@@ -106,7 +125,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   // Only block genuinely unavailable choices. If the player already made this decision in
   // the past, keep it selectable and suppress its reputation effects.
-  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds) && !alreadyDecided) {
+  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds, prev.knownTokens) && !alreadyDecided) {
     return prev;
   }
 
@@ -121,27 +140,33 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   const withEffects = applyEffects(baseWithLog, choiceToEffects(prev, effectiveChoice));
 
-  const { newEvents, triggeredEvents } = evaluateEvents(prev, withEffects.factions);
+  const withTokens = effectiveChoice.grantsTokens?.length
+    ? { ...withEffects, knownTokens: addTokens(withEffects.knownTokens, effectiveChoice.grantsTokens) }
+    : withEffects;
 
-  const encounterPick = withEffects.pendingEncounter ? parseEncounterResolutionChoiceId(choice.id) : null;
-  if (withEffects.pendingEncounter && encounterPick && encounterPick.encounterId === withEffects.pendingEncounter.id) {
+  const { newEvents, triggeredEvents } = evaluateEvents(prev, withTokens.factions);
+
+  const encounterPick = withTokens.pendingEncounter ? parseEncounterResolutionChoiceId(choice.id) : null;
+  if (withTokens.pendingEncounter && encounterPick && encounterPick.encounterId === withTokens.pendingEncounter.id) {
     const resolved = resolveEncounter({
-      world: withEffects.world,
-      encounter: withEffects.pendingEncounter,
-      turnNumber: withEffects.turnNumber,
+      world: withTokens.world,
+      encounter: withTokens.pendingEncounter,
+      turnNumber: withTokens.turnNumber,
       resolution: encounterPick.resolution,
     });
 
+    const tree = getDialogueTree(withTokens.chapterId);
+
     return {
-      ...withEffects,
+      ...withTokens,
       events: newEvents,
       selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
       stepNumber: prev.stepNumber + 1,
       // Return to the main hall hub so the campaign continues.
-      currentDialogue: dialogueTree[getChapter(withEffects.chapterId).hubNodeId] ?? withEffects.currentDialogue,
+      currentDialogue: tree[getChapter(withTokens.chapterId).hubNodeId] ?? withTokens.currentDialogue,
       pendingEncounter: null,
       log: [
-        ...withEffects.log,
+        ...withTokens.log,
         ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
         ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
         ...resolved.logEntries,
@@ -150,21 +175,22 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     };
   }
 
-  const chapter = getChapter(withEffects.chapterId);
-  const hub = dialogueTree[chapter.hubNodeId] ?? null;
+  const chapter = getChapter(withTokens.chapterId);
+  const tree = getDialogueTree(withTokens.chapterId);
+  const hub = tree[chapter.hubNodeId] ?? null;
 
   // Most scenes should resolve back to the chapter hub rather than dropping the player
   // into a "no dialogue" state.
-  const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : hub;
+  const nextDialogue = choice.nextNodeId ? tree[choice.nextNodeId] || null : hub;
 
   return {
-    ...withEffects,
+    ...withTokens,
     currentDialogue: nextDialogue,
     events: newEvents,
     selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
     stepNumber: prev.stepNumber + 1,
     log: [
-      ...withEffects.log,
+      ...withTokens.log,
       ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
       ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
     ],
@@ -282,7 +308,7 @@ export const tsConversationEngine: ConversationEngine = {
   getChoiceLockedFlags(state) {
     if (!state.currentDialogue) return null;
     return state.currentDialogue.choices.map(choice =>
-      isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds)
+      isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.knownTokens)
     );
   },
   getChoiceUiHints(state) {
@@ -306,7 +332,7 @@ export const tsConversationEngine: ConversationEngine = {
       }
 
       const lockedByExclusiveGroup = isChoiceLockedByExclusiveGroup(choice, state.selectedChoiceIds);
-      const lockedBySecrets = isChoiceLockedBySecrets(choice, state.knownSecrets);
+      const lockedBySecrets = isChoiceLockedBySecrets(choice, state.knownSecrets) || isChoiceLockedByTokens(choice, state.knownTokens);
 
       const repReqMin = choice.requiredReputation ?? null;
       const repReqMax = choice.requiredReputationMax ?? null;
@@ -320,7 +346,7 @@ export const tsConversationEngine: ConversationEngine = {
       );
 
       return {
-        locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
+        locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.knownTokens),
         alreadyDecided: false,
         lockedBySecrets,
         lockedByReputation: repMinLocked || repMaxLocked,

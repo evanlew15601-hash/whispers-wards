@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { tsConversationEngine, TS_OPENING_LOG_LINE } from './tsConversationEngine';
-import { dialogueTree } from '../data';
+import { getDialogueTree } from '../data';
 import { buildEncounterDialogueNode } from '../encounters';
 import type { SecondaryEncounter } from '../types';
+
+const tree = getDialogueTree('chapter-1');
 
 describe('tsConversationEngine', () => {
   it('startNewGame sets initial scene/dialogue/log', () => {
@@ -116,7 +118,7 @@ describe('tsConversationEngine', () => {
 
     const atSummit = {
       ...initial,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
       rngSeed: 123456789,
       factions: initial.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
       knownSecrets: [],
@@ -205,7 +207,7 @@ describe('tsConversationEngine', () => {
 
     const legacyState = {
       ...initial,
-      currentDialogue: dialogueTree['renzo-ledger-request'],
+      currentDialogue: tree['renzo-ledger-request'],
       knownSecrets: ['You stole a copy of Renzo\'s ledger pages while his guards were distracted.'],
       selectedChoiceIds: [],
       rngSeed: 123456789,
@@ -232,7 +234,7 @@ describe('tsConversationEngine', () => {
 
     const atLedger = {
       ...initial,
-      currentDialogue: dialogueTree['renzo-ledger-request'],
+      currentDialogue: tree['renzo-ledger-request'],
       rngSeed: 123456789,
     };
 
@@ -247,7 +249,7 @@ describe('tsConversationEngine', () => {
 
     const revisit = {
       ...afterSteal,
-      currentDialogue: dialogueTree['renzo-ledger-request'],
+      currentDialogue: tree['renzo-ledger-request'],
     };
 
     const revisitHints = tsConversationEngine.getChoiceUiHints(revisit);
@@ -268,7 +270,7 @@ describe('tsConversationEngine', () => {
 
     const atMaps = {
       ...initial,
-      currentDialogue: dialogueTree['map-revelation'],
+      currentDialogue: tree['map-revelation'],
       rngSeed: 123456789,
     };
 
@@ -280,7 +282,7 @@ describe('tsConversationEngine', () => {
 
     const revisitMaps = {
       ...afterKeep,
-      currentDialogue: dialogueTree['map-revelation'],
+      currentDialogue: tree['map-revelation'],
     };
 
     const revealForgery = revisitMaps.currentDialogue!.choices.find(c => c.id === 'reveal-forgery');
@@ -291,7 +293,7 @@ describe('tsConversationEngine', () => {
 
     const atArchives = {
       ...initial,
-      currentDialogue: dialogueTree['hall-archives'],
+      currentDialogue: tree['hall-archives'],
       rngSeed: 123456789,
     };
 
@@ -303,7 +305,7 @@ describe('tsConversationEngine', () => {
 
     const revisitArchives = {
       ...afterSellAccord,
-      currentDialogue: dialogueTree['hall-archives'],
+      currentDialogue: tree['hall-archives'],
     };
 
     const showToAldric = revisitArchives.currentDialogue!.choices.find(c => c.id === 'archives-aldric');
@@ -313,7 +315,7 @@ describe('tsConversationEngine', () => {
 
     const atRenzoOffer = {
       ...initial,
-      currentDialogue: dialogueTree['renzo-offer'],
+      currentDialogue: tree['renzo-offer'],
       rngSeed: 123456789,
     };
 
@@ -325,7 +327,7 @@ describe('tsConversationEngine', () => {
 
     const revisitOffer = {
       ...afterRefuse,
-      currentDialogue: dialogueTree['renzo-offer'],
+      currentDialogue: tree['renzo-offer'],
     };
 
     const sign = revisitOffer.currentDialogue!.choices.find(c => c.id === 'offer-sign');
@@ -335,7 +337,7 @@ describe('tsConversationEngine', () => {
 
     const atLedgerRequest = {
       ...initial,
-      currentDialogue: dialogueTree['renzo-ledger-request'],
+      currentDialogue: tree['renzo-ledger-request'],
       rngSeed: 123456789,
     };
 
@@ -347,7 +349,7 @@ describe('tsConversationEngine', () => {
 
     const revisitLedgerRequest = {
       ...afterBuy,
-      currentDialogue: dialogueTree['renzo-ledger-request'],
+      currentDialogue: tree['renzo-ledger-request'],
     };
 
     const steal = revisitLedgerRequest.currentDialogue!.choices.find(c => c.id === 'ledger-steal');
@@ -357,7 +359,7 @@ describe('tsConversationEngine', () => {
 
     const atStolenLedger = {
       ...initial,
-      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+      currentDialogue: tree['renzo-ledger-stolen'],
       rngSeed: 123456789,
     };
 
@@ -369,7 +371,7 @@ describe('tsConversationEngine', () => {
 
     const revisitStolenLedger = {
       ...afterSell,
-      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+      currentDialogue: tree['renzo-ledger-stolen'],
     };
 
     const takeToAldric = revisitStolenLedger.currentDialogue!.choices.find(c => c.id === 'stolen-to-aldric');
@@ -383,7 +385,7 @@ describe('tsConversationEngine', () => {
 
     const atSummit = {
       ...initial,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
       rngSeed: 123456789,
     };
 
@@ -418,7 +420,7 @@ describe('tsConversationEngine', () => {
 
     const revisitSummit = {
       ...afterEncounter,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
     };
 
     expect(revisitSummit.selectedChoiceIds).toContain('summit-adjourn');

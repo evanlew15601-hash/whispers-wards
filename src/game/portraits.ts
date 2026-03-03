@@ -118,6 +118,84 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
     };
   }
 
+  // Chapter II / III recurring cast.
+  if (normalized.includes('marra')) {
+    return {
+      kind: 'image',
+      src: heroImage,
+      alt: speaker,
+      objectPosition: '42% 24%',
+    };
+  }
+
+  if (normalized.includes('jalen')) {
+    return {
+      kind: 'image',
+      src: heroImage,
+      alt: speaker,
+      objectPosition: '58% 32%',
+    };
+  }
+
+  if (normalized.includes('iven')) {
+    return {
+      kind: 'image',
+      src: heroImage,
+      alt: speaker,
+      objectPosition: '52% 22%',
+      filterClassName: 'cc-portrait-iron',
+    };
+  }
+
+  if (normalized.includes('loran')) {
+    return {
+      kind: 'image',
+      src: heroImage,
+      alt: speaker,
+      objectPosition: '63% 26%',
+      filterClassName: 'cc-portrait-ember',
+    };
+  }
+
+  if (normalized.includes('cerys')) {
+    return {
+      kind: 'image',
+      src: heroImage,
+      alt: speaker,
+      objectPosition: '46% 22%',
+      filterClassName: 'cc-portrait-verdant',
+    };
+  }
+
+  if (normalized.includes('hest')) {
+    return {
+      kind: 'image',
+      src: heroImage,
+      alt: speaker,
+      objectPosition: '50% 18%',
+      filterClassName: 'cc-portrait-verdant',
+    };
+  }
+
+  if (normalized.includes('rell')) {
+    return {
+      kind: 'image',
+      src: heroImage,
+      alt: speaker,
+      objectPosition: '55% 18%',
+      filterClassName: 'cc-portrait-iron',
+    };
+  }
+
+  if (normalized.includes('sera')) {
+    return {
+      kind: 'image',
+      src: heroImage,
+      alt: speaker,
+      objectPosition: '45% 35%',
+    };
+  }
+
   if (speakerFaction) {
     const auraVar =
       speakerFaction === 'iron-pact'

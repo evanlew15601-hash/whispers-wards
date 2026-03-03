@@ -1,5 +1,5 @@
 import type { DialogueChoice, Faction } from './types';
-import { dialogueTree } from './data';
+import { getAllDialogueNodes } from './data';
 
 type LockableChoice = Pick<
   DialogueChoice,
@@ -12,10 +12,14 @@ type LockableChoice = Pick<
     'requiredReputation' |
     'requiredReputationMax' |
     'requiresAllSecrets' |
-    'requiresAnySecrets'
+    'requiresAnySecrets' |
+    'requiresAllTokens' |
+    'requiresAnyTokens'
 >;
 
 type SecretLockableChoice = Pick<DialogueChoice, 'requiresAllSecrets' | 'requiresAnySecrets'>;
+
+type TokenLockableChoice = Pick<DialogueChoice, 'requiresAllTokens' | 'requiresAnyTokens'>;
 
 export function isChoiceLockedBySecrets(choice: SecretLockableChoice, knownSecrets: string[]): boolean {
   const needsAll = choice.requiresAllSecrets ?? null;
@@ -33,6 +37,22 @@ export function isChoiceLockedBySecrets(choice: SecretLockableChoice, knownSecre
   return false;
 }
 
+export function isChoiceLockedByTokens(choice: TokenLockableChoice, knownTokens: string[]): boolean {
+  const needsAll = choice.requiresAllTokens ?? null;
+  if (needsAll?.length) {
+    const ok = needsAll.every(t => knownTokens.includes(t));
+    if (!ok) return true;
+  }
+
+  const needsAny = choice.requiresAnyTokens ?? null;
+  if (needsAny?.length) {
+    const ok = needsAny.some(t => knownTokens.includes(t));
+    if (!ok) return true;
+  }
+
+  return false;
+}
+
 const hasNonZeroReputationEffect = (choice: Pick<DialogueChoice, 'effects'>) => {
   return choice.effects.some(e => e.reputationChange !== 0);
 };
@@ -44,7 +64,7 @@ const hasAnyGameEffects = (choice: Pick<DialogueChoice, 'gameEffects'>) => {
 const uniqueRepChoiceIdByRevealsInfo = (() => {
   const seen = new Map<string, string | null>();
 
-  for (const node of Object.values(dialogueTree)) {
+  for (const node of getAllDialogueNodes()) {
     for (const c of node.choices) {
       if (!c.revealsInfo) continue;
       if (!hasNonZeroReputationEffect(c)) continue;
@@ -66,7 +86,7 @@ const uniqueRepChoiceIdByRevealsInfo = (() => {
 const uniqueRepChoiceIdByText = (() => {
   const seen = new Map<string, string | null>();
 
-  for (const node of Object.values(dialogueTree)) {
+  for (const node of getAllDialogueNodes()) {
     for (const c of node.choices) {
       if (!hasNonZeroReputationEffect(c)) continue;
 
@@ -87,7 +107,7 @@ const uniqueRepChoiceIdByText = (() => {
 const choiceIdToExclusiveGroup = (() => {
   const out = new Map<string, string>();
 
-  for (const node of Object.values(dialogueTree)) {
+  for (const node of getAllDialogueNodes()) {
     for (const c of node.choices) {
       if (!c.exclusiveGroup) continue;
       out.set(c.id, c.exclusiveGroup);
@@ -146,6 +166,7 @@ export function isChoiceLocked(
   factions: Faction[],
   knownSecrets: string[],
   selectedChoiceIds: string[] = [],
+  knownTokens: string[] = [],
 ): boolean {
   if (knownSecrets.includes('override')) return false;
 
@@ -158,6 +179,7 @@ export function isChoiceLocked(
   if (isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets)) return false;
 
   if (isChoiceLockedBySecrets(choice, knownSecrets)) return true;
+  if (isChoiceLockedByTokens(choice, knownTokens)) return true;
 
   const repReq = choice.requiredReputation;
   if (repReq) {

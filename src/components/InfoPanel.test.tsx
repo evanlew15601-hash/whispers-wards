@@ -31,7 +31,7 @@ describe('InfoPanel leads', () => {
 
   const node: DialogueNode = {
     id: 'test-node',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'A short line of dialogue.',
     choices: [
       {
@@ -49,6 +49,7 @@ describe('InfoPanel leads', () => {
       <InfoPanel
         currentDialogue={node}
         knownSecrets={[]}
+        knownTokens={[]}
         turnNumber={1}
         log={[]}
         world={world}
@@ -65,6 +66,7 @@ describe('InfoPanel leads', () => {
       <InfoPanel
         currentDialogue={node}
         knownSecrets={['proof:ember']}
+        knownTokens={[]}
         turnNumber={1}
         log={[]}
         world={world}

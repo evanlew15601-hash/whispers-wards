@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { STORAGE_KEY_V1 } from './storage';
-import { dialogueTree, initialEvents, initialFactions } from './data';
+import { getDialogueTree, initialEvents, initialFactions } from './data';
 
 vi.mock('./engine/uqmWasmRuntime', () => ({
   loadUqmWasmRuntime: () => Promise.reject(new Error('no wasm')),
@@ -18,7 +18,7 @@ vi.mock('sonner', () => ({
 
 describe('useGameState', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     localStorage.clear();
     vi.resetModules();
   });
@@ -33,6 +33,7 @@ describe('useGameState', () => {
       currentDialogue: { id: 'opening' },
       events,
       knownSecrets: ['qa-secret'],
+      knownTokens: [],
       turnNumber: 7,
       log: ['qa log'],
       // intentionally partial player data (should be normalized)
@@ -80,7 +81,7 @@ describe('useGameState', () => {
     expect(Object.keys(result.current.state.world.tradeRoutes).length).toBeGreaterThan(0);
 
     expect(result.current.state.currentDialogue?.id).toBe('opening');
-    expect(dialogueTree[result.current.state.currentDialogue?.id ?? '']).toBeTruthy();
+    expect(getDialogueTree('chapter-1')[result.current.state.currentDialogue?.id ?? '']).toBeTruthy();
   });
 
   it('openLoadScreen/backToTitle transition scenes', async () => {
@@ -127,6 +128,7 @@ describe('useGameState', () => {
       currentDialogue: { id: 'concord-hub' },
       events: initialEvents.map(e => ({ ...e })),
       knownSecrets: [],
+      knownTokens: [],
       turnNumber: 10,
       log: [],
       stepNumber: 10,
@@ -196,6 +198,7 @@ describe('useGameState', () => {
       currentDialogue: { id: 'opening' },
       events,
       knownSecrets: [],
+      knownTokens: [],
       turnNumber: 7,
       log: ['qa log'],
       player: { name: 'Envoy', pronouns: 'they/them', portraitId: 'envoy-default' },

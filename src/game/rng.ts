@@ -3,9 +3,21 @@ export type RngSeed = number;
 const UINT32_RANGE = 0x100000000;
 const NON_ZERO_FALLBACK_SEED = 0x6d2b79f5;
 
+const mixSeed32 = (seed: number): number => {
+  let x = seed >>> 0;
+  x ^= x >>> 16;
+  x = Math.imul(x, 0x7feb352d);
+  x ^= x >>> 15;
+  x = Math.imul(x, 0x846ca68b);
+  x ^= x >>> 16;
+  return x >>> 0;
+};
+
 export const normalizeSeed = (seed: number): number => {
   const s = seed >>> 0;
-  return s === 0 ? NON_ZERO_FALLBACK_SEED : s;
+  const nonZero = s === 0 ? NON_ZERO_FALLBACK_SEED : s;
+  const mixed = mixSeed32(nonZero);
+  return mixed === 0 ? NON_ZERO_FALLBACK_SEED : mixed;
 };
 
 // xorshift32 (fast, deterministic, 32-bit)
@@ -14,7 +26,8 @@ export const nextSeed = (seed: number): number => {
   x ^= (x << 13) >>> 0;
   x ^= x >>> 17;
   x ^= (x << 5) >>> 0;
-  return x >>> 0;
+  x >>>= 0;
+  return x === 0 ? NON_ZERO_FALLBACK_SEED : x;
 };
 
 export const rngFloat01 = (seed: number): { value: number; seed: number } => {

@@ -138,6 +138,7 @@ export const persistedStateV2Schema = z
     factions: z.array(factionSchema).optional(),
     events: z.array(gameEventSchema).optional(),
     knownSecrets: z.array(z.string()).optional(),
+    knownTokens: z.array(z.string()).optional(),
     selectedChoiceIds: z.array(z.string()).optional(),
     turnNumber: z.number().optional(),
     log: z.array(z.string()).optional(),
@@ -362,9 +363,12 @@ const migrateSlotV1ToV2 = (slot: PersistedSlotV1 | undefined): PersistedSlotV2 |
 
   const s = (slot as PersistedSlotV1).state as Record<string, unknown> | null;
   const stateCandidate = {
+    player: s?.player,
     factions: s?.factions,
     events: s?.events,
     knownSecrets: s?.knownSecrets,
+    knownTokens: s?.knownTokens,
+    selectedChoiceIds: s?.selectedChoiceIds,
     turnNumber: s?.turnNumber,
     log: s?.log,
     rngSeed: s?.rngSeed,
@@ -487,6 +491,7 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
       factions: state.factions as any,
       events: state.events as any,
       knownSecrets: state.knownSecrets,
+      knownTokens: state.knownTokens,
       selectedChoiceIds: state.selectedChoiceIds,
       stepNumber: state.stepNumber,
       turnNumber: state.turnNumber,

@@ -102,6 +102,28 @@ export const codexEntries: CodexEntry[] = [
     ],
   },
   {
+    id: 'ash-road',
+    title: 'Ash Road',
+    category: 'Places',
+    summary: 'A key trade route where tolls, seizures, and paperwork can stop a region without firing a shot.',
+    paragraphs: [
+      'Ash Road is a practical artery. It feeds towns in winter and moves coin in summer. When it is blocked, everyone feels it within days.',
+      'Because it is a route, disputes about it rarely stay local. A single barrier changes prices, patrol routes, and who can afford to wait.',
+      'Control of Ash Road is often argued as "procedure". In reality, it is legitimacy made concrete: who is allowed to say no, and who must obey.',
+    ],
+  },
+  {
+    id: 'root-archive',
+    title: 'The Root-Archive',
+    category: 'Places',
+    summary: 'A sealed record house where ward craft and clerk craft meet, built to preserve chains of authority.',
+    paragraphs: [
+      'The Root-Archive keeps old dockets, stamp lines, and custody notes that do not sit neatly under any one delegation.',
+      'Its wards are conservative. They resist forced entry and punish careless handling more than hostile intent.',
+      'People seek it when they need origins: which seal appeared first, which order format spread, and who benefitted from the confusion.',
+    ],
+  },
+  {
     id: 'root-oath',
     title: 'The Root-Oath',
     category: 'Law & Custom',
@@ -121,6 +143,28 @@ export const codexEntries: CodexEntry[] = [
       'In Ember practice, contracts matter because other people will enforce them: courts, guilds, and creditors.',
       'A charter grants permissions (to travel, trade, collect tolls) and creates obligations (fees, reporting, enforcement).',
       'A wise envoy reads who benefits, who pays, and what happens when someone breaks the terms.',
+    ],
+  },
+  {
+    id: 'administrative-continuity',
+    title: 'Administrative Continuity',
+    category: 'Law & Custom',
+    summary: 'A Concord habit: turning decisions into procedure so nobody has to admit they chose.',
+    paragraphs: [
+      'Continuity is not a law and not a delegation. It is a method: templates, docket ranges, neutral seals, and language designed to sound inevitable.',
+      'It thrives after crises. When delegations agree on an outcome but fear the blame, continuity offers a way to act “routinely” while calling the choice an emergency.',
+      'An envoy can fight it by naming owners (signatories, countersigns, witnesses) or by making its actions leave marks that survive filing.',
+    ],
+  },
+  {
+    id: 'docket-stair',
+    title: 'The Docket Stair',
+    category: 'Places',
+    summary: 'A service stair behind the records rooms where corridor authority becomes docket ranges.',
+    paragraphs: [
+      'Clerks use the docket stair to move bundles between copy rooms, registries, and the archive without drawing attention.',
+      'It is rumored to have been cut after an earlier Concord settlement collapsed into interpretive warfare: a year spent arguing what the words meant.',
+      'On the stair, decisions shed names. They become numbers. That distance is the point.',
     ],
   },
   {

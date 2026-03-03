@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { CHAPTERS } from './chapters';
 import { ENCOUNTER_POOLS } from './encounterPools';
-import { dialogueTree } from './data';
+import { getDialogueTree } from './data';
 
 describe('chapters integrity', () => {
   it('defines at least a default chapter', () => {
@@ -11,7 +11,7 @@ describe('chapters integrity', () => {
 
   it('references valid hub node ids and chapter transitions', () => {
     for (const chapter of Object.values(CHAPTERS)) {
-      expect(dialogueTree[chapter.hubNodeId]).toBeTruthy();
+      expect(getDialogueTree(chapter.id)[chapter.hubNodeId]).toBeTruthy();
 
       if (chapter.exitToChapterId !== null) {
         expect(CHAPTERS[chapter.exitToChapterId]).toBeTruthy();

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } from '@/game/engine/uqmTextWrap';
-import { isChoiceLocked, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
+import { isChoiceLocked, isChoiceLockedByHistory, isChoiceLockedBySecrets, isChoiceLockedByTokens } from '@/game/choiceLocks';
 import { useAudio } from '@/audio/useAudio';
 import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
 import CommPortrait from '@/components/CommPortrait';
@@ -16,6 +16,7 @@ interface DialoguePanelProps {
   node: DialogueNode;
   onChoice: (choice: DialogueChoice) => void;
   knownSecrets: string[];
+  knownTokens?: string[];
   factions: Faction[];
   selectedChoiceIds?: string[];
   playerPortraitId?: string;
@@ -46,6 +47,8 @@ const DIALOGUE_MAX_COLUMNS = 56;
 const CHOICE_MAX_COLUMNS = 52;
 const REVEAL_TICK_MS = 28;
 
+const EMPTY_TOKENS: string[] = [];
+
 const isUserTyping = () => {
   const el = document.activeElement as HTMLElement | null;
   if (!el) return false;
@@ -56,7 +59,7 @@ const isUserTyping = () => {
   return el.isContentEditable;
 };
 
-const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceIds = [], playerPortraitId, playerName, lockedChoices, choiceUiHints }: DialoguePanelProps) => {
+const DialoguePanel = ({ node, onChoice, knownSecrets, knownTokens = EMPTY_TOKENS, factions, selectedChoiceIds = [], playerPortraitId, playerName, lockedChoices, choiceUiHints }: DialoguePanelProps) => {
   const { playSfx } = useAudio();
 
   const fullText = node.text;
@@ -114,11 +117,11 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
       if (!choice.hideWhenLockedBySecrets) return true;
 
-      // Only hide when the lock is due to missing secrets.
-      const lockedBySecrets = hint?.lockedBySecrets ?? isChoiceLockedBySecrets(choice, knownSecrets);
+      // Only hide when the lock is due to missing proof (secrets/tokens).
+      const lockedBySecrets = hint?.lockedBySecrets ?? (isChoiceLockedBySecrets(choice, knownSecrets) || isChoiceLockedByTokens(choice, knownTokens));
       return !lockedBySecrets;
     });
-  }, [knownSecrets, node.choices, selectedChoiceIds, choiceUiHintById]);
+  }, [knownSecrets, knownTokens, node.choices, selectedChoiceIds, choiceUiHintById]);
 
   const skipReveal = useCallback(() => {
     playSfx('ui.skip');
@@ -274,7 +277,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         const locked =
           alreadyDecided
             ? false
-            : hint?.locked ?? lockedFlag ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+            : hint?.locked ?? lockedFlag ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds, knownTokens);
 
         if (locked) {
           nudgeLockedChoice(choice.id);
@@ -296,6 +299,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     lockedChoiceFlagById,
     factions,
     knownSecrets,
+    knownTokens,
     selectedChoiceIds,
     onChoice,
     nudgeLockedChoice,
@@ -307,7 +311,9 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
   const aura = node.speakerFaction ? factionAuraVars[node.speakerFaction] ?? 'var(--gold-glow)' : 'var(--gold-glow)';
   const SpeakerIcon = node.speakerFaction ? factionIcons[node.speakerFaction] ?? Sparkles : Sparkles;
 
-  const portrait = useMemo(() => getSpeakerPortrait(node.speaker, node.speakerFaction), [node.speaker, node.speakerFaction]);
+  const displaySpeaker = node.speaker === 'Narrator' ? 'Field Notes' : node.speaker;
+
+  const portrait = useMemo(() => getSpeakerPortrait(displaySpeaker, node.speakerFaction), [displaySpeaker, node.speakerFaction]);
 
   const isEncounterNode = node.id.startsWith('encounter:');
 
@@ -344,7 +350,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
             <div className="flex flex-col">
               <span className="font-display text-sm tracking-widest text-primary uppercase">
-                {node.speaker}
+                {displaySpeaker}
               </span>
               <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
                 {isRevealing
@@ -473,7 +479,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
               const locked = alreadyDecided
                 ? false
-                : hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+                : hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds, knownTokens);
 
               const repReqMin = hint?.requiredReputationMin ?? choice.requiredReputation ?? null;
               const repReqMax = hint?.requiredReputationMax ?? choice.requiredReputationMax ?? null;
@@ -505,7 +511,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 onChoice(choice);
               };
 
-              const secretsLocked = locked && (hint?.lockedBySecrets ?? isChoiceLockedBySecrets(choice, knownSecrets));
+              const secretsLocked = locked && (hint?.lockedBySecrets ?? (isChoiceLockedBySecrets(choice, knownSecrets) || isChoiceLockedByTokens(choice, knownTokens)));
               const historyLocked = alreadyDecided;
 
               const repLockedLabel = locked && (hint?.lockedByReputation ?? (repMinLocked || repMaxLocked));

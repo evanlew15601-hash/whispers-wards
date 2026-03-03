@@ -12,6 +12,7 @@ import { ChevronDown, Compass, Eye, Swords } from 'lucide-react';
 interface InfoPanelProps {
   currentDialogue: DialogueNode | null;
   knownSecrets: string[];
+  knownTokens: string[];
   turnNumber: number;
   log: string[];
   world: WorldState;
@@ -21,10 +22,10 @@ interface InfoPanelProps {
 }
 
 const InfoPanel = (
-  { currentDialogue, knownSecrets, turnNumber, log, world, factions, pendingEncounter, player }: InfoPanelProps,
+  { currentDialogue, knownSecrets, knownTokens, turnNumber, log, world, factions, pendingEncounter, player }: InfoPanelProps,
 ) => {
   const encounterTurnsLeft = pendingEncounter ? pendingEncounter.expiresOnTurn - turnNumber : null;
-  const leadHints = getLeadHintsForCurrentDialogue(currentDialogue, knownSecrets);
+  const leadHints = getLeadHintsForCurrentDialogue(currentDialogue, knownSecrets, knownTokens);
 
   const pendingUrgent = encounterTurnsLeft !== null && encounterTurnsLeft <= 1;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { dialogueTree } from '../data';
+import { getDialogueTree } from '../data';
 import { tsConversationEngine } from '../engine/tsConversationEngine';
 import { applyGameFlowEvent } from './gameFlow';
 
@@ -8,13 +8,15 @@ describe('gameFlow (state-machine guards)', () => {
   it('ignores choice events outside gameplay modes', () => {
     const engine = tsConversationEngine;
 
+    const tree = getDialogueTree('chapter-1');
+
     const titleState = {
       ...engine.createInitialState(),
-      currentDialogue: dialogueTree['opening'],
+      currentDialogue: tree['opening'],
       currentScene: 'title',
     };
 
-    const choice = dialogueTree['opening'].choices[0];
+    const choice = tree['opening'].choices[0];
 
     const next = applyGameFlowEvent(titleState, { type: 'choice', choice }, engine);
     expect(next).toBe(titleState);
@@ -25,9 +27,11 @@ describe('gameFlow (state-machine guards)', () => {
 
     const start = engine.startNewGame();
 
+    const tree = getDialogueTree('chapter-1');
+
     const hubState = {
       ...start,
-      currentDialogue: dialogueTree['concord-hub'],
+      currentDialogue: tree['concord-hub'],
       pendingEncounter: {
         id: 'enc-test',
         kind: 'embargo',
@@ -51,9 +55,11 @@ describe('gameFlow (state-machine guards)', () => {
 
     const start = engine.startNewGame();
 
+    const tree = getDialogueTree('chapter-1');
+
     const fromHub = {
       ...start,
-      currentDialogue: dialogueTree['concord-hub'],
+      currentDialogue: tree['concord-hub'],
     };
 
     const hubNext = applyGameFlowEvent(fromHub, { type: 'returnToHub' }, engine);
@@ -61,7 +67,7 @@ describe('gameFlow (state-machine guards)', () => {
 
     const fromScene = {
       ...start,
-      currentDialogue: dialogueTree['opening'],
+      currentDialogue: tree['opening'],
     };
 
     const sceneNext = applyGameFlowEvent(fromScene, { type: 'returnToHub' }, engine);
