@@ -499,6 +499,9 @@ const GameScreen = ({
                 <HubPanel
                   node={state.currentDialogue!}
                   onChoice={makeChoice}
+                  knownSecrets={state.knownSecrets}
+                  factions={state.factions}
+                  selectedChoiceIds={state.selectedChoiceIds}
                   crisisPending={Boolean(state.pendingEncounter)}
                   crisisTurnsLeft={encounterTurnsLeft}
                   crisisConsequence={crisisExpiryPreview}

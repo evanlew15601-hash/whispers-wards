@@ -91,11 +91,29 @@ describe('applyManagementAction', () => {
     expect(paused).not.toBe(started);
     expect(paused.projects[0]?.status).toBe('paused');
 
-    const resumed = applyManagementAction(paused, 'projects:resume:scribe-audit');
+    const resumed = applyManagementAction(
+      {
+        ...paused,
+        management: {
+          ...paused.management,
+          apRemaining: 1,
+        },
+      },
+      'projects:resume:scribe-audit',
+    );
     expect(resumed).not.toBe(paused);
     expect(resumed.projects[0]?.status).toBe('active');
 
-    const cancelled = applyManagementAction(resumed, 'projects:cancel:scribe-audit');
+    const cancelled = applyManagementAction(
+      {
+        ...resumed,
+        management: {
+          ...resumed.management,
+          apRemaining: 1,
+        },
+      },
+      'projects:cancel:scribe-audit',
+    );
     expect(cancelled).not.toBe(resumed);
     expect(cancelled.projects[0]?.status).toBe('cancelled');
 

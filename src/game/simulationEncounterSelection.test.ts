@@ -67,7 +67,7 @@ describe('pickEncounterCandidate', () => {
     expect(pick!.usedFallbackPool).toBe(true);
   });
 
-  it('uses weights when provided (seed-search proof)', () => {
+  it('uses weights when provided', () => {
     const candidates: EncounterCandidate[] = [
       { kind: 'embargo', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad' },
       { kind: 'raid', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad' },
@@ -78,46 +78,23 @@ describe('pickEncounterCandidate', () => {
       seenThisChapter: {},
     };
 
-    const equalWeights = (c: EncounterCandidate) => (c.kind === 'embargo' ? 1 : 1);
+    const equalWeights = (_: EncounterCandidate) => 1;
     const skewedWeights = (c: EncounterCandidate) => (c.kind === 'embargo' ? 10 : 1);
 
-    let seedThatDiffers: number | null = null;
-    for (let seed = 1; seed <= 5000; seed++) {
-      const uniform = pickEncounterCandidate({
-        candidates,
-        turnNumber: 10,
-        rngSeed: seed,
-        memory,
-        getWeight: equalWeights,
-      });
-      const weighted = pickEncounterCandidate({
-        candidates,
-        turnNumber: 10,
-        rngSeed: seed,
-        memory,
-        getWeight: skewedWeights,
-      });
-
-      if (!uniform || !weighted) continue;
-      if (uniform.templateId !== weighted.templateId) {
-        seedThatDiffers = seed;
-        break;
-      }
-    }
-
-    expect(seedThatDiffers).not.toBeNull();
+    // This seed is chosen so that the uniform pick (50/50) differs from the skewed pick (10/11).
+    const seed = 123456789;
 
     const uniform = pickEncounterCandidate({
       candidates,
       turnNumber: 10,
-      rngSeed: seedThatDiffers!,
+      rngSeed: seed,
       memory,
       getWeight: equalWeights,
     });
     const weighted = pickEncounterCandidate({
       candidates,
       turnNumber: 10,
-      rngSeed: seedThatDiffers!,
+      rngSeed: seed,
       memory,
       getWeight: skewedWeights,
     });

@@ -126,7 +126,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       resolution: encounterPick.resolution,
     });
 
-    return {
+    const out: GameState = {
       ...withEffects,
       events: newEvents,
       selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
@@ -143,6 +143,8 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       ],
       world: resolved.world,
     };
+
+    return evaluateChapterTransition(out);
   }
 
   const chapter = getChapter(withEffects.chapterId);
@@ -152,7 +154,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
   // into a "no dialogue" state.
   const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : hub;
 
-  return {
+  const out: GameState = {
     ...withEffects,
     currentDialogue: nextDialogue,
     events: newEvents,
@@ -165,6 +167,8 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
     ],
   };
+
+  return evaluateChapterTransition(out);
 };
 
 const endTurn = (prev: GameState): GameState => {

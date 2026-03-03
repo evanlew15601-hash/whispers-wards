@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import type { DialogueNode } from '@/game/types';
+import type { DialogueNode, Faction } from '@/game/types';
 
 import HubPanel from '@/components/HubPanel';
 
@@ -14,6 +14,18 @@ describe('HubPanel crisis guard', () => {
     ],
   };
 
+  const factions: Faction[] = [
+    {
+      id: 'iron-pact',
+      name: 'The Iron Pact',
+      description: '',
+      motto: '',
+      color: 'iron',
+      reputation: 0,
+      traits: [],
+    },
+  ];
+
   it('confirms before leaving the Hall when a crisis is urgent', async () => {
     const onChoice = vi.fn();
 
@@ -21,6 +33,9 @@ describe('HubPanel crisis guard', () => {
       <HubPanel
         node={node}
         onChoice={onChoice}
+        knownSecrets={[]}
+        factions={factions}
+        selectedChoiceIds={[]}
         crisisPending={true}
         crisisTurnsLeft={1}
       />,
@@ -46,6 +61,9 @@ describe('HubPanel crisis guard', () => {
       <HubPanel
         node={node}
         onChoice={onChoice}
+        knownSecrets={[]}
+        factions={factions}
+        selectedChoiceIds={[]}
         crisisPending={true}
         crisisTurnsLeft={2}
       />,
@@ -64,6 +82,9 @@ describe('HubPanel crisis guard', () => {
       <HubPanel
         node={node}
         onChoice={onChoice}
+        knownSecrets={[]}
+        factions={factions}
+        selectedChoiceIds={[]}
         crisisPending={false}
         crisisTurnsLeft={null}
       />,

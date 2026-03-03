@@ -5,7 +5,7 @@ import { dialogueTree } from '../data';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
-import { getChapter } from '../chapters';
+import { evaluateChapterTransition, getChapter } from '../chapters';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -361,9 +361,8 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
     startNewGame: tsConversationEngine.startNewGame,
     applyChoice(prev, choice) {
       const next = applyChoiceUsingWasm(prev, choice, uqm, graph);
-      if (next) return next;
-      // Safe fallback (should be rare)
-      return tsConversationEngine.applyChoice(prev, choice);
+      const resolved = next ?? tsConversationEngine.applyChoice(prev, choice);
+      return evaluateChapterTransition(resolved);
     },
     endTurn(prev) {
       return tsConversationEngine.endTurn(prev);
@@ -447,57 +446,16 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         lockedFlags = state.currentDialogue.choices.map((_, i) => exp.uqm_conv_choice_is_locked(i) === 1);
       }
 
-      const canReadMeta =
-        typeof exp.uqm_conv_choice_get_req_faction === 'function' &&
-        typeof exp.uqm_conv_choice_get_req_min === 'function' &&
-        typeof exp.uqm_conv_choice_get_d0 === 'function' &&
-        typeof exp.uqm_conv_choice_get_d1 === 'function' &&
-        typeof exp.uqm_conv_choice_get_d2 === 'function' &&
-        typeof exp.uqm_conv_choice_get_reveal_lo === 'function' &&
-        typeof exp.uqm_conv_choice_get_reveal_hi === 'function';
-
       return state.currentDialogue.choices.map((choice, i) => {
         const locked = (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
 
-        if (!canReadMeta) {
-          return {
-            locked,
-            requiredReputation: choice.requiredReputation ?? null,
-            effects: choice.effects,
-            revealsInfo: choice.revealsInfo ?? null,
-          };
-        }
-
-        const reqFaction = exp.uqm_conv_choice_get_req_faction!(i);
-        const reqMin = exp.uqm_conv_choice_get_req_min!(i);
-        const reqFactionId = reqFaction >= 0 ? factionIdFromIndex(reqFaction) : null;
-
-        const effects: ChoiceUiHint['effects'] = [];
-        const d0 = exp.uqm_conv_choice_get_d0!(i);
-        const d1 = exp.uqm_conv_choice_get_d1!(i);
-        const d2 = exp.uqm_conv_choice_get_d2!(i);
-        if (d0) effects.push({ factionId: 'iron-pact', reputationChange: d0 });
-        if (d1) effects.push({ factionId: 'verdant-court', reputationChange: d1 });
-        if (d2) effects.push({ factionId: 'ember-throne', reputationChange: d2 });
-
-        const revealLo = exp.uqm_conv_choice_get_reveal_lo!(i) >>> 0;
-        const revealHi = exp.uqm_conv_choice_get_reveal_hi!(i) >>> 0;
-
-        let revealInfo: string | null = null;
-        if (revealLo !== 0 || revealHi !== 0) {
-          for (let bit = 0; bit < graph.secretBitCapacity; bit++) {
-            const isSet = bit < 32 ? ((revealLo >>> bit) & 1) === 1 : ((revealHi >>> (bit - 32)) & 1) === 1;
-            if (!isSet) continue;
-            revealInfo = graph.bitToSecret[bit] ?? null;
-            break;
-          }
-        }
-
+        // Keep UI metadata aligned with the TS engine by using the source graph values.
+        // WASM only encodes one reputation delta per faction and does not preserve effect ordering.
         return {
           locked,
-          requiredReputation: reqFactionId ? { factionId: reqFactionId, min: reqMin } : null,
-          effects,
-          revealsInfo: revealInfo ?? choice.revealsInfo ?? null,
+          requiredReputation: choice.requiredReputation ?? null,
+          effects: choice.effects,
+          revealsInfo: choice.revealsInfo ?? null,
         };
       });
     },

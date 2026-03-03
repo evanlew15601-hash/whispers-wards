@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import type { DialogueChoice, DialogueNode } from '@/game/types';
+import type { DialogueChoice, DialogueNode, Faction } from '@/game/types';
+import { isChoiceLocked, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
 import Tip from '@/ui/tips/Tip';
 import {
   AlertDialog,
@@ -26,12 +27,24 @@ const isUserTyping = () => {
 interface HubPanelProps {
   node: DialogueNode;
   onChoice: (choice: DialogueChoice) => void;
+  knownSecrets: string[];
+  factions: Faction[];
+  selectedChoiceIds: string[];
   crisisPending?: boolean;
   crisisTurnsLeft?: number | null;
   crisisConsequence?: string | null;
 }
 
-const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = null, crisisConsequence = null }: HubPanelProps) => {
+const HubPanel = ({
+  node,
+  onChoice,
+  knownSecrets,
+  factions,
+  selectedChoiceIds,
+  crisisPending = false,
+  crisisTurnsLeft = null,
+  crisisConsequence = null,
+}: HubPanelProps) => {
   const paragraphs = node.text.split(/\n\n+/g).filter(Boolean);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -49,9 +62,42 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
     return crisisConsequence ? `${base}\n\n${crisisConsequence}` : base;
   }, [crisisConsequence, crisisPending, crisisTurnsLeft]);
 
+  const visibleChoices = useMemo(() => {
+    if (knownSecrets.includes('override')) return node.choices;
+
+    const candidates = node.choices.filter(choice => {
+      if (choice.hideWhenHasAnySecrets?.length) {
+        const shouldHide = choice.hideWhenHasAnySecrets.some(s => knownSecrets.includes(s));
+        if (shouldHide) return false;
+      }
+
+      const secretsLocked = isChoiceLockedBySecrets(choice, knownSecrets);
+      if (choice.hideWhenLockedBySecrets && secretsLocked) return false;
+
+      const repReq = choice.requiredReputation ?? null;
+      const repLocked = Boolean(
+        repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+      );
+
+      const locked = isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+      if (locked && !repLocked && !secretsLocked) return false;
+
+      return true;
+    });
+
+    const undecided = candidates.filter(choice => !isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets));
+    return undecided.length ? undecided : candidates;
+  }, [factions, knownSecrets, node.choices, selectedChoiceIds]);
+
   const crisisUrgent = crisisPending && crisisTurnsLeft !== null && crisisTurnsLeft <= 1;
 
   const requestChoice = useCallback((choice: DialogueChoice) => {
+    const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+    const locked =
+      alreadyDecided ? false : isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+
+    if (locked) return;
+
     if (!crisisUrgent) {
       onChoice(choice);
       return;
@@ -59,7 +105,7 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
 
     setPendingChoice(choice);
     setConfirmOpen(true);
-  }, [crisisUrgent, onChoice]);
+  }, [crisisUrgent, factions, knownSecrets, onChoice, selectedChoiceIds]);
 
   const confirmChoice = useCallback(() => {
     if (pendingChoice) onChoice(pendingChoice);
@@ -77,7 +123,7 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
       const key = e.key;
       if (key >= '1' && key <= '9') {
         const idx = Number(key) - 1;
-        const choice = node.choices[idx];
+        const choice = visibleChoices[idx];
         if (!choice) return;
         e.preventDefault();
         requestChoice(choice);
@@ -86,7 +132,7 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
 
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [confirmOpen, node.id, node.choices, requestChoice]);
+  }, [confirmOpen, node.id, requestChoice, visibleChoices]);
 
   return (
     <motion.div
@@ -151,20 +197,48 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
         )}
 
         <div className="flex flex-col gap-2">
-          {node.choices.map((choice, i) => {
+          {visibleChoices.map((choice, i) => {
             const hotkey = i < 9 ? String(i + 1) : null;
+
+            const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+            const locked =
+              alreadyDecided ? false : isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+
+            const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
+
+            const repReq = choice.requiredReputation ?? null;
+            const repLocked = Boolean(
+              repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+            );
+
+            const reqFactionName = repReq
+              ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
+              : null;
+
+            const title = locked
+              ? repLocked && repReq
+                ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}`
+                : secretsLocked
+                  ? 'Requires proof'
+                  : 'Unavailable'
+              : undefined;
 
             return (
               <motion.button
                 key={choice.id}
                 type="button"
                 aria-keyshortcuts={hotkey ?? undefined}
+                aria-disabled={locked}
+                disabled={locked}
+                title={title}
                 onClick={() => requestChoice(choice)}
-                className="group relative overflow-hidden rounded-sm border border-border bg-secondary/35 p-4 text-left font-body text-sm transition-all sm:text-base hover:border-primary/40 hover:bg-secondary"
+                className={`group relative overflow-hidden rounded-sm border border-border bg-secondary/35 p-4 text-left font-body text-sm transition-all sm:text-base
+                  ${locked ? 'cursor-not-allowed opacity-50' : 'hover:border-primary/40 hover:bg-secondary'}
+                `}
                 initial={{ x: -10, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.08 * i, duration: 0.25 }}
-                whileHover={{ x: 3 }}
+                whileHover={locked ? {} : { x: 3 }}
               >
                 <div className="flex items-start gap-3">
                   {hotkey && (

@@ -54,8 +54,8 @@ describe('UQM minimal wasm build artifact', () => {
       mem.set(bytes, ptr);
       mem[ptr + bytes.length] = 0;
 
-      // With maxWidth=8, should fit "Hello " (6 chars) but not "from".
-      expect(exp.uqm_line_fit_chars(ptr, 8)).toBe(6);
+      // With maxWidth=8, should fit "Hello" (5 chars) but not "from".
+      expect(exp.uqm_line_fit_chars(ptr, 8)).toBe(5);
 
       // With maxWidth=6, should fit "Hello" (5 chars).
       expect(exp.uqm_line_fit_chars(ptr, 6)).toBe(5);

@@ -111,6 +111,49 @@ describe('tsConversationEngine', () => {
     expect(next.knownSecrets).toEqual(['dup']);
   });
 
+  it('locks the Hall summit destination until the envoy has earned the right to call it', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atHub = {
+      ...initial,
+      currentDialogue: dialogueTree['concord-hub'],
+      knownSecrets: [],
+    };
+
+    const summitIdx = atHub.currentDialogue!.choices.findIndex(c => c.id === 'hub-summit');
+    expect(summitIdx).toBeGreaterThanOrEqual(0);
+
+    const lockedFlags = tsConversationEngine.getChoiceLockedFlags(atHub);
+    expect(lockedFlags?.[summitIdx]).toBe(true);
+
+    const withLeverage = {
+      ...atHub,
+      knownSecrets: ['The Ember Throne forged maps to manipulate the border dispute.'],
+    };
+
+    const unlockedFlags = tsConversationEngine.getChoiceLockedFlags(withLeverage);
+    expect(unlockedFlags?.[summitIdx]).toBe(false);
+  });
+
+  it('advances to chapter 2 after resolving the Greenmarch summit', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atEnding = {
+      ...initial,
+      currentDialogue: dialogueTree['ending-greenmarch-compact'],
+      knownSecrets: [],
+      chapterId: 'chapter-1',
+      chapterTurn: 7,
+    };
+
+    const choice = atEnding.currentDialogue!.choices[0];
+    const after = tsConversationEngine.applyChoice(atEnding, choice);
+
+    expect(after.chapterId).toBe('chapter-2');
+    expect(after.currentDialogue?.id).toBe('concord-hub-2');
+    expect(after.log.some(l => l.includes('Chapter II'))).toBe(true);
+  });
+
   it('locks proof-gated summit actions until evidence is discovered', () => {
     const initial = tsConversationEngine.startNewGame();
 
