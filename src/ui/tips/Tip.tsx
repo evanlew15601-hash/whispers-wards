@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { CircleHelp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { useTips } from '@/ui/tips/useTips';
 
 export type TipProps = {
@@ -28,17 +29,23 @@ const Tip = ({ id, content, label, kind, className }: TipProps) => {
   const aria = label ?? `Tip: ${id}`;
 
   const trigger = (
-    <Button
-      type="button"
-      variant="ghost"
-      className={
-        className ??
-        'h-6 w-6 rounded-sm p-0 text-muted-foreground hover:text-foreground focus-visible:ring-primary/60'
-      }
+    <span
+      role="button"
+      tabIndex={0}
       aria-label={aria}
+      className={cn(
+        buttonVariants({ variant: 'ghost' }),
+        className ?? 'h-6 w-6 rounded-sm p-0 text-muted-foreground hover:text-foreground focus-visible:ring-primary/60',
+      )}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).click();
+        }
+      }}
     >
       <CircleHelp className="h-4 w-4" />
-    </Button>
+    </span>
   );
 
   if (resolvedKind === 'popover') {
@@ -53,12 +60,14 @@ const Tip = ({ id, content, label, kind, className }: TipProps) => {
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
-      <TooltipContent>
-        <div className="max-w-72 text-sm">{content}</div>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+        <TooltipContent>
+          <div className="max-w-72 text-sm">{content}</div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 

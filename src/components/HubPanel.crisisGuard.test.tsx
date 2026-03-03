@@ -21,6 +21,11 @@ describe('HubPanel crisis guard', () => {
       <HubPanel
         node={node}
         onChoice={onChoice}
+        knownSecrets={[]}
+        factions={[]}
+        selectedChoiceIds={[]}
+        lockedChoices={null}
+        choiceUiHints={null}
         crisisPending={true}
         crisisTurnsLeft={1}
       />,
@@ -46,6 +51,11 @@ describe('HubPanel crisis guard', () => {
       <HubPanel
         node={node}
         onChoice={onChoice}
+        knownSecrets={[]}
+        factions={[]}
+        selectedChoiceIds={[]}
+        lockedChoices={null}
+        choiceUiHints={null}
         crisisPending={true}
         crisisTurnsLeft={2}
       />,
@@ -64,6 +74,11 @@ describe('HubPanel crisis guard', () => {
       <HubPanel
         node={node}
         onChoice={onChoice}
+        knownSecrets={[]}
+        factions={[]}
+        selectedChoiceIds={[]}
+        lockedChoices={null}
+        choiceUiHints={null}
         crisisPending={false}
         crisisTurnsLeft={null}
       />,

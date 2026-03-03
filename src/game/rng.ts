@@ -18,8 +18,11 @@ export const nextSeed = (seed: number): number => {
 };
 
 export const rngFloat01 = (seed: number): { value: number; seed: number } => {
+  // xorshift32 can have weak initial diffusion for small seeds (e.g. 1..N).
+  // Advance twice so the first output has better distribution.
   const next = nextSeed(seed);
-  return { value: next / UINT32_RANGE, seed: next };
+  const out = nextSeed(next);
+  return { value: out / UINT32_RANGE, seed: out };
 };
 
 export const rngIntInclusive = (

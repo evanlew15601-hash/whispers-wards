@@ -255,7 +255,9 @@ function applyChoiceUsingWasm(
   const chapter = getChapter(prev.chapterId);
   const hub = dialogueTree[chapter.hubNodeId] ?? null;
 
-  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : hub;
+  const endsConversation = choice.nextNodeId === null && choice.id.startsWith('end-');
+
+  const nextDialogue = endsConversation ? null : nextDialogueId ? dialogueTree[nextDialogueId] ?? null : hub;
 
   const newFactions = prev.factions.map(f => {
     if (f.id === 'iron-pact') return { ...f, reputation: newRep0 };
@@ -323,6 +325,7 @@ function applyChoiceUsingWasm(
     `> ${choice.text}`,
     ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
     ...newlyLearned.map(s => `🔍 Secret learned: ${s}`),
+    ...(endsConversation ? ['🏁 Chapter complete'] : []),
   ];
 
   return {

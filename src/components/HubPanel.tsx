@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import type { DialogueChoice, DialogueNode } from '@/game/types';
+import type { DialogueChoice, DialogueNode, Faction } from '@/game/types';
 import Tip from '@/ui/tips/Tip';
 import {
   AlertDialog,
@@ -12,6 +12,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Lock } from 'lucide-react';
+import { isChoiceLockedBySecrets } from '@/game/choiceLocks';
+
+import type { ChoiceUiHint } from '@/game/engine/conversationEngine';
 
 const isUserTyping = () => {
   const el = document.activeElement as HTMLElement | null;
@@ -26,12 +30,36 @@ const isUserTyping = () => {
 interface HubPanelProps {
   node: DialogueNode;
   onChoice: (choice: DialogueChoice) => void;
+  knownSecrets: string[];
+  factions: Faction[];
+  selectedChoiceIds: string[];
+  lockedChoices?: boolean[] | null;
+  choiceUiHints?: ChoiceUiHint[] | null;
   crisisPending?: boolean;
   crisisTurnsLeft?: number | null;
   crisisConsequence?: string | null;
 }
 
-const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = null, crisisConsequence = null }: HubPanelProps) => {
+const PROOF_SECRETS = [
+  'The Ember Throne forged maps to manipulate the border dispute.',
+  'Renzo\'s ledger pages show coded payments tied to the border killings.',
+  'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+  'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+  'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.',
+];
+
+const HubPanel = ({
+  node,
+  onChoice,
+  knownSecrets,
+  factions,
+  selectedChoiceIds,
+  lockedChoices,
+  choiceUiHints,
+  crisisPending = false,
+  crisisTurnsLeft = null,
+  crisisConsequence = null,
+}: HubPanelProps) => {
   const paragraphs = node.text.split(/\n\n+/g).filter(Boolean);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -51,7 +79,37 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
 
   const crisisUrgent = crisisPending && crisisTurnsLeft !== null && crisisTurnsLeft <= 1;
 
+  const choiceUiHintById = useMemo(() => {
+    const map = new Map<string, ChoiceUiHint>();
+    if (!choiceUiHints?.length) return map;
+    node.choices.forEach((choice, idx) => {
+      const hint = choiceUiHints[idx];
+      if (hint) map.set(choice.id, hint);
+    });
+    return map;
+  }, [node.id, node.choices, choiceUiHints]);
+
+  const lockedChoiceFlagById = useMemo(() => {
+    const map = new Map<string, boolean>();
+    if (!lockedChoices?.length) return map;
+    node.choices.forEach((choice, idx) => {
+      const locked = lockedChoices[idx];
+      if (typeof locked === 'boolean') map.set(choice.id, locked);
+    });
+    return map;
+  }, [node.id, node.choices, lockedChoices]);
+
+  const hasProof = useMemo(() => {
+    if (knownSecrets.includes('override')) return true;
+    return PROOF_SECRETS.some(s => knownSecrets.includes(s));
+  }, [knownSecrets]);
+
   const requestChoice = useCallback((choice: DialogueChoice) => {
+    const hint = choiceUiHintById.get(choice.id);
+    const locked = hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? false;
+
+    if (locked) return;
+
     if (!crisisUrgent) {
       onChoice(choice);
       return;
@@ -59,7 +117,7 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
 
     setPendingChoice(choice);
     setConfirmOpen(true);
-  }, [crisisUrgent, onChoice]);
+  }, [choiceUiHintById, lockedChoiceFlagById, crisisUrgent, onChoice]);
 
   const confirmChoice = useCallback(() => {
     if (pendingChoice) onChoice(pendingChoice);
@@ -143,6 +201,11 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
           </span>
         </div>
 
+        <div className="text-xs text-muted-foreground">
+          Suggested loop: gather at least one piece of proof, then call the summit to commit to an outcome.
+          {!hasProof ? ' (Summit is locked until you have proof.)' : ''}
+        </div>
+
         {crisisPending && (
           <div className="text-xs text-muted-foreground">
             A crisis is pending in the Hall. You can still travel, but the crisis will remain unresolved.
@@ -154,17 +217,32 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
           {node.choices.map((choice, i) => {
             const hotkey = i < 9 ? String(i + 1) : null;
 
+            const hint = choiceUiHintById.get(choice.id);
+            const locked = hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? false;
+
+            const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
+
+            const repReq = hint?.requiredReputation ?? choice.requiredReputation ?? null;
+            const reqFactionName = repReq
+              ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
+              : null;
+
             return (
               <motion.button
                 key={choice.id}
                 type="button"
+                aria-disabled={locked}
                 aria-keyshortcuts={hotkey ?? undefined}
                 onClick={() => requestChoice(choice)}
-                className="group relative overflow-hidden rounded-sm border border-border bg-secondary/35 p-4 text-left font-body text-sm transition-all sm:text-base hover:border-primary/40 hover:bg-secondary"
+                className={`group relative overflow-hidden rounded-sm border border-border bg-secondary/35 p-4 text-left font-body text-sm transition-all sm:text-base
+                  ${locked
+                    ? 'cursor-not-allowed opacity-60'
+                    : 'hover:border-primary/40 hover:bg-secondary'}
+                `}
                 initial={{ x: -10, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.08 * i, duration: 0.25 }}
-                whileHover={{ x: 3 }}
+                whileHover={locked ? {} : { x: 3 }}
               >
                 <div className="flex items-start gap-3">
                   {hotkey && (
@@ -172,7 +250,27 @@ const HubPanel = ({ node, onChoice, crisisPending = false, crisisTurnsLeft = nul
                       {hotkey}
                     </div>
                   )}
-                  <span className="text-secondary-foreground">{choice.text}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="text-secondary-foreground">{choice.text}</span>
+
+                    {(secretsLocked || (repReq && locked)) && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {repReq && locked && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
+                            <Lock className="h-3 w-3" />
+                            requires {reqFactionName ?? repReq.factionId.replace('-', ' ')} ≥ {repReq.min}
+                          </span>
+                        )}
+
+                        {secretsLocked && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
+                            <Lock className="h-3 w-3" />
+                            requires proof
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <span className="absolute left-0 top-0 h-full w-0.5 bg-primary/0 transition-all group-hover:bg-primary/60" />
