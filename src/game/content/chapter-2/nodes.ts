@@ -129,7 +129,7 @@ Someone wanted the appearance of authority, not the burden of it.',
     speaker: 'Merchant Jalen',
     text: 'Jalen keeps glancing over his shoulder as he speaks. His hands shake when he tries to hold them still.
 
-"They took three crates," he says. "Not contraband. Grain and lamp oil. The guard said it was a docket order. I asked for the number. He told me to stop asking."',
+"They took crates," he says. "Not contraband. Grain and lamp oil. The guard said it was a docket order. I asked for the number. He told me to stop asking."',
     choices: [
       {
         id: 'ch2-witness-sign',
@@ -163,15 +163,15 @@ Someone wanted the appearance of authority, not the burden of it.',
     speaker: 'Merchant Jalen',
     text: 'He swallows.
 
-"Fine. There was a second man. Not in uniform. He spoke for the clerk. He told the guard what to take." Jalen stares at the table. "He called it \"the committee\". Like that meant I should know."',
+"There was a second man. Not in uniform. He spoke for the clerk. He told the guard what to take." Jalen stares at the table. "He called it the committee. Like that meant I should know."',
     choices: [
       {
         id: 'ch2-witness-committee',
-        text: 'Write down the name. A committee that does not show its face is still accountable.',
+        text: 'Write down the name and keep it separate from gossip.',
         effects: [],
         grantsTokens: ['tok:ch02:pattern:committee'],
         nextNodeId: 'chapter-2-hub',
-        revealsInfo: 'A merchant claims a civilian adviser spoke for customs and referred to a "committee" issuing seizures.',
+        revealsInfo: 'A merchant claims a civilian adviser spoke for customs and referred to a committee issuing seizures.',
       },
     ],
   },
@@ -180,7 +180,7 @@ Someone wanted the appearance of authority, not the burden of it.',
     id: 'ch2-customs',
     speaker: 'Clerk Iven',
     speakerFaction: 'iron-pact',
-    text: 'Iven does not look up until you say your title. When he does, his eyes go to your hands first, checking for weapons or seals.
+    text: 'Iven does not look up until you say your title. When he does, his eyes go to your hands first.
 
 "Envoy," he says. "We\'re holding the road under a temporary toll order. The docket trail is complete. The seizures are lawful."',
     choices: [
@@ -210,11 +210,11 @@ Someone wanted the appearance of authority, not the burden of it.',
   'ch2-docket-trail': {
     id: 'ch2-docket-trail',
     speaker: 'Narrator',
-    text: 'The numbers are clean. Too clean.
+    text: 'The numbers are clean.
 
-A shipment is seized, then reissued to a different name, then delayed again. The same few agents appear on the margins in careful handwriting. The clerks\' signatures do not match the speed of the crisis. The paperwork was ready.
+A shipment is seized, then reissued to a different name, then delayed again. The same few agents appear on the margins in careful handwriting. The clerks\' signatures do not match the pace of the crisis.
 
-If you call this out, the clerk will insist it is procedure. Procedure can be true and still be used as a weapon.',
+The clerk will call it procedure. Procedure can be accurate and still be used as a weapon.',
     choices: [
       {
         id: 'ch2-docket-counting',
@@ -275,7 +275,7 @@ It is signed and sealed. It is dated before the first wagons stalled.
     choices: [
       {
         id: 'ch2-origin-token',
-        text: 'Write down the committee docket and keep it separate from the rest.',
+        text: 'Write down the committee docket and keep it separate.',
         effects: [],
         grantsTokens: ['tok:ch02:pattern:committee'],
         nextNodeId: 'chapter-2-hub',
@@ -318,7 +318,7 @@ It is signed and sealed. It is dated before the first wagons stalled.
     id: 'ch2-escrow-terms',
     speaker: 'Factor Loran',
     speakerFaction: 'ember-throne',
-    text: 'He lays out the offer. Ember will "administer" the road. Goods move if fees are paid up front. Disputes are settled by accountants. Miss one payment and your cargo waits.
+    text: 'He lays out the offer. Ember will administer the road. Goods move if fees are paid up front. Disputes are settled by accountants. Miss one payment and your cargo waits.
 
 "It\'s fair," Loran says. "Equal rules for everyone." He does not say who wrote the rules.',
     choices: [
@@ -351,10 +351,8 @@ It is signed and sealed. It is dated before the first wagons stalled.
       },
       {
         id: 'ch2-ledger-appeal',
-        text: 'Tell him you will protect sources if he gives you the truth.',
-        effects: [
-          { factionId: 'ember-throne', reputationChange: 3 },
-        ],
+        text: 'Offer to protect sources if he gives you the truth.',
+        effects: [{ factionId: 'ember-throne', reputationChange: 3 }],
         requiredReputation: { factionId: 'ember-throne', min: 10 },
         hideWhenLockedBySecrets: true,
         grantsTokens: ['tok:ch02:ledger:irregular'],
@@ -372,7 +370,7 @@ It is signed and sealed. It is dated before the first wagons stalled.
   'ch2-ledger-result': {
     id: 'ch2-ledger-result',
     speaker: 'Narrator',
-    text: 'The entries are short, dense, and unromantic. Payments routed through cutouts. Fees recorded as "storage" and "inspection". The same few names show up whenever a wagon is delayed.
+    text: 'The entries are short, dense, and unromantic. Payments routed through cutouts. Fees recorded as storage and inspection. The same few names show up whenever a wagon is delayed.
 
 None of it proves intent on its own. It proves coordination.',
     choices: [
@@ -423,7 +421,7 @@ None of it proves intent on its own. It proves coordination.',
     speaker: 'Narrator',
     text: 'Cerys does not offer a chant. She offers constraints. A ward that shifts traffic to a secondary path, away from the barrier.
 
-"It will work," she says. "It will also make new enemies. No reroute is neutral."',
+"It will work," she says. "It will also make new enemies."',
     choices: [
       {
         id: 'ch2-ward-note',
@@ -470,6 +468,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
           { factionId: 'ember-throne', reputationChange: -2 },
         ],
         gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:stopgap' },
           { kind: 'tension', a: 'iron-pact', b: 'ember-throne', delta: 4 },
           { kind: 'log', message: '📜 Ash Road: Stopgap release under escort.' },
@@ -478,7 +477,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
       },
       {
         id: 'ch2-trib-iron',
-        text: 'Back Iron enforcement. Keep the barrier and make seizures transparent, even if it means confrontation.',
+        text: 'Back Iron enforcement. Keep the barrier and make seizures transparent.',
         effects: [
           { factionId: 'iron-pact', reputationChange: 6 },
           { factionId: 'verdant-court', reputationChange: -4 },
@@ -487,6 +486,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         requiresAllTokens: ['tok:ch02:iron:toll-order'],
         hideWhenLockedBySecrets: true,
         gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:iron' },
           { kind: 'tension', a: 'iron-pact', b: 'verdant-court', delta: 8 },
           { kind: 'log', message: '🛡️ Ash Road: Iron enforcement and published seizures.' },
@@ -495,7 +495,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
       },
       {
         id: 'ch2-trib-verdant',
-        text: 'Back a Verdant reroute ward. Move the pressure off the barrier and accept the political cost.',
+        text: 'Back a Verdant reroute ward and accept the political cost.',
         effects: [
           { factionId: 'verdant-court', reputationChange: 6 },
           { factionId: 'iron-pact', reputationChange: -2 },
@@ -504,6 +504,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         requiresAllTokens: ['tok:ch02:verdant:reroute-ward'],
         hideWhenLockedBySecrets: true,
         gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:verdant' },
           { kind: 'tension', a: 'iron-pact', b: 'verdant-court', delta: 4 },
           { kind: 'tension', a: 'ember-throne', b: 'verdant-court', delta: 4 },
@@ -522,6 +523,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         requiresAllTokens: ['tok:ch02:ember:escrow-terms'],
         hideWhenLockedBySecrets: true,
         gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:ember' },
           { kind: 'tension', a: 'iron-pact', b: 'ember-throne', delta: 2 },
           { kind: 'tension', a: 'verdant-court', b: 'ember-throne', delta: 2 },
@@ -540,6 +542,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         requiresAllTokens: ['tok:ch02:docket:trail', 'tok:ch02:ledger:irregular'],
         hideWhenLockedBySecrets: true,
         gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:expose' },
           { kind: 'tension', a: 'ember-throne', b: 'iron-pact', delta: 10 },
           { kind: 'log', message: '🔎 Ash Road: Irregular chain exposed in tribunal.' },
@@ -548,7 +551,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
       },
       {
         id: 'ch2-trib-name-committee',
-        text: 'Name the committee docket and insist on a written authority for every seizure.',
+        text: 'Name the committee docket and require written authority for every seizure.',
         effects: [
           { factionId: 'iron-pact', reputationChange: 2 },
           { factionId: 'verdant-court', reputationChange: 2 },
@@ -557,6 +560,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         requiresAllTokens: ['tok:ch02:pattern:committee'],
         hideWhenLockedBySecrets: true,
         gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:committee' },
           { kind: 'tension', a: 'iron-pact', b: 'ember-throne', delta: 6 },
           { kind: 'log', message: '📎 Ash Road: Committee docket named and constrained.' },
@@ -593,9 +597,7 @@ You bought time. You did not buy clarity.',
   'ch2-ending-iron': {
     id: 'ch2-ending-iron',
     speaker: 'Narrator',
-    text: 'The guard lieutenant takes your decision like an order. The barrier stays. Seizures are logged in front of witnesses. The crowd hates it, but it stops pretending it does not know where to aim its anger.
-
-You traded speed for accountability.
+    text: 'The barrier stays. Seizures are logged in front of witnesses. The crowd hates it, but it stops pretending it does not know where to aim its anger.
 
 The road moves again, slowly, under the weight of enforcement.',
     choices: [
@@ -611,9 +613,9 @@ The road moves again, slowly, under the weight of enforcement.',
   'ch2-ending-verdant': {
     id: 'ch2-ending-verdant',
     speaker: 'Narrator',
-    text: 'The ward does what it is supposed to do. Traffic shifts off the chokepoint. The barrier matters less within an hour.
+    text: 'The ward shifts traffic off the chokepoint. The barrier matters less within an hour.
 
-Merchants cheer until they realize someone else is paying the cost. A village off the old path now sees wagons at its door. Guards follow. Arguments follow.
+Merchants cheer until they realize someone else is paying the cost. A village off the old path now sees wagons at its door. Guards follow.
 
 You moved the pressure. You did not remove it.',
     choices: [

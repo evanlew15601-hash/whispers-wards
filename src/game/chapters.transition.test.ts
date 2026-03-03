@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { getDialogueTree } from './data';
 import { tsConversationEngine } from './engine/tsConversationEngine';
 import { applyManagementAction } from './management/applyManagementAction';
 
@@ -31,5 +32,28 @@ describe('chapter transitions', () => {
     expect(eventsAfter).toEqual(eventsBefore);
 
     expect(after.knownTokens).toContain('tok:ch01:test-proof');
+  });
+
+  it('moves into chapter-3 once chapter-2 is resolved and preserves knownTokens', () => {
+    const base = tsConversationEngine.startNewGame();
+
+    const chapter2Hub = getDialogueTree('chapter-2')['chapter-2-hub'];
+    if (!chapter2Hub) throw new Error('Expected chapter-2-hub');
+
+    const withToken = {
+      ...base,
+      chapterId: 'chapter-2',
+      chapterTurn: 1,
+      currentDialogue: chapter2Hub,
+      milestones: [...base.milestones, 'chapter-2:resolved'],
+      knownTokens: ['tok:ch02:test'],
+      rngSeed: 1,
+    };
+
+    const after = tsConversationEngine.endTurn(withToken);
+
+    expect(after.chapterId).toBe('chapter-3');
+    expect(after.currentDialogue?.id).toBe('chapter-3-hub');
+    expect(after.knownTokens).toContain('tok:ch02:test');
   });
 });
