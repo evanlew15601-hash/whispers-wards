@@ -125,6 +125,55 @@ describe('DialoguePanel', () => {
     vi.useRealTimers();
   });
 
+  it('supports requiredReputationMax gating (locks when reputation is too high)', () => {
+    vi.useFakeTimers();
+
+    const onChoice = vi.fn();
+
+    const node: DialogueNode = {
+      id: 'node-rep-max',
+      speaker: 'Narrator',
+      text: 'A short line of dialogue.',
+      choices: [
+        {
+          id: 'c1',
+          text: 'This option is only available if your Verdant reputation is low.',
+          effects: [],
+          nextNodeId: 'node-2',
+          requiredReputationMax: { factionId: 'verdant-court', max: 0 },
+        },
+      ],
+    };
+
+    const factions: Faction[] = [
+      {
+        id: 'verdant-court',
+        name: 'The Verdant Court',
+        description: '',
+        motto: '',
+        color: 'verdant',
+        reputation: 5,
+        traits: [],
+      },
+    ];
+
+    render(
+      <DialoguePanel
+        node={node}
+        onChoice={onChoice}
+        knownSecrets={[]}
+        factions={factions}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: ' ' });
+    fireEvent.keyDown(window, { key: '1' });
+
+    expect(onChoice).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
   it('locks choices that require proof until the secret is known', () => {
     vi.useFakeTimers();
 
@@ -181,6 +230,130 @@ describe('DialoguePanel', () => {
 
     fireEvent.keyDown(window, { key: '1' });
     expect(onChoice).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
+  });
+
+  it('can hide secret-locked options entirely and remap hotkeys to visible choices', () => {
+    vi.useFakeTimers();
+
+    const onChoice = vi.fn();
+
+    const node: DialogueNode = {
+      id: 'node-hide-locked',
+      speaker: 'Narrator',
+      text: 'A short line of dialogue.',
+      choices: [
+        {
+          id: 'always-1',
+          text: 'Always visible',
+          effects: [],
+          nextNodeId: 'node-2',
+        },
+        {
+          id: 'needs-proof',
+          text: 'Only visible with proof',
+          effects: [],
+          nextNodeId: 'node-3',
+          requiresAnySecrets: ['proof:ember'],
+          hideWhenLockedBySecrets: true,
+        },
+        {
+          id: 'always-2',
+          text: 'Second visible choice',
+          effects: [],
+          nextNodeId: 'node-4',
+        },
+      ],
+    };
+
+    const factions: Faction[] = [
+      {
+        id: 'ember-throne',
+        name: 'The Ember Throne',
+        description: '',
+        motto: '',
+        color: 'ember',
+        reputation: 0,
+        traits: [],
+      },
+    ];
+
+    const { queryByText } = render(
+      <DialoguePanel
+        node={node}
+        onChoice={onChoice}
+        knownSecrets={[]}
+        factions={factions}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: ' ' });
+
+    // Hidden because it's locked by secrets and marked hideWhenLockedBySecrets.
+    expect(queryByText('Only visible with proof')).toBeNull();
+
+    // Hotkey 2 should now select the third choice (second visible choice).
+    fireEvent.keyDown(window, { key: '2' });
+    expect(onChoice).toHaveBeenCalledTimes(1);
+    expect(onChoice).toHaveBeenCalledWith(node.choices[2]);
+
+    vi.useRealTimers();
+  });
+
+  it('can hide redundant choices once a proof secret is already known', () => {
+    vi.useFakeTimers();
+
+    const onChoice = vi.fn();
+
+    const node: DialogueNode = {
+      id: 'node-hide-redundant',
+      speaker: 'Narrator',
+      text: 'A short line of dialogue.',
+      choices: [
+        {
+          id: 'generic',
+          text: 'Generic option',
+          effects: [],
+          nextNodeId: 'node-2',
+          hideWhenHasAnySecrets: ['proof:ember'],
+        },
+        {
+          id: 'specific',
+          text: 'Specific proof-backed option',
+          effects: [],
+          nextNodeId: 'node-3',
+          requiresAnySecrets: ['proof:ember'],
+          hideWhenLockedBySecrets: true,
+        },
+      ],
+    };
+
+    const factions: Faction[] = [
+      {
+        id: 'ember-throne',
+        name: 'The Ember Throne',
+        description: '',
+        motto: '',
+        color: 'ember',
+        reputation: 0,
+        traits: [],
+      },
+    ];
+
+    const { queryByText } = render(
+      <DialoguePanel
+        node={node}
+        onChoice={onChoice}
+        knownSecrets={['proof:ember']}
+        factions={factions}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: ' ' });
+
+    expect(queryByText('Generic option')).toBeNull();
+    expect(queryByText('Specific proof-backed option')).toBeTruthy();
 
     vi.useRealTimers();
   });

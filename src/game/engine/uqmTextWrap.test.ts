@@ -25,6 +25,29 @@ describe('uqmTextWrap', () => {
     expect(a).toContain('');
   });
 
+  it('normalizes CRLF and preserves explicit blank lines', async () => {
+    vi.doMock('./uqmWasmRuntime', () => ({
+      loadUqmWasmRuntime: () => Promise.reject(new Error('no wasm')),
+    }));
+
+    const { wrapTextLinesUqm } = await import('./uqmTextWrap');
+
+    const lines = await wrapTextLinesUqm('One\r\n\r\nTwo\r\n\r\n\r\nThree', 80);
+    expect(lines).toEqual(['One', '', 'Two', '', '', 'Three']);
+  });
+
+  it('wraps with tabs/spaces and trims line endings deterministically', async () => {
+    vi.doMock('./uqmWasmRuntime', () => ({
+      loadUqmWasmRuntime: () => Promise.reject(new Error('no wasm')),
+    }));
+
+    const { wrapTextLinesJs } = await import('./uqmTextWrap');
+
+    const lines = wrapTextLinesJs('A\tB   C   ', 3);
+    // The wrapper trims trailing whitespace per line.
+    expect(lines).toEqual(['A', 'B', 'C']);
+  });
+
   it('uses lineFitChars when wasm runtime is available', async () => {
     const lineFitChars = vi.fn((text: string, maxWidth: number) => {
       if (text.length <= maxWidth) return text.length;
@@ -43,5 +66,18 @@ describe('uqmTextWrap', () => {
 
     expect(lineFitChars).toHaveBeenCalled();
     expect(lines).toEqual(['Hello', 'from', 'UQM']);
+  });
+
+  it('guards against a buggy lineFitChars implementation returning 0', async () => {
+    const lineFitChars = vi.fn(() => 0);
+
+    vi.doMock('./uqmWasmRuntime', () => ({
+      loadUqmWasmRuntime: () => Promise.resolve({ lineFitChars }),
+    }));
+
+    const { wrapTextLinesUqm } = await import('./uqmTextWrap');
+
+    const lines = await wrapTextLinesUqm('ABC', 10);
+    expect(lines).toEqual(['A', 'B', 'C']);
   });
 });

@@ -5,7 +5,7 @@ import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '../choiceLocks';
 import { applyEffects, type GameEffect } from '../effects';
 import { evaluateChapterTransition, getChapter } from '../chapters';
 import { advanceProjectsOneTurn } from '../projects';
@@ -62,6 +62,7 @@ const suppressReputationEffects = (choice: DialogueChoice): DialogueChoice => {
   return {
     ...choice,
     effects: choice.effects.map(e => ({ ...e, reputationChange: 0 })),
+    gameEffects: choice.gameEffects?.length ? [] : choice.gameEffects,
   };
 };
 
@@ -86,7 +87,7 @@ const evaluateEvents = (prev: GameState, factions: GameState['factions']) => {
 };
 
 const choiceToEffects = (prev: GameState, choice: DialogueChoice): GameEffect[] => {
-  const effects: GameEffect[] = [];
+  const effects: GameEffect[] = [...(choice.gameEffects ?? [])];
 
   for (const e of choice.effects) {
     if (e.reputationChange === 0) continue;
@@ -113,7 +114,12 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   const secretLearned = Boolean(choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo));
 
-  const withEffects = applyEffects(prev, choiceToEffects(prev, effectiveChoice));
+  const baseWithLog = {
+    ...prev,
+    log: [...prev.log, `> ${choice.text}`],
+  };
+
+  const withEffects = applyEffects(baseWithLog, choiceToEffects(prev, effectiveChoice));
 
   const { newEvents, triggeredEvents } = evaluateEvents(prev, withEffects.factions);
 
@@ -135,8 +141,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       currentDialogue: dialogueTree[getChapter(withEffects.chapterId).hubNodeId] ?? withEffects.currentDialogue,
       pendingEncounter: null,
       log: [
-        ...prev.log,
-        `> ${choice.text}`,
+        ...withEffects.log,
         ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
         ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
         ...resolved.logEntries,
@@ -159,8 +164,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     selectedChoiceIds: addChoiceId(prev.selectedChoiceIds, choice.id),
     stepNumber: prev.stepNumber + 1,
     log: [
-      ...prev.log,
-      `> ${choice.text}`,
+      ...withEffects.log,
       ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
       ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
     ],
@@ -283,12 +287,50 @@ export const tsConversationEngine: ConversationEngine = {
   },
   getChoiceUiHints(state) {
     if (!state.currentDialogue) return null;
-    return state.currentDialogue.choices.map(choice => ({
-      locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
-      requiredReputation: choice.requiredReputation ?? null,
-      effects: choice.effects,
-      revealsInfo: choice.revealsInfo ?? null,
-    }));
+
+    return state.currentDialogue.choices.map(choice => {
+      const alreadyDecided = isChoiceLockedByHistory(choice, state.selectedChoiceIds, state.knownSecrets, state.log);
+
+      if (alreadyDecided) {
+        return {
+          locked: false,
+          alreadyDecided: true,
+          lockedBySecrets: false,
+          lockedByReputation: false,
+          lockedByExclusiveGroup: false,
+          requiredReputationMin: choice.requiredReputation ?? null,
+          requiredReputationMax: choice.requiredReputationMax ?? null,
+          effects: choice.effects,
+          revealsInfo: choice.revealsInfo ?? null,
+        };
+      }
+
+      const lockedByExclusiveGroup = isChoiceLockedByExclusiveGroup(choice, state.selectedChoiceIds);
+      const lockedBySecrets = isChoiceLockedBySecrets(choice, state.knownSecrets);
+
+      const repReqMin = choice.requiredReputation ?? null;
+      const repReqMax = choice.requiredReputationMax ?? null;
+
+      const repMinLocked = Boolean(
+        repReqMin && (state.factions.find(f => f.id === repReqMin.factionId)?.reputation ?? -Infinity) < repReqMin.min
+      );
+
+      const repMaxLocked = Boolean(
+        repReqMax && (state.factions.find(f => f.id === repReqMax.factionId)?.reputation ?? Infinity) > repReqMax.max
+      );
+
+      return {
+        locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
+        alreadyDecided: false,
+        lockedBySecrets,
+        lockedByReputation: repMinLocked || repMaxLocked,
+        lockedByExclusiveGroup,
+        requiredReputationMin: repReqMin,
+        requiredReputationMax: repReqMax,
+        effects: choice.effects,
+        revealsInfo: choice.revealsInfo ?? null,
+      };
+    });
   },
 };
 

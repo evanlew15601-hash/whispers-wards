@@ -101,8 +101,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     if (knownSecrets.includes('override')) return node.choices;
 
     return node.choices.filter(choice => {
+      const hint = choiceUiHintById.get(choice.id);
+
       // Preserve visibility if it was already selected; we still want “already decided” to show.
-      const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+      const alreadyDecided = hint?.alreadyDecided ?? isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
       if (alreadyDecided) return true;
 
       if (choice.hideWhenHasAnySecrets?.length) {
@@ -113,9 +115,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
       if (!choice.hideWhenLockedBySecrets) return true;
 
       // Only hide when the lock is due to missing secrets.
-      return !isChoiceLockedBySecrets(choice, knownSecrets);
+      const lockedBySecrets = hint?.lockedBySecrets ?? isChoiceLockedBySecrets(choice, knownSecrets);
+      return !lockedBySecrets;
     });
-  }, [knownSecrets, node.choices, selectedChoiceIds]);
+  }, [knownSecrets, node.choices, selectedChoiceIds, choiceUiHintById]);
 
   const skipReveal = useCallback(() => {
     playSfx('ui.skip');
@@ -263,10 +266,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         const choice = visibleChoices[idx];
         if (!choice) return;
 
-        const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
-
         const hint = choiceUiHintById.get(choice.id);
         const lockedFlag = lockedChoiceFlagById.get(choice.id);
+
+        const alreadyDecided = hint?.alreadyDecided ?? isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
 
         const locked =
           alreadyDecided
@@ -466,21 +469,28 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
             {visibleChoices.map((choice, i) => {
               const hint = choiceUiHintById.get(choice.id);
 
-              const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+              const alreadyDecided = hint?.alreadyDecided ?? isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
 
               const locked = alreadyDecided
                 ? false
                 : hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
 
-              const repReq = hint?.requiredReputation ?? choice.requiredReputation;
+              const repReqMin = hint?.requiredReputationMin ?? choice.requiredReputation ?? null;
+              const repReqMax = hint?.requiredReputationMax ?? choice.requiredReputationMax ?? null;
 
-              const repLocked = Boolean(
-                repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+              const repMinLocked = Boolean(
+                !alreadyDecided && repReqMin && (factions.find(f => f.id === repReqMin.factionId)?.reputation ?? -Infinity) < repReqMin.min
               );
 
-              const reqFactionName = repReq
-                ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
-                : null;
+              const repMaxLocked = Boolean(
+                !alreadyDecided && repReqMax && (factions.find(f => f.id === repReqMax.factionId)?.reputation ?? Infinity) > repReqMax.max
+              );
+
+              const reqFactionName = repReqMin
+                ? factions.find(f => f.id === repReqMin.factionId)?.name ?? repReqMin.factionId.replace('-', ' ')
+                : repReqMax
+                  ? factions.find(f => f.id === repReqMax.factionId)?.name ?? repReqMax.factionId.replace('-', ' ')
+                  : null;
 
               const lines = choiceLines[choice.id] ?? [choice.text];
               const hotkey = i < 9 ? String(i + 1) : null;
@@ -495,8 +505,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 onChoice(choice);
               };
 
-              const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
+              const secretsLocked = locked && (hint?.lockedBySecrets ?? isChoiceLockedBySecrets(choice, knownSecrets));
               const historyLocked = alreadyDecided;
+
+              const repLockedLabel = locked && (hint?.lockedByReputation ?? (repMinLocked || repMaxLocked));
 
               const displayEffects = alreadyDecided
                 ? (hint?.effects ?? choice.effects).map(effect => ({ ...effect, reputationChange: 0 }))
@@ -508,7 +520,17 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   type="button"
                   aria-disabled={locked}
                   aria-keyshortcuts={hotkey ?? undefined}
-                  title={locked && repReq ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}` : undefined}
+                  title={
+                    locked && (repReqMin || repReqMax)
+                      ? repReqMin && repReqMax && repReqMin.factionId === repReqMax.factionId
+                        ? `Requires ${reqFactionName ?? repReqMin.factionId.replace('-', ' ')} reputation ${repReqMin.min}–${repReqMax.max}`
+                        : repReqMin
+                          ? `Requires ${reqFactionName ?? repReqMin.factionId.replace('-', ' ')} reputation ≥ ${repReqMin.min}`
+                          : repReqMax
+                            ? `Requires ${reqFactionName ?? repReqMax.factionId.replace('-', ' ')} reputation ≤ ${repReqMax.max}`
+                            : undefined
+                      : undefined
+                  }
                   onClick={onSelect}
                   className={`group relative overflow-hidden rounded-sm border border-border bg-secondary/45 p-4 text-left font-body text-sm transition-all sm:text-base
                     ${locked
@@ -548,10 +570,16 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                       </span>
 
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {repReq && locked && (
+                        {(repReqMin || repReqMax) && repLockedLabel && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
                             <Lock className="h-3 w-3" />
-                            requires {reqFactionName ?? repReq.factionId.replace('-', ' ')} ≥ {repReq.min}
+                            {repReqMin && repReqMax && repReqMin.factionId === repReqMax.factionId
+                              ? `requires ${reqFactionName ?? repReqMin.factionId.replace('-', ' ')} ${repReqMin.min}–${repReqMax.max}`
+                              : repReqMin
+                                ? `requires ${reqFactionName ?? repReqMin.factionId.replace('-', ' ')} ≥ ${repReqMin.min}`
+                                : repReqMax
+                                  ? `requires ${reqFactionName ?? repReqMax.factionId.replace('-', ' ')} ≤ ${repReqMax.max}`
+                                  : null}
                           </span>
                         )}
 

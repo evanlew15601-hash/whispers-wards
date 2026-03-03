@@ -36,17 +36,23 @@ function compileGraph(secretBitCapacity: number, choiceStrideBytes: number): Com
   const nodeIds = Object.keys(dialogueTree).sort();
   const nodeIdToIndex = new Map<string, number>(nodeIds.map((id, idx) => [id, idx]));
 
-  const secrets = new Set<string>();
+  const lockSecrets = new Set<string>();
+  const otherSecrets = new Set<string>();
+
   for (const nodeId of nodeIds) {
     for (const c of dialogueTree[nodeId].choices) {
-      if (c.revealsInfo) secrets.add(c.revealsInfo);
-      if (c.requiresAllSecrets) for (const s of c.requiresAllSecrets) secrets.add(s);
-      if (c.requiresAnySecrets) for (const s of c.requiresAnySecrets) secrets.add(s);
+      if (c.requiresAllSecrets) for (const s of c.requiresAllSecrets) lockSecrets.add(s);
+      if (c.requiresAnySecrets) for (const s of c.requiresAnySecrets) lockSecrets.add(s);
+      if (c.revealsInfo) otherSecrets.add(c.revealsInfo);
     }
   }
 
-  const secretsSorted = [...secrets].sort();
-  const secretsForWasm = secretsSorted.slice(0, secretBitCapacity);
+  // Prioritize secrets that participate in locking so that WASM can compute locks/hints
+  // consistently with TS even when total secrets exceed the mask capacity.
+  const lockSorted = [...lockSecrets].sort();
+  const otherSorted = [...otherSecrets].filter(s => !lockSecrets.has(s)).sort();
+
+  const secretsForWasm = [...lockSorted, ...otherSorted].slice(0, secretBitCapacity);
   const secretToBit = new Map<string, number>(secretsForWasm.map((s, i) => [s, i]));
 
   const bitToSecret = new Array<string | null>(secretBitCapacity).fill(null);
@@ -194,6 +200,9 @@ function applyChoiceUsingWasm(
 ): GameState | null {
   if (!prev.currentDialogue) return null;
 
+  // Generalized effects are TS-only (WASM core doesn't execute them).
+  if (choice.gameEffects?.length) return null;
+
   // WASM engine applies reputation deltas inside the wasm core. For already-decided
   // rep-affecting choices, fall back to the TS engine which suppresses effects.
   if (isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log)) {
@@ -252,11 +261,6 @@ function applyChoiceUsingWasm(
   const newRep1 = clamp(exp.uqm_conv_get_rep(1), -100, 100);
   const newRep2 = clamp(exp.uqm_conv_get_rep(2), -100, 100);
 
-  const chapter = getChapter(prev.chapterId);
-  const hub = dialogueTree[chapter.hubNodeId] ?? null;
-
-  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : hub;
-
   const newFactions = prev.factions.map(f => {
     if (f.id === 'iron-pact') return { ...f, reputation: newRep0 };
     if (f.id === 'verdant-court') return { ...f, reputation: newRep1 };
@@ -300,6 +304,11 @@ function applyChoiceUsingWasm(
   }
 
   const newSecrets = [...new Set(ordered)];
+
+  const chapter = getChapter(prev.chapterId);
+  const hub = dialogueTree[chapter.hubNodeId] ?? null;
+
+  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : hub;
 
   // Check events (same logic as TS engine)
   const newEvents = prev.events.map(event => {
@@ -395,6 +404,9 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         const hi = exp.uqm_conv_get_locked_choices_hi() >>> 0;
 
         return state.currentDialogue.choices.map((choice, i) => {
+          const alreadyDecided = isChoiceLockedByHistory(choice, state.selectedChoiceIds, state.knownSecrets, state.log);
+          if (alreadyDecided) return false;
+
           const wasmLocked =
             i < 32
               ? ((lo >>> i) & 1) === 1
@@ -409,9 +421,12 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       const lockedFlags: boolean[] = new Array(count);
       for (let i = 0; i < count; i++) lockedFlags[i] = exp.uqm_conv_choice_is_locked(i) === 1;
 
-      return state.currentDialogue.choices.map((choice, i) =>
-        (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds)
-      );
+      return state.currentDialogue.choices.map((choice, i) => {
+        const alreadyDecided = isChoiceLockedByHistory(choice, state.selectedChoiceIds, state.knownSecrets, state.log);
+        if (alreadyDecided) return false;
+
+        return (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
+      });
     },
     getChoiceUiHints(state): ChoiceUiHint[] | null {
       if (!state.currentDialogue) return null;
@@ -457,12 +472,37 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         typeof exp.uqm_conv_choice_get_reveal_hi === 'function';
 
       return state.currentDialogue.choices.map((choice, i) => {
-        const locked = (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
+        const alreadyDecided = isChoiceLockedByHistory(choice, state.selectedChoiceIds, state.knownSecrets, state.log);
+
+        const repReqMinFromChoice = choice.requiredReputation ?? null;
+        const repReqMaxFromChoice = choice.requiredReputationMax ?? null;
+
+        const lockedByExclusiveGroup = alreadyDecided ? false : isChoiceLockedByExclusiveGroup(choice, state.selectedChoiceIds);
+        const lockedBySecrets = alreadyDecided ? false : isChoiceLockedBySecrets(choice, state.knownSecrets);
+
+        const lockedByReputationMin = Boolean(
+          !alreadyDecided && repReqMinFromChoice && (state.factions.find(f => f.id === repReqMinFromChoice.factionId)?.reputation ?? -Infinity) < repReqMinFromChoice.min
+        );
+
+        const lockedByReputationMax = Boolean(
+          !alreadyDecided && repReqMaxFromChoice && (state.factions.find(f => f.id === repReqMaxFromChoice.factionId)?.reputation ?? Infinity) > repReqMaxFromChoice.max
+        );
+
+        const lockedByReputation = lockedByReputationMin || lockedByReputationMax;
+
+        const locked = alreadyDecided
+          ? false
+          : (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
 
         if (!canReadMeta) {
           return {
             locked,
-            requiredReputation: choice.requiredReputation ?? null,
+            alreadyDecided,
+            lockedBySecrets,
+            lockedByReputation,
+            lockedByExclusiveGroup,
+            requiredReputationMin: repReqMinFromChoice,
+            requiredReputationMax: repReqMaxFromChoice,
             effects: choice.effects,
             revealsInfo: choice.revealsInfo ?? null,
           };
@@ -493,9 +533,25 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
           }
         }
 
+        const requiredReputationMin = reqFactionId ? { factionId: reqFactionId, min: reqMin } : repReqMinFromChoice;
+        const requiredReputationMax = repReqMaxFromChoice;
+
+        const lockedByReputationMinMeta = Boolean(
+          !alreadyDecided && requiredReputationMin && (state.factions.find(f => f.id === requiredReputationMin.factionId)?.reputation ?? -Infinity) < requiredReputationMin.min
+        );
+
+        const lockedByReputationMaxMeta = Boolean(
+          !alreadyDecided && requiredReputationMax && (state.factions.find(f => f.id === requiredReputationMax.factionId)?.reputation ?? Infinity) > requiredReputationMax.max
+        );
+
         return {
           locked,
-          requiredReputation: reqFactionId ? { factionId: reqFactionId, min: reqMin } : null,
+          alreadyDecided,
+          lockedBySecrets,
+          lockedByReputation: lockedByReputationMinMeta || lockedByReputationMaxMeta,
+          lockedByExclusiveGroup,
+          requiredReputationMin,
+          requiredReputationMax,
           effects,
           revealsInfo: revealInfo ?? choice.revealsInfo ?? null,
         };

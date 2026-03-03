@@ -122,28 +122,82 @@ describe('tsConversationEngine', () => {
       knownSecrets: [],
     };
 
-    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-ledger');
-    expect(exposeIdx).toBeGreaterThanOrEqual(0);
+    const ledgerIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-ledger');
+    const manifestIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-manifest');
+    const mapsIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-maps');
 
-    const exposeChoice = atSummit.currentDialogue!.choices[exposeIdx];
+    expect(ledgerIdx).toBeGreaterThanOrEqual(0);
+    expect(manifestIdx).toBeGreaterThanOrEqual(0);
+    expect(mapsIdx).toBeGreaterThanOrEqual(0);
+
+    const ledgerChoice = atSummit.currentDialogue!.choices[ledgerIdx];
+    const manifestChoice = atSummit.currentDialogue!.choices[manifestIdx];
+    const mapsChoice = atSummit.currentDialogue!.choices[mapsIdx];
 
     const lockedFlags = tsConversationEngine.getChoiceLockedFlags(atSummit);
-    expect(lockedFlags?.[exposeIdx]).toBe(true);
+    expect(lockedFlags?.[ledgerIdx]).toBe(true);
+    expect(lockedFlags?.[manifestIdx]).toBe(true);
+    expect(lockedFlags?.[mapsIdx]).toBe(true);
 
-    const nextLocked = tsConversationEngine.applyChoice(atSummit, exposeChoice);
-    expect(nextLocked).toBe(atSummit);
+    expect(tsConversationEngine.applyChoice(atSummit, ledgerChoice)).toBe(atSummit);
+    expect(tsConversationEngine.applyChoice(atSummit, manifestChoice)).toBe(atSummit);
+    expect(tsConversationEngine.applyChoice(atSummit, mapsChoice)).toBe(atSummit);
 
-    const withProof = {
+    const withLedgerProof = {
       ...atSummit,
       knownSecrets: ['Renzo\'s ledger pages show coded payments tied to the border killings.'],
     };
 
-    const unlockedFlags = tsConversationEngine.getChoiceLockedFlags(withProof);
-    expect(unlockedFlags?.[exposeIdx]).toBe(false);
+    const unlockedLedger = tsConversationEngine.getChoiceLockedFlags(withLedgerProof);
+    expect(unlockedLedger?.[ledgerIdx]).toBe(false);
+    expect(unlockedLedger?.[manifestIdx]).toBe(true);
+    expect(unlockedLedger?.[mapsIdx]).toBe(true);
 
-    const next = tsConversationEngine.applyChoice(withProof, exposeChoice);
-    expect(next).not.toBe(withProof);
-    expect(next.currentDialogue?.id).toBe('ending-embers-fall-ledger');
+    const nextLedger = tsConversationEngine.applyChoice(withLedgerProof, ledgerChoice);
+    expect(nextLedger).not.toBe(withLedgerProof);
+    expect(nextLedger.currentDialogue?.id).toBe('ending-embers-fall-ledger');
+
+    const withManifestProof = {
+      ...atSummit,
+      knownSecrets: ['Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.'],
+    };
+
+    const unlockedManifest = tsConversationEngine.getChoiceLockedFlags(withManifestProof);
+    expect(unlockedManifest?.[ledgerIdx]).toBe(true);
+    expect(unlockedManifest?.[manifestIdx]).toBe(false);
+    expect(unlockedManifest?.[mapsIdx]).toBe(true);
+
+    const nextManifest = tsConversationEngine.applyChoice(withManifestProof, manifestChoice);
+    expect(nextManifest).not.toBe(withManifestProof);
+    expect(nextManifest.currentDialogue?.id).toBe('ending-embers-fall-manifest');
+
+    const withMapsProof = {
+      ...atSummit,
+      knownSecrets: ['The Ember Throne forged maps to manipulate the border dispute.'],
+    };
+
+    const unlockedMaps = tsConversationEngine.getChoiceLockedFlags(withMapsProof);
+    expect(unlockedMaps?.[ledgerIdx]).toBe(true);
+    expect(unlockedMaps?.[manifestIdx]).toBe(true);
+    expect(unlockedMaps?.[mapsIdx]).toBe(false);
+
+    const nextMaps = tsConversationEngine.applyChoice(withMapsProof, mapsChoice);
+    expect(nextMaps).not.toBe(withMapsProof);
+    expect(nextMaps.currentDialogue?.id).toBe('ending-embers-fall-maps');
+
+    const withMultipleProofs = {
+      ...atSummit,
+      knownSecrets: [
+        'Renzo\'s ledger pages show coded payments tied to the border killings.',
+        'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+        'The Ember Throne forged maps to manipulate the border dispute.',
+      ],
+    };
+
+    const unlockedMultiple = tsConversationEngine.getChoiceLockedFlags(withMultipleProofs);
+    expect(unlockedMultiple?.[ledgerIdx]).toBe(false);
+    expect(unlockedMultiple?.[manifestIdx]).toBe(false);
+    expect(unlockedMultiple?.[mapsIdx]).toBe(false);
   });
 
   it('suppresses reputation effects when repeating rep-affecting choices in legacy saves', () => {
@@ -195,6 +249,10 @@ describe('tsConversationEngine', () => {
       ...afterSteal,
       currentDialogue: dialogueTree['renzo-ledger-request'],
     };
+
+    const revisitHints = tsConversationEngine.getChoiceUiHints(revisit);
+    expect(revisitHints?.[stealIdx]?.alreadyDecided).toBe(true);
+    expect(revisitHints?.[stealIdx]?.locked).toBe(false);
 
     const repsBefore = Object.fromEntries(revisit.factions.map(f => [f.id, f.reputation] as const));
 
