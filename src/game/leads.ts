@@ -49,6 +49,7 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {
   const missing = new Set<string>();
+  const shouldHintToken = (token: string) => !token.includes(':outcome:');
 
   for (const choice of node.choices) {
     const lockedBySecrets = isChoiceLockedBySecrets(choice, knownSecrets);
@@ -73,6 +74,7 @@ function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], kno
     const needsAllTokens = choice.requiresAllTokens ?? null;
     if (needsAllTokens?.length) {
       for (const t of needsAllTokens) {
+        if (!shouldHintToken(t)) continue;
         if (!knownTokens.includes(t)) missing.add(t);
       }
     }
@@ -81,7 +83,10 @@ function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], kno
     if (needsAnyTokens?.length) {
       const hasAny = needsAnyTokens.some(t => knownTokens.includes(t));
       if (!hasAny) {
-        for (const t of needsAnyTokens) missing.add(t);
+        for (const t of needsAnyTokens) {
+          if (!shouldHintToken(t)) continue;
+          missing.add(t);
+        }
       }
     }
   }

@@ -102,6 +102,28 @@ export const codexEntries: CodexEntry[] = [
     ],
   },
   {
+    id: 'ash-road',
+    title: 'Ash Road',
+    category: 'Places',
+    summary: 'A key trade route where tolls, seizures, and paperwork can stop a region without firing a shot.',
+    paragraphs: [
+      'Ash Road is a practical artery. It feeds towns in winter and moves coin in summer. When it is blocked, everyone feels it within days.',
+      'Because it is a route, disputes about it rarely stay local. A single barrier changes prices, patrol routes, and who can afford to wait.',
+      'Control of Ash Road is often argued as "procedure". In reality, it is legitimacy made concrete: who is allowed to say no, and who must obey.',
+    ],
+  },
+  {
+    id: 'root-archive',
+    title: 'The Root-Archive',
+    category: 'Places',
+    summary: 'A sealed record house where ward craft and clerk craft meet, built to preserve chains of authority.',
+    paragraphs: [
+      'The Root-Archive keeps old dockets, stamp lines, and custody notes that do not sit neatly under any one delegation.',
+      'Its wards are conservative. They resist forced entry and punish careless handling more than hostile intent.',
+      'People seek it when they need origins: which seal appeared first, which order format spread, and who benefitted from the confusion.',
+    ],
+  },
+  {
     id: 'root-oath',
     title: 'The Root-Oath',
     category: 'Law & Custom',

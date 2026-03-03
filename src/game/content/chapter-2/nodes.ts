@@ -42,6 +42,12 @@ If you clear the road too quickly, you may be clearing it for the wrong reason. 
         nextNodeId: 'ch2-tally-grove',
       },
       {
+        id: 'ch2-hub-dispatches',
+        text: 'Open the Concord Hall dispatches you carried into the crisis.',
+        effects: [],
+        nextNodeId: 'ch2-dispatches',
+      },
+      {
         id: 'ch2-hub-tribunal',
         text: 'Call a roadside tribunal and force a decision while there is still time.',
         effects: [],
@@ -57,6 +63,76 @@ If you clear the road too quickly, you may be clearing it for the wrong reason. 
           'tok:ch02:pattern:committee',
         ],
         nextNodeId: 'ch2-tribunal',
+      },
+    ],
+  },
+
+  'ch2-dispatches': {
+    id: 'ch2-dispatches',
+    speaker: 'Narrator',
+    text: 'You break the seals in the shade of a wagon. One packet bears an Iron impress. The other carries Ember wax, thin and immaculate.
+
+Neither message will clear the road for you. Both will try to claim your decision after the fact.',
+    choices: [
+      {
+        id: 'ch2-dispatches-aldric',
+        text: 'Read the Iron dispatch.',
+        effects: [],
+        nextNodeId: 'ch2-dispatch-aldric',
+      },
+      {
+        id: 'ch2-dispatches-renzo',
+        text: 'Read the Ember dispatch.',
+        effects: [],
+        nextNodeId: 'ch2-dispatch-renzo',
+      },
+      {
+        id: 'ch2-dispatches-back',
+        text: 'Put the papers away and return to the road.',
+        effects: [],
+        nextNodeId: 'chapter-2-hub',
+      },
+    ],
+  },
+
+  'ch2-dispatch-aldric': {
+    id: 'ch2-dispatch-aldric',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: '"Envoy.
+
+Ash Road is a throat. Do not let a merchant\'s hand close it and call it law. If you must choose, choose a rule that can be enforced in public and explained to a hungry guard.
+
+Make the record clean. If someone is issuing orders without a face, drag the face into daylight."',
+    choices: [
+      {
+        id: 'ch2-aldric-back',
+        text: 'Return to the dispatches.',
+        effects: [],
+        nextNodeId: 'ch2-dispatches',
+        revealsInfo: 'Aldric urged you to choose a public rule on Ash Road and expose any hidden chain of orders.',
+      },
+    ],
+  },
+
+  'ch2-dispatch-renzo': {
+    id: 'ch2-dispatch-renzo',
+    speaker: 'Renzo Calder',
+    speakerFaction: 'ember-throne',
+    text: '"Envoy,
+
+I am told your line has stalled and that everyone is shouting at the same tired clerk. That is the oldest trick in governance: exhaust the witness and call the exhaustion truth.
+
+Put the costs on paper and decide who pays them. Then find the signature that profits from delay.
+
+If you want advice I would sign, I will give it to you when you can offer me the same."',
+    choices: [
+      {
+        id: 'ch2-renzo-back',
+        text: 'Return to the dispatches.',
+        effects: [],
+        nextNodeId: 'ch2-dispatches',
+        revealsInfo: 'Renzo framed Ash Road as an exhaustion tactic and urged you to trace who benefits from delay.',
       },
     ],
   },
@@ -467,6 +543,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
           { factionId: 'verdant-court', reputationChange: 1 },
           { factionId: 'ember-throne', reputationChange: -2 },
         ],
+        grantsTokens: ['tok:ch02:outcome:stopgap'],
         gameEffects: [
           { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:stopgap' },
@@ -485,6 +562,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         ],
         requiresAllTokens: ['tok:ch02:iron:toll-order'],
         hideWhenLockedBySecrets: true,
+        grantsTokens: ['tok:ch02:outcome:iron'],
         gameEffects: [
           { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:iron' },
@@ -503,6 +581,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         ],
         requiresAllTokens: ['tok:ch02:verdant:reroute-ward'],
         hideWhenLockedBySecrets: true,
+        grantsTokens: ['tok:ch02:outcome:verdant'],
         gameEffects: [
           { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:verdant' },
@@ -522,6 +601,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         ],
         requiresAllTokens: ['tok:ch02:ember:escrow-terms'],
         hideWhenLockedBySecrets: true,
+        grantsTokens: ['tok:ch02:outcome:ember'],
         gameEffects: [
           { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:ember' },
@@ -541,6 +621,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         ],
         requiresAllTokens: ['tok:ch02:docket:trail', 'tok:ch02:ledger:irregular'],
         hideWhenLockedBySecrets: true,
+        grantsTokens: ['tok:ch02:outcome:expose'],
         gameEffects: [
           { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:expose' },
@@ -559,6 +640,7 @@ No decision will be clean. A clean decision is usually a decision that hides its
         ],
         requiresAllTokens: ['tok:ch02:pattern:committee'],
         hideWhenLockedBySecrets: true,
+        grantsTokens: ['tok:ch02:outcome:committee'],
         gameEffects: [
           { kind: 'milestone:add', id: 'chapter-2:resolved' },
           { kind: 'milestone:add', id: 'chapter-2:resolved:committee' },
@@ -588,8 +670,7 @@ You bought time. You did not buy clarity.',
       {
         id: 'ch2-ending-stopgap-back',
         text: 'Return to the line.',
-        effects: [],
-        nextNodeId: 'chapter-2-hub',
+        effects: []        nextNodeId: 'chapter-2-hub',
       },
     ],
   },
@@ -686,3 +767,4 @@ The road begins to move because delay is harder to defend in public.',
     ],
   },
 });
+;

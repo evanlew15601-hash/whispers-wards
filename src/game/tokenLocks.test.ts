@@ -4,15 +4,15 @@ import { getDialogueTree } from './data';
 import { tsConversationEngine } from './engine/tsConversationEngine';
 
 describe('token gating', () => {
-  it('locks choices behind tokens and unlocks once tokens are present', () => {
+  it('locks choices behind tokens and unlocks once the token is earned', () => {
     const base = tsConversationEngine.startNewGame();
     const tree = getDialogueTree('chapter-2');
 
     const tribunal = tree['ch2-tribunal'];
     if (!tribunal) throw new Error('Expected ch2-tribunal');
 
-    const expose = tribunal.choices.find(c => c.id === 'ch2-trib-expose');
-    if (!expose) throw new Error('Expected ch2-trib-expose choice');
+    const ironChoice = tribunal.choices.find(c => c.id === 'ch2-trib-iron');
+    if (!ironChoice) throw new Error('Expected ch2-trib-iron choice');
 
     const lockedState = {
       ...base,
@@ -22,18 +22,20 @@ describe('token gating', () => {
       knownTokens: [],
     };
 
-    expect(tsConversationEngine.applyChoice(lockedState, expose)).toBe(lockedState);
+    expect(tsConversationEngine.applyChoice(lockedState, ironChoice)).toBe(lockedState);
 
     const unlockedState = {
       ...lockedState,
-      knownTokens: ['tok:ch02:docket:trail', 'tok:ch02:ledger:irregular'],
+      knownTokens: ['tok:ch02:iron:toll-order'],
     };
 
-    const next = tsConversationEngine.applyChoice(unlockedState, expose);
+    const next = tsConversationEngine.applyChoice(unlockedState, ironChoice);
     expect(next).not.toBe(unlockedState);
-    expect(next.currentDialogue?.id).toBe('ch2-ending-expose');
-    expect(next.knownTokens).toContain('tok:ch02:docket:trail');
-    expect(next.knownTokens).toContain('tok:ch02:ledger:irregular');
-    expect(next.milestones).toContain('chapter-2:resolved:expose');
+    expect(next.currentDialogue?.id).toBe('ch2-ending-iron');
+    expect(next.knownTokens).toContain('tok:ch02:iron:toll-order');
+    expect(next.knownTokens).toContain('tok:ch02:outcome:iron');
+    expect(next.milestones).toContain('chapter-2:resolved');
+    expect(next.milestones).toContain('chapter-2:resolved:iron');
   });
+});
 });

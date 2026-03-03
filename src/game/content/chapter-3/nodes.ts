@@ -11,10 +11,24 @@ export const dialogueTree = defineDialogueTree({
   'chapter-3-hub': {
     id: 'chapter-3-hub',
     speaker: 'Narrator',
-    text: 'The Root-Archive sits in a shallow valley beyond the road. Stone steps descend to a sealed door. Verdant marks sit alongside clerk-script and old Concord stamps.
+    text: 'The Root-Archive sits in a shallow valley beyond the road. Stone steps descend to a sealed door where Verdant marks sit beside clerk-script under old Concord stamps.
 
-A young courier waits by the entrance. An Iron scout watches the path from a distance. Someone has tried to make this place neutral. Someone else has tried to make it useful.',
+Thessaly Wren waits under the trees, close enough to be seen and far enough to deny she was here. A courier lingers by the entrance while an Iron scout watches the path.
+
+Someone tried to make this place neutral. Someone tried to make it useful.',
     choices: [
+      {
+        id: 'ch3-hub-thessaly',
+        text: 'Speak to Thessaly Wren before you go inside.',
+        effects: [],
+        nextNodeId: 'ch3-thessaly',
+      },
+      {
+        id: 'ch3-hub-stonework',
+        text: 'Inspect the door, stamps, and latch marks.',
+        effects: [],
+        nextNodeId: 'ch3-stonework',
+      },
       {
         id: 'ch3-hub-curator',
         text: 'Request entry and ask for the curator by name.',
@@ -34,10 +48,208 @@ A young courier waits by the entrance. An Iron scout watches the path from a dis
         nextNodeId: 'ch3-courier',
       },
       {
+        id: 'ch3-hub-replies',
+        text: 'Review the notes that arrived after Ash Road.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+      {
         id: 'ch3-hub-back',
         text: 'Step away from the door and reconsider.',
         effects: [],
         nextNodeId: null,
+      },
+    ],
+  },
+
+  'ch3-thessaly': {
+    id: 'ch3-thessaly',
+    speaker: 'Thessaly Wren',
+    speakerFaction: 'verdant-court',
+    text: '"You moved Ash Road," Thessaly says. She watches the entrance as if the door might listen.
+
+"Now you want records." She lowers her voice. "If you take anything out of this place, make sure it is something you are willing to defend in daylight."',
+    choices: [
+      {
+        id: 'ch3-thessaly-ask-stopgap',
+        text: 'Ask what she thinks of the stopgap escort and partial release.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:stopgap'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-thessaly-react-stopgap',
+      },
+      {
+        id: 'ch3-thessaly-ask-iron',
+        text: 'Ask what she thinks of Iron enforcement on the road.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:iron'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-thessaly-react-iron',
+      },
+      {
+        id: 'ch3-thessaly-ask-verdant',
+        text: 'Ask what she thinks of the reroute ward and its cost.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:verdant'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-thessaly-react-verdant',
+      },
+      {
+        id: 'ch3-thessaly-ask-ember',
+        text: 'Ask what she thinks of Ember escrow administration.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:ember'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-thessaly-react-ember',
+      },
+      {
+        id: 'ch3-thessaly-ask-expose',
+        text: 'Ask whether exposing the chain was worth the backlash.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:expose'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-thessaly-react-expose',
+      },
+      {
+        id: 'ch3-thessaly-ask-committee',
+        text: 'Ask what she thinks of naming the committee docket in public.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:committee'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-thessaly-react-committee',
+      },
+      {
+        id: 'ch3-thessaly-ask',
+        text: 'Ask what she expects the Archive to show.',
+        effects: [],
+        nextNodeId: 'ch3-thessaly-ask',
+      },
+      {
+        id: 'ch3-thessaly-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-thessaly-react-stopgap': {
+    id: 'ch3-thessaly-react-stopgap',
+    speaker: 'Thessaly Wren',
+    speakerFaction: 'verdant-court',
+    text: '"A stopgap is honest," she says. "It admits you are choosing who eats first. It also teaches everyone to wait for the next exception."',
+    choices: [
+      {
+        id: 'ch3-thessaly-react-stopgap-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-thessaly-react-iron': {
+    id: 'ch3-thessaly-react-iron',
+    speaker: 'Thessaly Wren',
+    speakerFaction: 'verdant-court',
+    text: '"Iron can move a line," she says. "It can teach a line to fear moving without permission. Once that lesson spreads, you do not get to choose where it stops."',
+    choices: [
+      {
+        id: 'ch3-thessaly-react-iron-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-thessaly-react-verdant': {
+    id: 'ch3-thessaly-react-verdant',
+    speaker: 'Thessaly Wren',
+    speakerFaction: 'verdant-court',
+    text: '"A reroute ward is a clean tool," she says. "If you moved the pressure onto someone who never consented to carry it, remember their names."',
+    choices: [
+      {
+        id: 'ch3-thessaly-react-verdant-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-thessaly-react-ember': {
+    id: 'ch3-thessaly-react-ember',
+    speaker: 'Thessaly Wren',
+    speakerFaction: 'verdant-court',
+    text: '"Escrow moves goods," she says. "It turns the road into a test of who can pay to be treated as real, and it will be called fair by the people collecting the fees."',
+    choices: [
+      {
+        id: 'ch3-thessaly-react-ember-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-thessaly-react-expose': {
+    id: 'ch3-thessaly-react-expose',
+    speaker: 'Thessaly Wren',
+    speakerFaction: 'verdant-court',
+    text: '"Truth has a cost," she says. "If you force it out too early, the cost lands on people who did not choose the fight. If you never force it out, the cost still lands."',
+    choices: [
+      {
+        id: 'ch3-thessaly-react-expose-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-thessaly-react-committee': {
+    id: 'ch3-thessaly-react-committee',
+    speaker: 'Thessaly Wren',
+    speakerFaction: 'verdant-court',
+    text: '"Naming it makes it real," she says. "That can be useful. It can also give it a banner to hide behind."',
+    choices: [
+      {
+        id: 'ch3-thessaly-react-committee-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-thessaly-ask': {
+    id: 'ch3-thessaly-ask',
+    speaker: 'Thessaly Wren',
+    speakerFaction: 'verdant-court',
+    text: '"Chains," she says. "Who signed, who stamped, who recorded it, who enforced it. The committee you heard about sits in a line of them. This one is active."',
+    choices: [
+      {
+        id: 'ch3-thessaly-note',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-stonework': {
+    id: 'ch3-stonework',
+    speaker: 'Narrator',
+    text: 'The door is older than the stamps on it. The latch has been replaced more than once. A clean set of tool marks sits under the newest Concord impression.
+
+Someone repaired the entrance recently. They did not advertise it.',
+    choices: [
+      {
+        id: 'ch3-stonework-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
       },
     ],
   },
@@ -48,7 +260,7 @@ A young courier waits by the entrance. An Iron scout watches the path from a dis
     speakerFaction: 'verdant-court',
     text: 'Hest keeps his hands clean by never touching anything directly. He uses a cloth for the latch. He uses titles for people.
 
-"Envoy," he says. "If Ash Road taught you anything, it should have taught you that paper is a tool. It can be a tool for order. It can be a tool for theft. The difference is rarely the ink."',
+"Envoy," he says. "If Ash Road taught you anything, it should have taught you that paper is a tool. It can serve order, or it can serve theft."',
     choices: [
       {
         id: 'ch3-curator-margin',
@@ -77,11 +289,11 @@ A young courier waits by the entrance. An Iron scout watches the path from a dis
     speakerFaction: 'verdant-court',
     text: 'Hest looks past you, as if checking whether the idea is listening.
 
-"A ward key is not a spell," he says. "It is permission. When it appears where it should not, it means someone is granting permission without saying so. That is the part I worry about."',
+"A ward key is permission," he says. "It appears in the margin when someone grants access without putting their name on it. That is what worries me."',
     choices: [
       {
         id: 'ch3-margin-note',
-        text: 'Ask what the Archive can prove, not what it suspects.',
+        text: 'Ask what the Archive can trace in writing and stampwork.',
         effects: [{ factionId: 'verdant-court', reputationChange: 2 }],
         nextNodeId: 'ch3-margin-proof',
       },
@@ -98,9 +310,11 @@ A young courier waits by the entrance. An Iron scout watches the path from a dis
     id: 'ch3-margin-proof',
     speaker: 'Curator Hest',
     speakerFaction: 'verdant-court',
-    text: '"Proof is the wrong word," Hest says. "The Archive is not a court. It is a memory.
+    text: '"This place keeps chains," Hest says. "Ink lineages and custody notes.
 
-But yes. The ink has a lineage. The stamps have a chain. If someone built a committee that issues authority through paperwork and ward craft, the Archive will show where it started."',
+Courts turn those chains into judgement. The Archive keeps them intact.
+
+If someone built a committee that issues authority through paperwork and ward craft, we can find where its stamp first appeared."',
     choices: [
       {
         id: 'ch3-margin-close',
@@ -117,7 +331,7 @@ But yes. The ink has a lineage. The stamps have a chain. If someone built a comm
     speakerFaction: 'verdant-court',
     text: 'He does not refuse. He does not agree.
 
-"Access is a policy question," he says. "If I open a sealed register for you, I am setting a rule that outlives both of us. If I refuse, someone less careful will come later with a better threat."',
+"Access is a policy question," he says. "If I open a sealed register for you, I set a rule that outlives both of us. If I refuse, someone less careful will come later with a better threat."',
     choices: [
       {
         id: 'ch3-registers-pledge',
@@ -146,12 +360,12 @@ But yes. The ink has a lineage. The stamps have a chain. If someone built a comm
     speaker: 'Narrator',
     text: 'The curator does not give you what you want. He gives you a path to it.
 
-A list of committee stamps that exist outside the delegations. A sequence of docket formats that predate recent crises. Enough to follow, not enough to burn.
+He provides a list of committee stamps that exist outside the delegations, along with docket formats that predate recent crises. It gives you a place to start. It would not hold up in open court.
 
 If the committee is real, it did not begin on Ash Road.',
     choices: [
       {
-        id: 'ch3-registers-back',
+        id: 'ch3-registers-result-back',
         text: 'Return to the entrance.',
         effects: [],
         nextNodeId: 'chapter-3-hub',
@@ -165,7 +379,7 @@ If the committee is real, it did not begin on Ash Road.',
     speakerFaction: 'iron-pact',
     text: 'Rell keeps his hands near his belt but not on the hilt.
 
-"I\'m not here to threaten druids," he says. "I\'m here because if the wrong record comes out of that door, someone will use it to justify a purge. People like justification more than they like truth."',
+"I was ordered to watch the door," he says. "If the wrong record comes out of it, someone will use it to justify a purge."',
     choices: [
       {
         id: 'ch3-scout-ask',
@@ -202,7 +416,7 @@ If the committee is real, it did not begin on Ash Road.',
     speaker: 'Courier Sera',
     text: 'Sera\'s boots are still muddy from the road. She does not seem impressed by the Archive.
 
-"I was paid to carry a packet," she says. "No seal. No name. Just a place to drop it." She looks at you. "If you want a neutral story, don\'t hire couriers. Hire liars."',
+"I was paid to carry a packet," she says. "No seal and no name. Only a drop point." She looks at you. "If you want a neutral story, don\'t hire couriers. Hire liars."',
     choices: [
       {
         id: 'ch3-courier-open',
@@ -229,6 +443,338 @@ If the committee is real, it did not begin on Ash Road.',
         text: 'Return to the entrance.',
         effects: [],
         nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-replies': {
+    id: 'ch3-replies',
+    speaker: 'Narrator',
+    text: 'Two notes arrived after Ash Road. One bears an Iron seal pressed too hard. The other carries Ember wax, thin and careful.
+
+Neither solves the Archive for you. Both are reminders that your decisions travel.',
+    choices: [
+      {
+        id: 'ch3-replies-aldric',
+        text: 'Open the Iron note.',
+        effects: [],
+        nextNodeId: 'ch3-replies-aldric-select',
+      },
+      {
+        id: 'ch3-replies-renzo',
+        text: 'Open the Ember note.',
+        effects: [],
+        nextNodeId: 'ch3-replies-renzo-select',
+      },
+      {
+        id: 'ch3-replies-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-replies-aldric-select': {
+    id: 'ch3-replies-aldric-select',
+    speaker: 'Narrator',
+    text: 'Aldric\'s hand is spare and direct. You scan for what he is asking you to make easier for him, and what he is warning you not to make normal.',
+    choices: [
+      {
+        id: 'ch3-aldric-stopgap',
+        text: 'Read Aldric\'s note on the stopgap.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:stopgap'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-aldric-stopgap',
+      },
+      {
+        id: 'ch3-aldric-iron',
+        text: 'Read Aldric\'s note on enforcement.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:iron'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-aldric-iron',
+      },
+      {
+        id: 'ch3-aldric-verdant',
+        text: 'Read Aldric\'s note on the reroute.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:verdant'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-aldric-verdant',
+      },
+      {
+        id: 'ch3-aldric-ember',
+        text: 'Read Aldric\'s note on escrow administration.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:ember'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-aldric-ember',
+      },
+      {
+        id: 'ch3-aldric-expose',
+        text: 'Read Aldric\'s note on the exposure.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:expose'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-aldric-expose',
+      },
+      {
+        id: 'ch3-aldric-committee',
+        text: 'Read Aldric\'s note on naming the docket.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:committee'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-aldric-committee',
+      },
+      {
+        id: 'ch3-aldric-back',
+        text: 'Set the letter aside.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-aldric-stopgap': {
+    id: 'ch3-letter-aldric-stopgap',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: '"Envoy.\n\nStopgaps keep people alive. Write the limits down before they become a habit."',
+    choices: [
+      {
+        id: 'ch3-letter-aldric-stopgap-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-aldric-iron': {
+    id: 'ch3-letter-aldric-iron',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: '"Envoy.\n\nYou chose enforcement. Publish the seizures in full and keep the escort disciplined."',
+    choices: [
+      {
+        id: 'ch3-letter-aldric-iron-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-aldric-verdant': {
+    id: 'ch3-letter-aldric-verdant',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: '"Envoy.\n\nYou moved the pressure off the barrier. Watch the detours; that is where resentment turns into raids."',
+    choices: [
+      {
+        id: 'ch3-letter-aldric-verdant-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-aldric-ember': {
+    id: 'ch3-letter-aldric-ember',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: '"Envoy.\n\nEscrow will move goods. Keep an exit clause in the record."',
+    choices: [
+      {
+        id: 'ch3-letter-aldric-ember-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-aldric-expose': {
+    id: 'ch3-letter-aldric-expose',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: '"Envoy.\n\nYou put the papers on the table. Guard the originals and the witnesses."',
+    choices: [
+      {
+        id: 'ch3-letter-aldric-expose-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-aldric-committee': {
+    id: 'ch3-letter-aldric-committee',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: '"Envoy.\n\nYou named the docket. Demand signatures for any order it issues."',
+    choices: [
+      {
+        id: 'ch3-letter-aldric-committee-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-replies-renzo-select': {
+    id: 'ch3-replies-renzo-select',
+    speaker: 'Narrator',
+    text: 'Renzo\'s note is folded too neatly. Even his compliments feel like they were weighed for shipping.',
+    choices: [
+      {
+        id: 'ch3-renzo-stopgap',
+        text: 'Read Renzo\'s note on the stopgap.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:stopgap'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-renzo-stopgap',
+      },
+      {
+        id: 'ch3-renzo-iron',
+        text: 'Read Renzo\'s note on enforcement.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:iron'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-renzo-iron',
+      },
+      {
+        id: 'ch3-renzo-verdant',
+        text: 'Read Renzo\'s note on the reroute.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:verdant'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-renzo-verdant',
+      },
+      {
+        id: 'ch3-renzo-ember',
+        text: 'Read Renzo\'s note on escrow administration.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:ember'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-renzo-ember',
+      },
+      {
+        id: 'ch3-renzo-expose',
+        text: 'Read Renzo\'s note on the exposure.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:expose'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-renzo-expose',
+      },
+      {
+        id: 'ch3-renzo-committee',
+        text: 'Read Renzo\'s note on naming the docket.',
+        effects: [],
+        requiresAllTokens: ['tok:ch02:outcome:committee'],
+        hideWhenLockedBySecrets: true,
+        nextNodeId: 'ch3-letter-renzo-committee',
+      },
+      {
+        id: 'ch3-renzo-back',
+        text: 'Set the letter aside.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-renzo-stopgap': {
+    id: 'ch3-letter-renzo-stopgap',
+    speaker: 'Renzo Calder',
+    speakerFaction: 'ember-throne',
+    text: '"Envoy.\n\nStopgaps are expensive. Someone will try to invoice you in favors."',
+    choices: [
+      {
+        id: 'ch3-letter-renzo-stopgap-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-renzo-iron': {
+    id: 'ch3-letter-renzo-iron',
+    speaker: 'Renzo Calder',
+    speakerFaction: 'ember-throne',
+    text: '"Envoy.\n\nEnforcement is predictable. Predictable systems invite pricing."',
+    choices: [
+      {
+        id: 'ch3-letter-renzo-iron-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-renzo-verdant': {
+    id: 'ch3-letter-renzo-verdant',
+    speaker: 'Renzo Calder',
+    speakerFaction: 'ember-throne',
+    text: '"Envoy.\n\nNew detours create new owners. Expect a friendly offer with sharp terms."',
+    choices: [
+      {
+        id: 'ch3-letter-renzo-verdant-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-renzo-ember': {
+    id: 'ch3-letter-renzo-ember',
+    speaker: 'Renzo Calder',
+    speakerFaction: 'ember-throne',
+    text: '"Envoy.\n\nEscrow is a clean story. Fees are where the leverage lives."',
+    choices: [
+      {
+        id: 'ch3-letter-renzo-ember-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-renzo-expose': {
+    id: 'ch3-letter-renzo-expose',
+    speaker: 'Renzo Calder',
+    speakerFaction: 'ember-throne',
+    text: '"Envoy.\n\nPublic proof changes bargaining. Keep the originals and do not let copies wander."',
+    choices: [
+      {
+        id: 'ch3-letter-renzo-expose-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-letter-renzo-committee': {
+    id: 'ch3-letter-renzo-committee',
+    speaker: 'Renzo Calder',
+    speakerFaction: 'ember-throne',
+    text: '"Envoy.\n\nOnce you name it, it becomes a counterparty. Useful, if you can make it liable."',
+    choices: [
+      {
+        id: 'ch3-letter-renzo-committee-back',
+        text: 'Fold the note and return.',
+        effects: [],
+        nextNodeId: 'ch3-replies',
       },
     ],
   },
