@@ -38,4 +38,3 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-2:resolved:iron');
   });
 });
-});

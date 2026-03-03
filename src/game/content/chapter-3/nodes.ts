@@ -27,6 +27,7 @@ Someone tried to make this place neutral. Someone tried to make it useful.',
         id: 'ch3-hub-stonework',
         text: 'Inspect the door, stamps, and latch marks.',
         effects: [],
+        grantsTokens: ['tok:ch03:door:toolmarks'],
         nextNodeId: 'ch3-stonework',
       },
       {
@@ -52,6 +53,14 @@ Someone tried to make this place neutral. Someone tried to make it useful.',
         text: 'Review the notes that arrived after Ash Road.',
         effects: [],
         nextNodeId: 'ch3-replies',
+      },
+      {
+        id: 'ch3-hub-course',
+        text: 'Decide what to do with what you have learned so far.',
+        effects: [],
+        hideWhenLockedBySecrets: true,
+        requiresAnyTokens: ['tok:ch03:door:toolmarks', 'tok:ch03:courier:ashwax', 'tok:ch03:clue:stamps'],
+        nextNodeId: 'ch3-course',
       },
       {
         id: 'ch3-hub-back',
@@ -337,6 +346,7 @@ If someone built a committee that issues authority through paperwork and ward cr
         id: 'ch3-registers-pledge',
         text: 'Offer a written pledge: no copies, no names, only chain-of-authority.',
         effects: [{ factionId: 'verdant-court', reputationChange: 2 }],
+        grantsTokens: ['tok:ch03:clue:stamps'],
         nextNodeId: 'ch3-registers-result',
         revealsInfo: 'You offered a pledge to limit what you take from the Root-Archive: chain-of-authority without names.',
       },
@@ -344,6 +354,7 @@ If someone built a committee that issues authority through paperwork and ward cr
         id: 'ch3-registers-pressure',
         text: 'Tell him the road is already being strangled by hidden rules.',
         effects: [{ factionId: 'iron-pact', reputationChange: 1 }, { factionId: 'verdant-court', reputationChange: -1 }],
+        grantsTokens: ['tok:ch03:clue:stamps'],
         nextNodeId: 'ch3-registers-result',
       },
       {
@@ -422,6 +433,7 @@ If the committee is real, it did not begin on Ash Road.',
         id: 'ch3-courier-open',
         text: 'Ask what the packet smelled like and what it weighed.',
         effects: [],
+        grantsTokens: ['tok:ch03:courier:ashwax'],
         nextNodeId: 'ch3-courier-detail',
       },
       {
@@ -775,6 +787,170 @@ Neither solves the Archive for you. Both are reminders that your decisions trave
         text: 'Fold the note and return.',
         effects: [],
         nextNodeId: 'ch3-replies',
+      },
+    ],
+  },
+
+  'ch3-course': {
+    id: 'ch3-course',
+    speaker: 'Narrator',
+    text: 'You have enough to act, and not enough to act safely.
+
+The Root-Archive will not write your policy for you. It can only tell you what kind of machinery you are feeding when you choose a rule.
+
+If authority can be issued without a face, then the next question is who gets to speak for it.',
+    choices: [
+      {
+        id: 'ch3-course-audit',
+        text: 'Call for a formal audit of committee dockets and require a chain-of-authority for every order.',
+        effects: [{ factionId: 'iron-pact', reputationChange: 1 }, { factionId: 'verdant-court', reputationChange: 1 }],
+        grantsTokens: ['tok:ch03:outcome:audit'],
+        gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-3:resolved' },
+          { kind: 'milestone:add', id: 'chapter-3:resolved:audit' },
+          { kind: 'log', message: '📚 Root-Archive: Formal audit demanded for committee authority.' },
+        ],
+        nextNodeId: 'ch3-ending-audit',
+      },
+      {
+        id: 'ch3-course-iron',
+        text: 'Give Aldric the stamp lineage and insist he tie enforcement to signatures.',
+        effects: [{ factionId: 'iron-pact', reputationChange: 4 }, { factionId: 'ember-throne', reputationChange: -2 }],
+        grantsTokens: ['tok:ch03:outcome:iron'],
+        gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-3:resolved' },
+          { kind: 'milestone:add', id: 'chapter-3:resolved:iron' },
+          { kind: 'log', message: '🗝️ Root-Archive: Authority file transferred to Iron custody with signature demands.' },
+        ],
+        nextNodeId: 'ch3-ending-iron',
+      },
+      {
+        id: 'ch3-course-verdant',
+        text: 'Leave the register trail with Hest and Thessaly, and let the Archive control access.',
+        effects: [{ factionId: 'verdant-court', reputationChange: 4 }, { factionId: 'iron-pact', reputationChange: -2 }],
+        grantsTokens: ['tok:ch03:outcome:verdant'],
+        gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-3:resolved' },
+          { kind: 'milestone:add', id: 'chapter-3:resolved:verdant' },
+          { kind: 'log', message: '🌿 Root-Archive: Committee trail retained under Verdant custody and controlled access.' },
+        ],
+        nextNodeId: 'ch3-ending-verdant',
+      },
+      {
+        id: 'ch3-course-ember',
+        text: 'Offer Renzo a constrained bargain: funding and access in exchange for liability and paper trails.',
+        effects: [{ factionId: 'ember-throne', reputationChange: 4 }, { factionId: 'verdant-court', reputationChange: -1 }],
+        grantsTokens: ['tok:ch03:outcome:ember'],
+        gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-3:resolved' },
+          { kind: 'milestone:add', id: 'chapter-3:resolved:ember' },
+          { kind: 'log', message: '🧾 Root-Archive: Constrained bargain made with Ember to bind authority to liability.' },
+        ],
+        nextNodeId: 'ch3-ending-ember',
+      },
+      {
+        id: 'ch3-course-quiet',
+        text: 'Keep the trail private and build a case without giving anyone a lever yet.',
+        effects: [{ factionId: 'verdant-court', reputationChange: 1 }, { factionId: 'ember-throne', reputationChange: 1 }],
+        grantsTokens: ['tok:ch03:outcome:quiet'],
+        gameEffects: [
+          { kind: 'milestone:add', id: 'chapter-3:resolved' },
+          { kind: 'milestone:add', id: 'chapter-3:resolved:quiet' },
+          { kind: 'log', message: '🕯️ Root-Archive: Committee trail kept private while a broader case is built.' },
+        ],
+        nextNodeId: 'ch3-ending-quiet',
+      },
+      {
+        id: 'ch3-course-back',
+        text: 'Not yet. Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-ending-audit': {
+    id: 'ch3-ending-audit',
+    speaker: 'Narrator',
+    text: 'You do not accuse anyone by name. You accuse the method.\n\nA chain-of-authority requirement sounds harmless. It forces power to sign its work, or admit it cannot.\n\nIf the committee survives this, it will adapt. If it fails, something else will take its place.',
+    choices: [
+      {
+        id: 'ch3-ending-audit-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-ending-iron': {
+    id: 'ch3-ending-iron',
+    speaker: 'Narrator',
+    text: 'Aldric will call it discipline. He will also call it necessity.
+
+If enforcement becomes the only way the Hall remembers how to act, then enforcement becomes the Hall.
+
+You gain speed. You also gain a shape you may not be able to leave.',
+    choices: [
+      {
+        id: 'ch3-ending-iron-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-ending-verdant': {
+    id: 'ch3-ending-verdant',
+    speaker: 'Narrator',
+    text: 'Hest locks the file away as if it were a knife.
+
+Controlled access can keep people safe. It can also keep them obedient.
+
+You have chosen restraint. The question is whether the restraint belongs to you, or to the system you are protecting.',
+    choices: [
+      {
+        id: 'ch3-ending-verdant-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-ending-ember': {
+    id: 'ch3-ending-ember',
+    speaker: 'Narrator',
+    text: 'Renzo will call your terms sensible. He will also price the risk.
+
+A paper trail that creates liability can civilize a market. It can also teach the powerful how to write around the liability.
+
+You have chosen leverage. You will be expected to use it.',
+    choices: [
+      {
+        id: 'ch3-ending-ember-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
+      },
+    ],
+  },
+
+  'ch3-ending-quiet': {
+    id: 'ch3-ending-quiet',
+    speaker: 'Narrator',
+    text: 'You keep the trail in your own hands.
+
+It buys you time to learn who is behind the stamp. It also keeps everyone else free to keep using it.
+
+Secrecy is a tool. You have decided you can hold it without becoming it.',
+    choices: [
+      {
+        id: 'ch3-ending-quiet-back',
+        text: 'Return to the entrance.',
+        effects: [],
+        nextNodeId: 'chapter-3-hub',
       },
     ],
   },

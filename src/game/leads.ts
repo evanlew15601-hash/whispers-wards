@@ -45,6 +45,17 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch02:pattern:committee': [
     'Press for the committee docket behind the seizures. Someone is issuing authority without being seen.',
   ],
+
+  // Chapter III — The Root-Archive
+  'tok:ch03:door:toolmarks': [
+    'Inspect the Root-Archive door and the newest stampwork. Someone has been here with tools recently.',
+  ],
+  'tok:ch03:courier:ashwax': [
+    'Ask the courier what kind of seal was on the packet. If it was ash wax, it ties back to Ash Road.',
+  ],
+  'tok:ch03:clue:stamps': [
+    'Push the curator for stamp lineage and docket formats that exist outside the three delegations.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {

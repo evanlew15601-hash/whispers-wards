@@ -3,6 +3,7 @@ import type { DialogueNode, Faction, GameEvent } from '../types';
 import { initialEvents as chapter1Events, initialFactions as chapter1Factions, dialogueTree as chapter1Tree } from './chapter-1';
 import { initialEvents as chapter2Events, initialFactions as chapter2Factions, dialogueTree as chapter2Tree } from './chapter-2';
 import { initialEvents as chapter3Events, initialFactions as chapter3Factions, dialogueTree as chapter3Tree } from './chapter-3';
+import { initialEvents as chapter4Events, initialFactions as chapter4Factions, dialogueTree as chapter4Tree } from './chapter-4';
 
 export type DialogueTree = Record<string, DialogueNode>;
 
