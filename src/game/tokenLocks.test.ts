@@ -4,35 +4,36 @@ import { getDialogueTree } from './data';
 import { tsConversationEngine } from './engine/tsConversationEngine';
 
 describe('token gating', () => {
-  it('locks choices behind tokens and unlocks once the token is earned', () => {
+  it('locks choices behind tokens and unlocks once tokens are present', () => {
     const base = tsConversationEngine.startNewGame();
     const tree = getDialogueTree('chapter-2');
 
-    const inner = tree['ch2-archives-inner'];
-    if (!inner) throw new Error('Expected ch2-archives-inner');
+    const tribunal = tree['ch2-tribunal'];
+    if (!tribunal) throw new Error('Expected ch2-tribunal');
 
-    const openLedger = inner.choices.find(c => c.id === 'ch2-open-ledger');
-    if (!openLedger) throw new Error('Expected ch2-open-ledger choice');
+    const expose = tribunal.choices.find(c => c.id === 'ch2-trib-expose');
+    if (!expose) throw new Error('Expected ch2-trib-expose choice');
 
     const lockedState = {
       ...base,
       chapterId: 'chapter-2',
       chapterTurn: 1,
-      currentDialogue: inner,
+      currentDialogue: tribunal,
       knownTokens: [],
     };
 
-    expect(tsConversationEngine.applyChoice(lockedState, openLedger)).toBe(lockedState);
+    expect(tsConversationEngine.applyChoice(lockedState, expose)).toBe(lockedState);
 
     const unlockedState = {
       ...lockedState,
-      knownTokens: ['tok:ch02:archives-seal'],
+      knownTokens: ['tok:ch02:docket:trail', 'tok:ch02:ledger:irregular'],
     };
 
-    const next = tsConversationEngine.applyChoice(unlockedState, openLedger);
+    const next = tsConversationEngine.applyChoice(unlockedState, expose);
     expect(next).not.toBe(unlockedState);
-    expect(next.currentDialogue?.id).toBe('chapter-2-hub');
-    expect(next.knownTokens).toContain('tok:ch02:archives-seal');
-    expect(next.knownSecrets.some(s => s.includes('ledger'))).toBe(true);
+    expect(next.currentDialogue?.id).toBe('ch2-ending-expose');
+    expect(next.knownTokens).toContain('tok:ch02:docket:trail');
+    expect(next.knownTokens).toContain('tok:ch02:ledger:irregular');
+    expect(next.milestones).toContain('chapter-2:resolved:expose');
   });
 });

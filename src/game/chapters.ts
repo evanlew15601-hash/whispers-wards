@@ -34,7 +34,7 @@ export const CHAPTERS: Record<string, ChapterDefinition> = {
   },
   'chapter-2': {
     id: 'chapter-2',
-    title: 'Chapter II — The Hall Archives',
+    title: 'Chapter II — Ash Road',
     hubNodeId: 'chapter-2-hub',
     encounterPoolId: 'encounters:chapter-2',
     managementPoolId: 'management:chapter-1',

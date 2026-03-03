@@ -19,8 +19,31 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'Verdant hinge-sigils mark a hidden passage door in Concord\'s east wing.': [
     'Search the east wing for seams behind tapestries or alcoves; look for faint hinge carvings in Verdant style.',
   ],
-  'tok:ch02:archives-seal': [
-    'Earn Archivist Mera\'s seal in the Hall Archives to access restricted ledgers.',
+
+  // Chapter II — Ash Road
+  'tok:ch02:seal:ashwax': [
+    'Inspect the seals used on seized cargo; keep a flake as proof before it is replaced.',
+  ],
+  'tok:ch02:witness:waystation': [
+    'Get a signed statement from a merchant at the waystation. Names and dates matter.',
+  ],
+  'tok:ch02:docket:trail': [
+    'Obtain the docket ledger at the customs post and follow the reissue numbers.',
+  ],
+  'tok:ch02:iron:toll-order': [
+    'Demand the original toll order that justifies the barrier, not a summary of it.',
+  ],
+  'tok:ch02:ledger:irregular': [
+    'Request raw ledger entries from the counting-house tied to the reissued names.',
+  ],
+  'tok:ch02:verdant:reroute-ward': [
+    'Speak to the tally-keeper in the grove about a reroute ward and its consequences.',
+  ],
+  'tok:ch02:ember:escrow-terms': [
+    'Ask the Ember factor to state escrow terms without ceremony. Keep the paper.',
+  ],
+  'tok:ch02:pattern:committee': [
+    'Press for the committee docket behind the seizures. Someone is issuing authority without being seen.',
   ],
 };
 
