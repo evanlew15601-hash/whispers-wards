@@ -134,8 +134,8 @@ describe('game storage', () => {
     const slots = listSaveSlots();
     expect(slots[0].meta?.turnNumber).toBe(state.turnNumber);
 
-    const loaded = loadGameFromSlot(1);
-    expect((loaded as any)?.player).toEqual({ name: 'Test Envoy' });
+    const loaded = loadGameFromSlot(1) as unknown as { player?: unknown } | null;
+    expect(loaded?.player).toEqual({ name: 'Test Envoy' });
   });
 
   it('migrates legacy unversioned key (v1) to STORAGE_KEY_V3', async () => {

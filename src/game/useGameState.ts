@@ -177,8 +177,8 @@ export function useGameState() {
 
     const hydratedLog = loadedAny.log ?? base.log;
 
-    const selectedChoiceIdsFromSave = Array.isArray((loadedAny as any).selectedChoiceIds)
-      ? ((loadedAny as any).selectedChoiceIds as string[])
+    const selectedChoiceIdsFromSave = Array.isArray(loadedAny.selectedChoiceIds)
+      ? loadedAny.selectedChoiceIds
       : base.selectedChoiceIds;
 
     const loadedTurnNumber = typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber;
@@ -192,24 +192,21 @@ export function useGameState() {
       knownSecrets: loadedAny.knownSecrets ?? base.knownSecrets,
       selectedChoiceIds: inferSelectedChoiceIdsFromLog(selectedChoiceIdsFromSave, hydratedLog),
       log: hydratedLog,
-      stepNumber:
-        typeof (loadedAny as any).stepNumber === 'number'
-          ? ((loadedAny as any).stepNumber as number)
-          : loadedTurnNumber,
+      stepNumber: typeof loadedAny.stepNumber === 'number' ? loadedAny.stepNumber : loadedTurnNumber,
       turnNumber: loadedTurnNumber,
-      chapterId: typeof (loadedAny as any).chapterId === 'string' ? ((loadedAny as any).chapterId as string) : base.chapterId,
-      chapterTurn: typeof (loadedAny as any).chapterTurn === 'number' ? ((loadedAny as any).chapterTurn as number) : base.chapterTurn,
-      milestones: Array.isArray((loadedAny as any).milestones) ? ((loadedAny as any).milestones as string[]) : base.milestones,
+      chapterId: typeof loadedAny.chapterId === 'string' ? loadedAny.chapterId : base.chapterId,
+      chapterTurn: typeof loadedAny.chapterTurn === 'number' ? loadedAny.chapterTurn : base.chapterTurn,
+      milestones: Array.isArray(loadedAny.milestones) ? loadedAny.milestones : base.milestones,
       resources:
-        (loadedAny as any).resources && typeof (loadedAny as any).resources === 'object'
-          ? ({ ...base.resources, ...(loadedAny as any).resources } as GameState['resources'])
+        loadedAny.resources && typeof loadedAny.resources === 'object'
+          ? ({ ...base.resources, ...(loadedAny.resources as Partial<GameState['resources']>) } as GameState['resources'])
           : base.resources,
-      projects: Array.isArray((loadedAny as any).projects) ? ((loadedAny as any).projects as GameState['projects']) : base.projects,
+      projects: Array.isArray(loadedAny.projects) ? loadedAny.projects : base.projects,
       management:
-        (loadedAny as any).management && typeof (loadedAny as any).management === 'object'
+        loadedAny.management && typeof loadedAny.management === 'object'
           ? {
               ...base.management,
-              ...(loadedAny as any).management,
+              ...(loadedAny.management as Partial<GameState['management']>),
             }
           : base.management,
       rngSeed: typeof loadedAny.rngSeed === 'number' ? loadedAny.rngSeed : base.rngSeed,
@@ -217,14 +214,14 @@ export function useGameState() {
         loadedAny.world && typeof loadedAny.world === 'object'
           ? {
               ...base.world,
-              ...(loadedAny.world as any),
+              ...(loadedAny.world as Partial<GameState['world']>),
               aiMemory: {
                 ...base.world.aiMemory,
-                ...((loadedAny.world as any).aiMemory ?? {}),
+                ...(((loadedAny.world as Partial<GameState['world']>).aiMemory ?? {}) as Partial<GameState['world']['aiMemory']>),
               },
               encounterMemory: {
                 ...(base.world.encounterMemory ?? { lastSeenTurnByTemplateId: {}, seenThisChapter: {} }),
-                ...((loadedAny.world as any).encounterMemory ?? {}),
+                ...(((loadedAny.world as Partial<GameState['world']>).encounterMemory ?? {}) as Partial<NonNullable<GameState['world']['encounterMemory']>>),
               },
             }
           : base.world,
