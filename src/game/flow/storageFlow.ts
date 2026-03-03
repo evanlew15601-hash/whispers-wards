@@ -1,7 +1,7 @@
 import type { GameState } from '../types';
 import type { ConversationEngine } from '../engine/conversationEngine';
 
-import { dialogueTree } from '../data';
+import { getAllDialogueNodes, getDialogueTree } from '../data';
 import { normalizePlayerProfile } from '../player';
 import { buildEncounterDialogueNode } from '../encounters';
 import type { SaveSlotInfo } from '../storage';
@@ -25,7 +25,7 @@ export type StorageFlowOutcome = {
 const uniqueRepChoiceIdByText = (() => {
   const seen = new Map<string, string | null>();
 
-  for (const node of Object.values(dialogueTree)) {
+  for (const node of getAllDialogueNodes()) {
     for (const c of node.choices) {
       if (!c.exclusiveGroup && !c.effects.some(e => e.reputationChange !== 0)) continue;
 
@@ -143,6 +143,9 @@ export function applyStorageFlowEvent(
 
     const loadedTurnNumber = typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber;
 
+    const chapterId = typeof (loadedAny as any).chapterId === 'string' ? ((loadedAny as any).chapterId as string) : base.chapterId;
+    const chapterTree = getDialogueTree(chapterId);
+
     const hydrated: GameState = {
       ...base,
       ...loadedAny,
@@ -150,6 +153,7 @@ export function applyStorageFlowEvent(
       factions: loadedAny.factions ?? base.factions,
       events: loadedAny.events ?? base.events,
       knownSecrets: loadedAny.knownSecrets ?? base.knownSecrets,
+      knownTokens: (loadedAny as any).knownTokens ?? base.knownTokens,
       selectedChoiceIds: inferSelectedChoiceIdsFromLog(selectedChoiceIdsFromSave, hydratedLog),
       log: hydratedLog,
       stepNumber:
@@ -157,7 +161,7 @@ export function applyStorageFlowEvent(
           ? ((loadedAny as any).stepNumber as number)
           : loadedTurnNumber,
       turnNumber: loadedTurnNumber,
-      chapterId: typeof (loadedAny as any).chapterId === 'string' ? ((loadedAny as any).chapterId as string) : base.chapterId,
+      chapterId,
       chapterTurn: typeof (loadedAny as any).chapterTurn === 'number' ? ((loadedAny as any).chapterTurn as number) : base.chapterTurn,
       milestones: Array.isArray((loadedAny as any).milestones) ? ((loadedAny as any).milestones as string[]) : base.milestones,
       resources:
@@ -192,7 +196,7 @@ export function applyStorageFlowEvent(
       currentDialogue: loadedDialogueId
         ? loadedDialogueId.startsWith('encounter:') && pendingEncounter
           ? buildEncounterDialogueNode(pendingEncounter)
-          : dialogueTree[loadedDialogueId] ?? (loadedAny.currentDialogue as GameState['currentDialogue'])
+          : chapterTree[loadedDialogueId] ?? (loadedAny.currentDialogue as GameState['currentDialogue'])
         : (loadedAny.currentDialogue as GameState['currentDialogue']) ?? null,
       // Always resume gameplay after loading a save.
       currentScene: 'game',

@@ -261,6 +261,7 @@ const GameScreen = ({
                   <InfoPanel
                     currentDialogue={state.currentDialogue}
                     knownSecrets={state.knownSecrets}
+                    knownTokens={state.knownTokens}
                     turnNumber={state.turnNumber}
                     log={state.log}
                     world={state.world}
@@ -542,6 +543,7 @@ const GameScreen = ({
                   node={state.currentDialogue!}
                   onChoice={makeChoice}
                   knownSecrets={state.knownSecrets}
+                  knownTokens={state.knownTokens}
                   factions={state.factions}
                   selectedChoiceIds={state.selectedChoiceIds}
                   playerName={state.player.name}
@@ -559,6 +561,7 @@ const GameScreen = ({
             <InfoPanel
               currentDialogue={state.currentDialogue}
               knownSecrets={state.knownSecrets}
+              knownTokens={state.knownTokens}
               turnNumber={state.turnNumber}
               log={state.log}
               world={state.world}

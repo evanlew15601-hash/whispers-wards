@@ -1,10 +1,16 @@
 import type { ConversationEngine, ChoiceUiHint } from './conversationEngine';
 import type { DialogueChoice, GameState } from '../types';
 
-import { dialogueTree } from '../data';
+import { getDialogueTree, type DialogueTree } from '../data';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
-import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import {
+  isChoiceLocked,
+  isChoiceLockedByExclusiveGroup,
+  isChoiceLockedByHistory,
+  isChoiceLockedBySecrets,
+  isChoiceLockedByTokens,
+} from '../choiceLocks';
 import { getChapter } from '../chapters';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
@@ -30,45 +36,52 @@ type CompiledGraph = {
   bitToSecret: (string | null)[];
   secretBitCapacity: number;
   choiceStrideBytes: number;
+  nodesPtr: number;
+  choicesPtr: number;
+  blobPtr: number;
 };
 
-function compileGraph(secretBitCapacity: number, choiceStrideBytes: number): CompiledGraph {
-  const nodeIds = Object.keys(dialogueTree).sort();
+const isToken = (s: string) => s.startsWith('tok:');
+
+function compileGraph(tree: DialogueTree, secretBitCapacity: number, choiceStrideBytes: number): Omit<CompiledGraph, 'nodesPtr' | 'choicesPtr' | 'blobPtr'> {
+  const nodeIds = Object.keys(tree).sort();
   const nodeIdToIndex = new Map<string, number>(nodeIds.map((id, idx) => [id, idx]));
 
-  const lockSecrets = new Set<string>();
-  const otherSecrets = new Set<string>();
+  const lockFacts = new Set<string>();
+  const otherFacts = new Set<string>();
 
   for (const nodeId of nodeIds) {
-    for (const c of dialogueTree[nodeId].choices) {
-      if (c.requiresAllSecrets) for (const s of c.requiresAllSecrets) lockSecrets.add(s);
-      if (c.requiresAnySecrets) for (const s of c.requiresAnySecrets) lockSecrets.add(s);
-      if (c.revealsInfo) otherSecrets.add(c.revealsInfo);
+    for (const c of tree[nodeId].choices) {
+      if (c.requiresAllSecrets) for (const s of c.requiresAllSecrets) lockFacts.add(s);
+      if (c.requiresAnySecrets) for (const s of c.requiresAnySecrets) lockFacts.add(s);
+      if (c.requiresAllTokens) for (const t of c.requiresAllTokens) lockFacts.add(t);
+      if (c.requiresAnyTokens) for (const t of c.requiresAnyTokens) lockFacts.add(t);
+      if (c.revealsInfo) otherFacts.add(c.revealsInfo);
     }
   }
 
-  // Prioritize secrets that participate in locking so that WASM can compute locks/hints
-  // consistently with TS even when total secrets exceed the mask capacity.
-  const lockSorted = [...lockSecrets].sort();
-  const otherSorted = [...otherSecrets].filter(s => !lockSecrets.has(s)).sort();
+  // Prioritize facts that participate in locking so that WASM can compute locks/hints
+  // consistently with TS even when total facts exceed the mask capacity.
+  const lockSorted = [...lockFacts].sort();
+  const otherSorted = [...otherFacts].filter(s => !lockFacts.has(s)).sort();
 
-  const secretsForWasm = [...lockSorted, ...otherSorted].slice(0, secretBitCapacity);
-  const secretToBit = new Map<string, number>(secretsForWasm.map((s, i) => [s, i]));
+  const factsForWasm = [...lockSorted, ...otherSorted].slice(0, secretBitCapacity);
+  const secretToBit = new Map<string, number>(factsForWasm.map((s, i) => [s, i]));
 
   const bitToSecret = new Array<string | null>(secretBitCapacity).fill(null);
-  for (let i = 0; i < secretsForWasm.length; i++) bitToSecret[i] = secretsForWasm[i];
+  for (let i = 0; i < factsForWasm.length; i++) bitToSecret[i] = factsForWasm[i];
 
   return { nodeIds, nodeIdToIndex, secretToBit, bitToSecret, secretBitCapacity, choiceStrideBytes };
 }
 
-function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph) {
+function writeGraphToWasm(uqm: UqmWasmRuntime, graph: Omit<CompiledGraph, 'nodesPtr' | 'choicesPtr' | 'blobPtr'>, tree: DialogueTree): Pick<CompiledGraph, 'nodesPtr' | 'choicesPtr' | 'blobPtr'> {
   const { exports } = uqm;
 
   const nodeCount = graph.nodeIds.length;
   const nodesSize = 8 + nodeCount * 8;
 
   let totalChoices = 0;
-  for (const id of graph.nodeIds) totalChoices += dialogueTree[id].choices.length;
+  for (const id of graph.nodeIds) totalChoices += tree[id].choices.length;
   const choicesSize = totalChoices * graph.choiceStrideBytes;
 
   // Keep the graph as a single packed blob in wasm memory:
@@ -85,7 +98,7 @@ function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph) {
   let choiceCursor = 0;
 
   for (let nodeIdx = 0; nodeIdx < graph.nodeIds.length; nodeIdx++) {
-    const node = dialogueTree[graph.nodeIds[nodeIdx]];
+    const node = tree[graph.nodeIds[nodeIdx]];
 
     // NodeMeta { u32 firstChoice; u32 choiceCount }
     mem.setUint32(nodesPtr + 8 + nodeIdx * 8 + 0, choiceCursor, true);
@@ -136,8 +149,14 @@ function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph) {
         mem.setUint32(base + 18, revealHi >>> 0, true);
       }
 
-      const allMask = secretsMask64FromStrings(choice.requiresAllSecrets, graph.secretToBit);
-      const anyMask = secretsMask64FromStrings(choice.requiresAnySecrets, graph.secretToBit);
+      const allMask = secretsMask64FromStrings(
+        [...(choice.requiresAllSecrets ?? []), ...(choice.requiresAllTokens ?? [])],
+        graph.secretToBit
+      );
+      const anyMask = secretsMask64FromStrings(
+        [...(choice.requiresAnySecrets ?? []), ...(choice.requiresAnyTokens ?? [])],
+        graph.secretToBit
+      );
 
       if (graph.choiceStrideBytes >= 38) {
         mem.setUint32(base + 22, allMask.lo, true);
@@ -155,6 +174,8 @@ function writeGraphToWasm(uqm: UqmWasmRuntime, graph: CompiledGraph) {
   } else {
     exports.uqm_conv_set_graph(nodesPtr, choicesPtr);
   }
+
+  return { nodesPtr, choicesPtr, blobPtr };
 }
 
 function secretsMask64FromStrings(secrets: readonly string[] | undefined, secretToBit: Map<string, number>): { lo: number; hi: number } {
@@ -197,6 +218,7 @@ function applyChoiceUsingWasm(
   choice: DialogueChoice,
   uqm: UqmWasmRuntime,
   graph: CompiledGraph,
+  tree: DialogueTree,
 ): GameState | null {
   if (!prev.currentDialogue) return null;
 
@@ -209,7 +231,7 @@ function applyChoiceUsingWasm(
     return null;
   }
 
-  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds)) {
+  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds, prev.knownTokens)) {
     return prev;
   }
 
@@ -225,7 +247,7 @@ function applyChoiceUsingWasm(
   const rep1 = prev.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0;
   const rep2 = prev.factions.find(f => f.id === 'ember-throne')?.reputation ?? 0;
 
-  const secretsMask = secretsMask64FromKnown(prev.knownSecrets, graph.secretToBit);
+  const secretsMask = secretsMask64FromKnown([...prev.knownTokens, ...prev.knownSecrets], graph.secretToBit);
 
   const exp = uqm.exports;
   if (graph.secretBitCapacity > 32 && exp.uqm_conv_reset64) {
@@ -275,40 +297,69 @@ function applyChoiceUsingWasm(
 
   const expected = secretsFromMask(graph, secretsLo >>> 0, secretsHi >>> 0);
 
-  const newlyLearned: string[] = [];
+  const newlyLearnedFacts: string[] = [];
   for (const s of expected) {
-    if (!prevExpected.has(s)) newlyLearned.push(s);
+    if (!prevExpected.has(s)) newlyLearnedFacts.push(s);
   }
 
+  const expectedTokens = new Set([...expected].filter(isToken));
+  const expectedSecrets = new Set([...expected].filter(s => !isToken(s)));
+
+  const newlyLearnedTokens = newlyLearnedFacts.filter(isToken);
+  const newlyLearnedSecrets: string[] = newlyLearnedFacts.filter(s => !isToken(s));
+
   // Track secrets even when they exceed the wasm mask capacity.
-  if (choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo) && !newlyLearned.includes(choice.revealsInfo)) {
-    newlyLearned.push(choice.revealsInfo);
+  if (choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo) && !newlyLearnedSecrets.includes(choice.revealsInfo)) {
+    newlyLearnedSecrets.push(choice.revealsInfo);
   }
 
   // Keep external secrets (e.g. "override") and keep order stable for secrets represented
   // in the wasm mask.
-  const ordered: string[] = prev.knownSecrets.filter(s => {
+  const orderedSecrets: string[] = prev.knownSecrets.filter(s => {
     if (!graph.secretToBit.has(s)) return true;
-    return expected.has(s);
+    return expectedSecrets.has(s);
   });
 
   // Ensure we didn't drop any secrets represented in the mask.
   for (let bit = 0; bit < graph.secretBitCapacity; bit++) {
     const s = graph.bitToSecret[bit];
-    if (!s) continue;
-    if (expected.has(s) && !ordered.includes(s)) ordered.push(s);
+    if (!s || isToken(s)) continue;
+    if (expectedSecrets.has(s) && !orderedSecrets.includes(s)) orderedSecrets.push(s);
   }
 
-  for (const s of newlyLearned) {
-    if (!ordered.includes(s)) ordered.push(s);
+  for (const s of newlyLearnedSecrets) {
+    if (!orderedSecrets.includes(s)) orderedSecrets.push(s);
   }
 
-  const newSecrets = [...new Set(ordered)];
+  const newKnownSecrets = [...new Set(orderedSecrets)];
+
+  const orderedTokens: string[] = prev.knownTokens.filter(t => {
+    if (!graph.secretToBit.has(t)) return true;
+    return expectedTokens.has(t);
+  });
+
+  for (let bit = 0; bit < graph.secretBitCapacity; bit++) {
+    const t = graph.bitToSecret[bit];
+    if (!t || !isToken(t)) continue;
+    if (expectedTokens.has(t) && !orderedTokens.includes(t)) orderedTokens.push(t);
+  }
+
+  for (const t of newlyLearnedTokens) {
+    if (!orderedTokens.includes(t)) orderedTokens.push(t);
+  }
+
+  if (choice.grantsTokens?.length) {
+    for (const t of choice.grantsTokens) {
+      if (!orderedTokens.includes(t)) orderedTokens.push(t);
+    }
+  }
+
+  const newKnownTokens = [...new Set(orderedTokens)];
 
   const chapter = getChapter(prev.chapterId);
-  const hub = dialogueTree[chapter.hubNodeId] ?? null;
+  const hub = tree[chapter.hubNodeId] ?? null;
 
-  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : hub;
+  const nextDialogue = nextDialogueId ? tree[nextDialogueId] ?? null : hub;
 
   // Check events (same logic as TS engine)
   const newEvents = prev.events.map(event => {
@@ -331,7 +382,7 @@ function applyChoiceUsingWasm(
     ...prev.log,
     `> ${choice.text}`,
     ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-    ...newlyLearned.map(s => `🔍 Secret learned: ${s}`),
+    ...newlyLearnedSecrets.map(s => `🔍 Secret learned: ${s}`),
   ];
 
   return {
@@ -339,7 +390,8 @@ function applyChoiceUsingWasm(
     factions: newFactions,
     currentDialogue: nextDialogue,
     events: newEvents,
-    knownSecrets: [...new Set(newSecrets)],
+    knownSecrets: newKnownSecrets,
+    knownTokens: newKnownTokens,
     selectedChoiceIds: prev.selectedChoiceIds.includes(choice.id) ? prev.selectedChoiceIds : [...prev.selectedChoiceIds, choice.id],
     stepNumber: prev.stepNumber + 1,
     log: newLog,
@@ -362,14 +414,42 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
   const secretBitCapacity = supports64 ? 64 : 32;
   const choiceStrideBytes = 38;
 
-  const graph = compileGraph(secretBitCapacity, choiceStrideBytes);
-  writeGraphToWasm(uqm, graph);
+  const graphsByChapterId = new Map<string, CompiledGraph>();
+
+  const activateGraph = (graph: CompiledGraph) => {
+    if (uqm.exports.uqm_conv_set_graph_blob) {
+      uqm.exports.uqm_conv_set_graph_blob(graph.blobPtr);
+    } else {
+      uqm.exports.uqm_conv_set_graph(graph.nodesPtr, graph.choicesPtr);
+    }
+  };
+
+  const ensureGraphForChapter = (chapterId: string): { graph: CompiledGraph; tree: DialogueTree } => {
+    const tree = getDialogueTree(chapterId);
+
+    const existing = graphsByChapterId.get(chapterId) ?? null;
+    if (existing) {
+      activateGraph(existing);
+      return { graph: existing, tree };
+    }
+
+    const baseGraph = compileGraph(tree, secretBitCapacity, choiceStrideBytes);
+    const ptrs = writeGraphToWasm(uqm, baseGraph, tree);
+    const graph: CompiledGraph = { ...baseGraph, ...ptrs };
+
+    graphsByChapterId.set(chapterId, graph);
+    return { graph, tree };
+  };
+
+  // Ensure the default chapter graph is loaded early.
+  ensureGraphForChapter('chapter-1');
 
   return {
     createInitialState: tsConversationEngine.createInitialState,
     startNewGame: tsConversationEngine.startNewGame,
     applyChoice(prev, choice) {
-      const next = applyChoiceUsingWasm(prev, choice, uqm, graph);
+      const { graph, tree } = ensureGraphForChapter(prev.chapterId);
+      const next = applyChoiceUsingWasm(prev, choice, uqm, graph, tree);
       if (next) return next;
       // Safe fallback (should be rare)
       return tsConversationEngine.applyChoice(prev, choice);
@@ -381,6 +461,8 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       if (!state.currentDialogue) return null;
       if (state.knownSecrets.includes('override')) return state.currentDialogue.choices.map(() => false);
 
+      const { graph } = ensureGraphForChapter(state.chapterId);
+
       const nodeIdx = graph.nodeIdToIndex.get(state.currentDialogue.id);
       if (nodeIdx === undefined) return null;
 
@@ -388,7 +470,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       const rep1 = state.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0;
       const rep2 = state.factions.find(f => f.id === 'ember-throne')?.reputation ?? 0;
 
-      const secretsMask = secretsMask64FromKnown(state.knownSecrets, graph.secretToBit);
+      const secretsMask = secretsMask64FromKnown([...state.knownTokens, ...state.knownSecrets], graph.secretToBit);
 
       const exp = uqm.exports;
       if (graph.secretBitCapacity > 32 && exp.uqm_conv_reset64) {
@@ -414,7 +496,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
               ? ((hi >>> (i - 32)) & 1) === 1
               : exp.uqm_conv_choice_is_locked(i) === 1;
 
-          return wasmLocked || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
+          return wasmLocked || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.knownTokens);
         });
       }
 
@@ -425,11 +507,13 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         const alreadyDecided = isChoiceLockedByHistory(choice, state.selectedChoiceIds, state.knownSecrets, state.log);
         if (alreadyDecided) return false;
 
-        return (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
+        return (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.knownTokens);
       });
     },
     getChoiceUiHints(state): ChoiceUiHint[] | null {
       if (!state.currentDialogue) return null;
+
+      const { graph } = ensureGraphForChapter(state.chapterId);
 
       const nodeIdx = graph.nodeIdToIndex.get(state.currentDialogue.id);
       if (nodeIdx === undefined) return null;
@@ -438,7 +522,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       const rep1 = state.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0;
       const rep2 = state.factions.find(f => f.id === 'ember-throne')?.reputation ?? 0;
 
-      const secretsMask = secretsMask64FromKnown(state.knownSecrets, graph.secretToBit);
+      const secretsMask = secretsMask64FromKnown([...state.knownTokens, ...state.knownSecrets], graph.secretToBit);
 
       const exp = uqm.exports;
       if (graph.secretBitCapacity > 32 && exp.uqm_conv_reset64) {
@@ -478,7 +562,9 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         const repReqMaxFromChoice = choice.requiredReputationMax ?? null;
 
         const lockedByExclusiveGroup = alreadyDecided ? false : isChoiceLockedByExclusiveGroup(choice, state.selectedChoiceIds);
-        const lockedBySecrets = alreadyDecided ? false : isChoiceLockedBySecrets(choice, state.knownSecrets);
+        const lockedBySecrets = alreadyDecided
+          ? false
+          : isChoiceLockedBySecrets(choice, state.knownSecrets) || isChoiceLockedByTokens(choice, state.knownTokens);
 
         const lockedByReputationMin = Boolean(
           !alreadyDecided && repReqMinFromChoice && (state.factions.find(f => f.id === repReqMinFromChoice.factionId)?.reputation ?? -Infinity) < repReqMinFromChoice.min
@@ -492,7 +578,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
 
         const locked = alreadyDecided
           ? false
-          : (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
+          : (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.knownTokens);
 
         if (!canReadMeta) {
           return {

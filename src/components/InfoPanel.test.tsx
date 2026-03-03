@@ -49,6 +49,7 @@ describe('InfoPanel leads', () => {
       <InfoPanel
         currentDialogue={node}
         knownSecrets={[]}
+        knownTokens={[]}
         turnNumber={1}
         log={[]}
         world={world}
@@ -65,6 +66,7 @@ describe('InfoPanel leads', () => {
       <InfoPanel
         currentDialogue={node}
         knownSecrets={['proof:ember']}
+        knownTokens={[]}
         turnNumber={1}
         log={[]}
         world={world}

@@ -41,6 +41,10 @@ export interface DialogueChoice {
   requiresAllSecrets?: string[];
   requiresAnySecrets?: string[];
 
+  requiresAllTokens?: string[];
+  requiresAnyTokens?: string[];
+  grantsTokens?: string[];
+
   /**
    * If true, the UI may omit this option entirely when it is locked due to missing secrets.
    *
@@ -158,6 +162,7 @@ export interface GameState {
   currentDialogue: DialogueNode | null;
   events: GameEvent[];
   knownSecrets: string[];
+  knownTokens: string[];
   /** Choice ids previously selected, used to prevent re-applying non-repeatable reputation effects. */
   selectedChoiceIds: string[];
 

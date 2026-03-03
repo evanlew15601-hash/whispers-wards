@@ -1,6 +1,6 @@
 import type { GameState } from './types';
 
-import { dialogueTree } from './data';
+import { getDialogueTree } from './data';
 import { applyEffects, type GameEffect } from './effects';
 
 export type ChapterExitCondition =
@@ -29,6 +29,17 @@ export const CHAPTERS: Record<string, ChapterDefinition> = {
     encounterPoolId: 'encounters:chapter-1',
     managementPoolId: 'management:chapter-1',
     projectPoolId: 'projects:chapter-1',
+    exitConditions: [{ kind: 'milestone', id: 'project:scribe-audit:complete' }],
+    exitToChapterId: 'chapter-2',
+  },
+  'chapter-2': {
+    id: 'chapter-2',
+    title: 'Chapter II — The Hall Archives',
+    hubNodeId: 'chapter-2-hub',
+    encounterPoolId: 'encounters:chapter-2',
+    managementPoolId: 'management:chapter-1',
+    projectPoolId: 'projects:chapter-1',
+    entryEffects: [{ kind: 'resource', resourceId: 'intel', delta: 1 }],
     exitConditions: [],
     exitToChapterId: null,
   },
@@ -91,7 +102,7 @@ export const evaluateChapterTransition = (prev: GameState): GameState => {
     next = applyEffects(next, nextDef.entryEffects);
   }
 
-  const hub = dialogueTree[nextDef.hubNodeId] ?? null;
+  const hub = getDialogueTree(nextDef.id)[nextDef.hubNodeId] ?? null;
   if (hub) {
     next = { ...next, currentDialogue: hub };
   }

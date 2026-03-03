@@ -4,11 +4,13 @@ import { createUqmWasmConversationEngine } from './uqmWasmConversationEngine';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { loadUqmMinimalWasmExports } from '@/test/uqmWasmTestUtils';
-import { dialogueTree } from '../data';
+import { getDialogueTree } from '../data';
 import { isChoiceLocked } from '../choiceLocks';
 import { buildEncounterDialogueNode } from '../encounters';
 import type { SecondaryEncounter } from '../types';
 import type { GameEffect } from '../effects';
+
+const tree = getDialogueTree('chapter-1');
 
 const repByFaction = (state: { factions: { id: string; reputation: number }[] }) => {
   return Object.fromEntries(state.factions.map(f => [f.id, f.reputation] as const));
@@ -24,6 +26,7 @@ const expectParity = (tsState: any, wasmState: any) => {
   expect(wasmState.currentDialogue?.id).toBe(tsState.currentDialogue?.id);
   expect(repByFaction(wasmState)).toEqual(repByFaction(tsState));
   expect(sortedSet(wasmState.knownSecrets)).toEqual(sortedSet(tsState.knownSecrets));
+  expect(sortedSet(wasmState.knownTokens ?? [])).toEqual(sortedSet(tsState.knownTokens ?? []));
   expect(sortedSet(wasmState.selectedChoiceIds)).toEqual(sortedSet(tsState.selectedChoiceIds));
   expect(triggeredEventIds(wasmState)).toEqual(triggeredEventIds(tsState));
 
@@ -113,7 +116,7 @@ describe('uqmWasmConversationEngine', () => {
     const start = tsConversationEngine.startNewGame();
     const seeded = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
       rngSeed: 123456789,
     };
 
@@ -154,7 +157,7 @@ describe('uqmWasmConversationEngine', () => {
     // Jump to a node where we added a new investigative option.
     const atFollowup = {
       ...seeded,
-      currentDialogue: dialogueTree['aldric-followup'],
+      currentDialogue: tree['aldric-followup'],
     };
 
     const auditChoice = atFollowup.currentDialogue!.choices.find(c => c.id === 'aldric-dispatches');
@@ -204,7 +207,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const atSummit = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
       rngSeed: 123456789,
       factions: start.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
       knownSecrets: [],
@@ -296,7 +299,7 @@ describe('uqmWasmConversationEngine', () => {
     const start = tsConversationEngine.startNewGame();
     const base = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
       rngSeed: 123456789,
       factions: start.factions.map(f => ({ ...f, reputation: 0 })),
     };
@@ -305,7 +308,7 @@ describe('uqmWasmConversationEngine', () => {
     expect(wasmEngine.getChoiceUiHints?.(base)).toEqual(tsConversationEngine.getChoiceUiHints?.(base));
 
     for (const choice of base.currentDialogue!.choices) {
-      const helperLocked = isChoiceLocked(choice, base.factions, base.knownSecrets, base.selectedChoiceIds);
+      const helperLocked = isChoiceLocked(choice, base.factions, base.knownSecrets, base.selectedChoiceIds, base.knownTokens);
       const nextTs = tsConversationEngine.applyChoice(base, choice);
       const nextWasm = wasmEngine.applyChoice(base, choice);
 
@@ -322,7 +325,7 @@ describe('uqmWasmConversationEngine', () => {
     const lockedChoice = withOverride.currentDialogue!.choices.find(c => c.requiredReputation);
     if (!lockedChoice) throw new Error('Expected a reputation-locked choice');
 
-    expect(isChoiceLocked(lockedChoice, withOverride.factions, withOverride.knownSecrets, withOverride.selectedChoiceIds)).toBe(false);
+    expect(isChoiceLocked(lockedChoice, withOverride.factions, withOverride.knownSecrets, withOverride.selectedChoiceIds, withOverride.knownTokens)).toBe(false);
     expect(wasmEngine.getChoiceLockedFlags?.(withOverride)).toEqual(withOverride.currentDialogue!.choices.map(() => false));
 
     const nextTs = tsConversationEngine.applyChoice(withOverride, lockedChoice);
@@ -359,7 +362,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const atMaps = {
       ...initial,
-      currentDialogue: dialogueTree['map-revelation'],
+      currentDialogue: tree['map-revelation'],
       rngSeed: 123456789,
     };
 
@@ -373,12 +376,12 @@ describe('uqmWasmConversationEngine', () => {
 
     const revisitMapsTs = {
       ...afterKeepTs,
-      currentDialogue: dialogueTree['map-revelation'],
+      currentDialogue: tree['map-revelation'],
     };
 
     const revisitMapsWasm = {
       ...afterKeepWasm,
-      currentDialogue: dialogueTree['map-revelation'],
+      currentDialogue: tree['map-revelation'],
     };
 
     const revealForgery = revisitMapsWasm.currentDialogue!.choices.find(c => c.id === 'reveal-forgery');
@@ -389,7 +392,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const atArchives = {
       ...initial,
-      currentDialogue: dialogueTree['hall-archives'],
+      currentDialogue: tree['hall-archives'],
       rngSeed: 123456789,
     };
 
@@ -403,12 +406,12 @@ describe('uqmWasmConversationEngine', () => {
 
     const revisitArchivesTs = {
       ...afterSellAccordTs,
-      currentDialogue: dialogueTree['hall-archives'],
+      currentDialogue: tree['hall-archives'],
     };
 
     const revisitArchivesWasm = {
       ...afterSellAccordWasm,
-      currentDialogue: dialogueTree['hall-archives'],
+      currentDialogue: tree['hall-archives'],
     };
 
     const showToAldric = revisitArchivesWasm.currentDialogue!.choices.find(c => c.id === 'archives-aldric');
@@ -419,7 +422,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const atRenzoOffer = {
       ...initial,
-      currentDialogue: dialogueTree['renzo-offer'],
+      currentDialogue: tree['renzo-offer'],
       rngSeed: 123456789,
     };
 
@@ -433,12 +436,12 @@ describe('uqmWasmConversationEngine', () => {
 
     const revisitOfferTs = {
       ...afterRefuseTs,
-      currentDialogue: dialogueTree['renzo-offer'],
+      currentDialogue: tree['renzo-offer'],
     };
 
     const revisitOfferWasm = {
       ...afterRefuseWasm,
-      currentDialogue: dialogueTree['renzo-offer'],
+      currentDialogue: tree['renzo-offer'],
     };
 
     const sign = revisitOfferWasm.currentDialogue!.choices.find(c => c.id === 'offer-sign');
@@ -449,7 +452,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const atLedgerRequest = {
       ...initial,
-      currentDialogue: dialogueTree['renzo-ledger-request'],
+      currentDialogue: tree['renzo-ledger-request'],
       rngSeed: 123456789,
     };
 
@@ -463,12 +466,12 @@ describe('uqmWasmConversationEngine', () => {
 
     const revisitLedgerRequestTs = {
       ...afterBuyTs,
-      currentDialogue: dialogueTree['renzo-ledger-request'],
+      currentDialogue: tree['renzo-ledger-request'],
     };
 
     const revisitLedgerRequestWasm = {
       ...afterBuyWasm,
-      currentDialogue: dialogueTree['renzo-ledger-request'],
+      currentDialogue: tree['renzo-ledger-request'],
     };
 
     const steal = revisitLedgerRequestWasm.currentDialogue!.choices.find(c => c.id === 'ledger-steal');
@@ -479,7 +482,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const atStolenLedger = {
       ...initial,
-      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+      currentDialogue: tree['renzo-ledger-stolen'],
       rngSeed: 123456789,
     };
 
@@ -493,12 +496,12 @@ describe('uqmWasmConversationEngine', () => {
 
     const revisitStolenLedgerTs = {
       ...afterSellTs,
-      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+      currentDialogue: tree['renzo-ledger-stolen'],
     };
 
     const revisitStolenLedgerWasm = {
       ...afterSellWasm,
-      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+      currentDialogue: tree['renzo-ledger-stolen'],
     };
 
     const takeToAldric = revisitStolenLedgerWasm.currentDialogue!.choices.find(c => c.id === 'stolen-to-aldric');
@@ -514,7 +517,7 @@ describe('uqmWasmConversationEngine', () => {
     const start = tsConversationEngine.startNewGame();
     const atSummit = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
       rngSeed: 123456789,
     };
 
@@ -548,7 +551,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const revisitSummit = {
       ...afterEncounter,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
     };
 
     expect(revisitSummit.selectedChoiceIds).toContain('summit-adjourn');
@@ -571,7 +574,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const baseSummit = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: tree['summit-start'],
       rngSeed: 123456789,
       factions: start.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
     };
@@ -584,7 +587,7 @@ describe('uqmWasmConversationEngine', () => {
     const accordChoice = accordSummit.currentDialogue!.choices.find(c => c.id === 'summit-compact-accord');
     if (!accordChoice) throw new Error('Expected summit-compact-accord choice');
 
-    expect(isChoiceLocked(accordChoice, accordSummit.factions, accordSummit.knownSecrets, accordSummit.selectedChoiceIds)).toBe(false);
+    expect(isChoiceLocked(accordChoice, accordSummit.factions, accordSummit.knownSecrets, accordSummit.selectedChoiceIds, accordSummit.knownTokens)).toBe(false);
 
     const nextTsAccord = tsConversationEngine.applyChoice(accordSummit, accordChoice);
     const nextWasmAccord = wasmEngine.applyChoice(accordSummit, accordChoice);
@@ -605,7 +608,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const start = tsConversationEngine.startNewGame();
 
-    const node = dialogueTree['aldric-followup'];
+    const node = tree['aldric-followup'];
     const original = node.choices.find(c => c.id === 'aldric-dispatches');
     if (!original) throw new Error('Expected aldric-dispatches choice');
 
@@ -637,7 +640,7 @@ describe('uqmWasmConversationEngine', () => {
   it('suppresses generalized effects on revisit using choice history (no resource farming)', () => {
     const initial = tsConversationEngine.startNewGame();
 
-    const node = dialogueTree['aldric-followup'];
+    const node = tree['aldric-followup'];
     const original = node.choices.find(c => c.id === 'aldric-dispatches');
     if (!original) throw new Error('Expected aldric-dispatches choice');
 

@@ -1,6 +1,6 @@
 import type { DialogueNode } from './types';
 
-import { isChoiceLockedBySecrets } from './choiceLocks';
+import { isChoiceLockedBySecrets, isChoiceLockedByTokens } from './choiceLocks';
 
 const proofLeadHintsBySecret: Record<string, string[]> = {
   'The Ember Throne forged maps to manipulate the border dispute.': [
@@ -19,26 +19,46 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'Verdant hinge-sigils mark a hidden passage door in Concord\'s east wing.': [
     'Search the east wing for seams behind tapestries or alcoves; look for faint hinge carvings in Verdant style.',
   ],
+  'tok:ch02:archives-seal': [
+    'Earn Archivist Mera\'s seal in the Hall Archives to access restricted ledgers.',
+  ],
 };
 
-function collectMissingProofSecrets(node: DialogueNode, knownSecrets: string[]): Set<string> {
+function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {
   const missing = new Set<string>();
 
   for (const choice of node.choices) {
-    if (!isChoiceLockedBySecrets(choice, knownSecrets)) continue;
+    const lockedBySecrets = isChoiceLockedBySecrets(choice, knownSecrets);
+    const lockedByTokens = isChoiceLockedByTokens(choice, knownTokens);
+    if (!lockedBySecrets && !lockedByTokens) continue;
 
-    const needsAll = choice.requiresAllSecrets ?? null;
-    if (needsAll?.length) {
-      for (const s of needsAll) {
+    const needsAllSecrets = choice.requiresAllSecrets ?? null;
+    if (needsAllSecrets?.length) {
+      for (const s of needsAllSecrets) {
         if (!knownSecrets.includes(s)) missing.add(s);
       }
     }
 
-    const needsAny = choice.requiresAnySecrets ?? null;
-    if (needsAny?.length) {
-      const hasAny = needsAny.some(s => knownSecrets.includes(s));
+    const needsAnySecrets = choice.requiresAnySecrets ?? null;
+    if (needsAnySecrets?.length) {
+      const hasAny = needsAnySecrets.some(s => knownSecrets.includes(s));
       if (!hasAny) {
-        for (const s of needsAny) missing.add(s);
+        for (const s of needsAnySecrets) missing.add(s);
+      }
+    }
+
+    const needsAllTokens = choice.requiresAllTokens ?? null;
+    if (needsAllTokens?.length) {
+      for (const t of needsAllTokens) {
+        if (!knownTokens.includes(t)) missing.add(t);
+      }
+    }
+
+    const needsAnyTokens = choice.requiresAnyTokens ?? null;
+    if (needsAnyTokens?.length) {
+      const hasAny = needsAnyTokens.some(t => knownTokens.includes(t));
+      if (!hasAny) {
+        for (const t of needsAnyTokens) missing.add(t);
       }
     }
   }
@@ -46,18 +66,22 @@ function collectMissingProofSecrets(node: DialogueNode, knownSecrets: string[]):
   return missing;
 }
 
-export function getLeadHintsForCurrentDialogue(currentDialogue: DialogueNode | null, knownSecrets: string[]): string[] {
+export function getLeadHintsForCurrentDialogue(
+  currentDialogue: DialogueNode | null,
+  knownSecrets: string[],
+  knownTokens: string[] = [],
+): string[] {
   if (!currentDialogue) return [];
   if (knownSecrets.includes('override')) return [];
 
-  const missingSecrets = collectMissingProofSecrets(currentDialogue, knownSecrets);
-  if (!missingSecrets.size) return [];
+  const missing = collectMissingProofKeys(currentDialogue, knownSecrets, knownTokens);
+  if (!missing.size) return [];
 
   const hints: string[] = [];
   const seen = new Set<string>();
 
-  for (const secret of missingSecrets) {
-    const mapped = proofLeadHintsBySecret[secret] ?? null;
+  for (const key of missing) {
+    const mapped = proofLeadHintsBySecret[key] ?? null;
     if (!mapped?.length) continue;
 
     for (const hint of mapped) {
