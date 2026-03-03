@@ -320,7 +320,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     description: 'Pause the audit to redirect staff to urgent matters. Progress is preserved.',
     category: 'projects',
     poolId: 'projects:chapter-1',
-    apCost: 1,
+    apCost: 0,
     cooldownTurns: 0,
     effects: [
       { kind: 'project:pauseByTemplate', templateId: 'scribe-audit' },
@@ -333,7 +333,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     description: 'Resume the audit with its previous progress intact.',
     category: 'projects',
     poolId: 'projects:chapter-1',
-    apCost: 1,
+    apCost: 0,
     cooldownTurns: 0,
     effects: [
       { kind: 'project:resumeByTemplate', templateId: 'scribe-audit' },
@@ -346,7 +346,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     description: 'Cancel the audit. Any partially gathered leads are discarded.',
     category: 'projects',
     poolId: 'projects:chapter-1',
-    apCost: 1,
+    apCost: 0,
     cooldownTurns: 0,
     effects: [
       { kind: 'project:cancelByTemplate', templateId: 'scribe-audit' },
@@ -379,7 +379,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     description: 'Pause convoy planning to redirect staff and escorts. Progress is preserved.',
     category: 'projects',
     poolId: 'projects:chapter-1',
-    apCost: 1,
+    apCost: 0,
     cooldownTurns: 0,
     effects: [
       { kind: 'project:pauseByTemplate', templateId: 'frontier-relief' },
@@ -392,7 +392,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     description: 'Resume the convoys with their previous progress intact.',
     category: 'projects',
     poolId: 'projects:chapter-1',
-    apCost: 1,
+    apCost: 0,
     cooldownTurns: 0,
     effects: [
       { kind: 'project:resumeByTemplate', templateId: 'frontier-relief' },
@@ -405,7 +405,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     description: 'Cancel the convoys. Any partial contracts are forfeited.',
     category: 'projects',
     poolId: 'projects:chapter-1',
-    apCost: 1,
+    apCost: 0,
     cooldownTurns: 0,
     effects: [
       { kind: 'project:cancelByTemplate', templateId: 'frontier-relief' },

@@ -256,7 +256,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'concord-hub': {
     id: 'concord-hub',
     speaker: 'Narrator',
-    text: 'Concord Hall was built for discretion. Velvet muffles footsteps. Stone carries voices farther than it should. Every corridor has someone listening.\n\nThe delegations keep to their corners, watching one another, waiting for you to blink first.\n\nIf you want peace, you\'ll have to earn it: with proof, with favors, or by giving someone a way to back down without humiliation.',
+    text: 'Concord Hall was built for discretion. Velvet muffles footsteps. Stone carries voices farther than it should. Every corridor has someone listening.\n\nThe delegations keep to their corners, watching one another, waiting for you to blink first.\n\nIf you want peace, you\'ll have to earn it: with proof, with favors, or by giving someone a way to back down without humiliation.\n\nWhen you\'re ready, call the summit and commit to an outcome. Some options only appear once you have proof (marked as intel).',
     choices: [
       {
         id: 'hub-aldric',
@@ -285,6 +285,13 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'hub-summit',
         text: 'Call the summit and force everyone into the same light.',
+        requiresAnySecrets: [
+          'The Ember Throne forged maps to manipulate the border dispute.',
+          'Renzo\'s ledger pages show coded payments tied to the border killings.',
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+          'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.',
+        ],
         effects: [],
         nextNodeId: 'summit-start',
       },
@@ -355,6 +362,17 @@ export const dialogueTree: Record<string, DialogueNode> = {
           { factionId: 'iron-pact', reputationChange: 5 },
         ],
         nextNodeId: 'aldric-burns-details',
+      },
+      {
+        id: 'aldric-proof-ledger',
+        text: 'Show Vane what you\'ve learned from Ember\'s ledgers.',
+        hideWhenLockedBySecrets: true,
+        requiresAnySecrets: [
+          'Renzo\'s ledger pages show coded payments tied to the border killings.',
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+        ],
+        effects: [],
+        nextNodeId: 'aldric-ledger',
       },
       {
         id: 'aldric-dispatches',
@@ -573,6 +591,17 @@ export const dialogueTree: Record<string, DialogueNode> = {
         nextNodeId: 'thessaly-pass',
       },
       {
+        id: 'thessaly-proof-ledger',
+        text: 'Show Thessaly what you\'ve learned from Ember\'s ledgers.',
+        hideWhenLockedBySecrets: true,
+        requiresAnySecrets: [
+          'Renzo\'s ledger pages show coded payments tied to the border killings.',
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+        ],
+        effects: [],
+        nextNodeId: 'thessaly-ledger',
+      },
+      {
         id: 'followup-ledger',
         text: '"If I bring you proof of Ember meddling, will you meet Aldric halfway?"',
         effects: [
@@ -729,7 +758,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         nextNodeId: 'aldric-burns-warning',
       },
       {
-        id: 'burns-back',
+        id: 'thessaly-burns-back',
         text: 'Return to the corridor-crossroads.',
         effects: [],
         nextNodeId: 'concord-hub',
@@ -1095,7 +1124,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         nextNodeId: 'summit-start',
       },
       {
-        id: 'ledger-back',
+        id: 'aldric-ledger-back',
         text: 'Hold the proof for now and keep negotiating in the corridors.',
         effects: [],
         nextNodeId: 'concord-hub',

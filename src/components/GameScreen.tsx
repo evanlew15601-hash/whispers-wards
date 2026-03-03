@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAmbience } from '@/audio/useAmbience';
 import { GameState, DialogueChoice } from '@/game/types';
 import { SaveSlotInfo } from '@/game/storage';
@@ -101,6 +101,41 @@ const GameScreen = ({
   const canAddressEncounter = Boolean(state.pendingEncounter && isInHub);
 
   const encounterTurnsLeft = state.pendingEncounter ? state.pendingEncounter.expiresOnTurn - state.turnNumber : null;
+
+  const crisisExpiryPreview = useMemo(() => {
+    if (!state.pendingEncounter) return null;
+
+    const kind = state.pendingEncounter.kind ?? 'summit';
+    const routeId = state.pendingEncounter.routeId;
+    const regionId = state.pendingEncounter.regionId;
+
+    const aId = state.pendingEncounter.relatedFactions[0] ?? null;
+    const bId = state.pendingEncounter.relatedFactions[1] ?? null;
+
+    const nameOf = (id: string | null) => {
+      if (!id) return 'Unknown';
+      return state.factions.find(f => f.id === id)?.name ?? id;
+    };
+
+    const parts: string[] = [];
+    if (aId && bId) parts.push(`+5 tension (${nameOf(aId)} vs ${nameOf(bId)})`);
+    else parts.push('+5 tension');
+
+    if ((kind === 'embargo' || kind === 'raid') && routeId) {
+      const route = state.world.tradeRoutes[routeId];
+      if (route) {
+        parts.push(`Trade route: ${route.name} becomes ${kind === 'embargo' ? 'embargoed' : 'raided'}`);
+      }
+    }
+
+    if (kind === 'skirmish' && regionId) {
+      const region = state.world.regions[regionId];
+      if (region) parts.push(`Region: ${region.name} becomes contested`);
+    }
+
+    return `If ignored: ${parts.join(' · ')}`;
+  }, [state.pendingEncounter, state.factions, state.world.regions, state.world.tradeRoutes]);
+
   const encounterBadgeVariant: 'default' | 'secondary' | 'destructive' =
     encounterTurnsLeft !== null && encounterTurnsLeft <= 1 ? 'destructive' : focusMode ? 'secondary' : 'default';
 
@@ -499,6 +534,11 @@ const GameScreen = ({
                 <HubPanel
                   node={state.currentDialogue!}
                   onChoice={makeChoice}
+                  knownSecrets={state.knownSecrets}
+                  factions={state.factions}
+                  selectedChoiceIds={state.selectedChoiceIds}
+                  lockedChoices={choiceLockedFlags}
+                  choiceUiHints={choiceUiHints}
                   crisisPending={Boolean(state.pendingEncounter)}
                   crisisTurnsLeft={encounterTurnsLeft}
                   crisisConsequence={crisisExpiryPreview}
@@ -507,40 +547,6 @@ const GameScreen = ({
                 <DialoguePanel
                   node={state.currentDialogue!}
                   onChoice={makeChoice}
-                  knownSecrets={state.knownSecrets}
-                  factions={state.factions}
-                  selectedChoiceIds={state.selectedChoiceIds}
-                  playerName={state.player.name}
-                  playerPortraitId={state.player.portraitId}
-                  lockedChoices={choiceLockedFlags}
-                  choiceUiHints={choiceUiHints}
-                />
-              )}
-            </>
-          )}
-        </main>
-
-        {!focusMode && (
-          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-            <InfoPanel
-              currentDialogue={state.currentDialogue}
-              knownSecrets={state.knownSecrets}
-              turnNumber={state.turnNumber}
-              log={state.log}
-              world={state.world}
-              factions={state.factions}
-              pendingEncounter={state.pendingEncounter}
-              player={state.player}
-            />
-          </motion.aside>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default GameScreen;
-oice={makeChoice}
                   knownSecrets={state.knownSecrets}
                   factions={state.factions}
                   selectedChoiceIds={state.selectedChoiceIds}

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } from '@/game/engine/uqmTextWrap';
-import { isChoiceLocked, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
+import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
 import { useAudio } from '@/audio/useAudio';
 import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
 import CommPortrait from '@/components/CommPortrait';
@@ -497,6 +497,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
               const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
               const historyLocked = alreadyDecided;
+              const exclusiveLocked =
+                locked &&
+                !alreadyDecided &&
+                !repLocked &&
+                !secretsLocked &&
+                isChoiceLockedByExclusiveGroup(choice, selectedChoiceIds);
 
               const displayEffects = alreadyDecided
                 ? (hint?.effects ?? choice.effects).map(effect => ({ ...effect, reputationChange: 0 }))
@@ -513,7 +519,9 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   className={`group relative overflow-hidden rounded-sm border border-border bg-secondary/45 p-4 text-left font-body text-sm transition-all sm:text-base
                     ${locked
                       ? 'cursor-not-allowed opacity-50'
-                      : 'hover:border-primary/50 hover:bg-secondary'
+                      : historyLocked
+                        ? 'opacity-80 hover:border-primary/30 hover:bg-secondary/70'
+                        : 'hover:border-primary/50 hover:bg-secondary'
                     }
                     ${lockedNudgeId === choice.id ? 'cc-choice-nudge' : ''}`}
                   initial={{ x: -20, opacity: 0 }}
@@ -565,7 +573,14 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                         {historyLocked && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
                             <Lock className="h-3 w-3" />
-                            already decided
+                            already decided (replay)
+                          </span>
+                        )}
+
+                        {exclusiveLocked && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
+                            <Lock className="h-3 w-3" />
+                            path already chosen
                           </span>
                         )}
 

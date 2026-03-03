@@ -12,6 +12,11 @@ const getActiveTabPanel = (dialog: HTMLElement) => {
 };
 
 describe('SaveLoadDialog', () => {
+  const activateTab = (dialog: HTMLElement, name: RegExp) => {
+    const tab = within(dialog).getByRole('tab', { name });
+    fireEvent.mouseDown(tab);
+    fireEvent.click(tab);
+  };
   const slots: SaveSlotInfo[] = [
     { id: 1, meta: null },
     {
@@ -87,7 +92,7 @@ describe('SaveLoadDialog', () => {
 
     const dialog = await screen.findByRole('dialog');
 
-    fireEvent.click(within(dialog).getByRole('tab', { name: /^load$/i }));
+    activateTab(dialog, /^load$/i);
 
     const loadPanel = getActiveTabPanel(dialog);
     const loadButtons = within(loadPanel).getAllByRole('button', { name: /^load$/i });

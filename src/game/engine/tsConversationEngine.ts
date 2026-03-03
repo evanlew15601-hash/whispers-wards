@@ -148,9 +148,11 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
   const chapter = getChapter(withEffects.chapterId);
   const hub = dialogueTree[chapter.hubNodeId] ?? null;
 
+  const endsConversation = choice.nextNodeId === null && choice.id.startsWith('end-');
+
   // Most scenes should resolve back to the chapter hub rather than dropping the player
   // into a "no dialogue" state.
-  const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : hub;
+  const nextDialogue = endsConversation ? null : choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : hub;
 
   return {
     ...withEffects,
@@ -163,6 +165,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       `> ${choice.text}`,
       ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
       ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+      ...(endsConversation ? ['🏁 Chapter complete'] : []),
     ],
   };
 };
@@ -283,12 +286,22 @@ export const tsConversationEngine: ConversationEngine = {
   },
   getChoiceUiHints(state) {
     if (!state.currentDialogue) return null;
-    return state.currentDialogue.choices.map(choice => ({
-      locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
-      requiredReputation: choice.requiredReputation ?? null,
-      effects: choice.effects,
-      revealsInfo: choice.revealsInfo ?? null,
-    }));
+    return state.currentDialogue.choices.map(choice => {
+      const effects: Array<{ factionId: string; reputationChange: number }> = [];
+      const d0 = choice.effects.find(e => e.factionId === 'iron-pact')?.reputationChange ?? 0;
+      const d1 = choice.effects.find(e => e.factionId === 'verdant-court')?.reputationChange ?? 0;
+      const d2 = choice.effects.find(e => e.factionId === 'ember-throne')?.reputationChange ?? 0;
+      if (d0) effects.push({ factionId: 'iron-pact', reputationChange: d0 });
+      if (d1) effects.push({ factionId: 'verdant-court', reputationChange: d1 });
+      if (d2) effects.push({ factionId: 'ember-throne', reputationChange: d2 });
+
+      return {
+        locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
+        requiredReputation: choice.requiredReputation ?? null,
+        effects,
+        revealsInfo: choice.revealsInfo ?? null,
+      };
+    });
   },
 };
 
