@@ -210,18 +210,25 @@ describe('uqmWasmConversationEngine', () => {
       knownSecrets: [],
     };
 
-    const exposeIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose');
-    expect(exposeIdx).toBeGreaterThanOrEqual(0);
+    const ledgerIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-ledger');
+    const manifestIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-manifest');
+    const mapsIdx = atSummit.currentDialogue!.choices.findIndex(c => c.id === 'summit-expose-maps');
 
-    const exposeChoice = atSummit.currentDialogue!.choices[exposeIdx];
+    expect(ledgerIdx).toBeGreaterThanOrEqual(0);
+    expect(manifestIdx).toBeGreaterThanOrEqual(0);
+    expect(mapsIdx).toBeGreaterThanOrEqual(0);
+
+    const ledgerChoice = atSummit.currentDialogue!.choices[ledgerIdx];
+    const manifestChoice = atSummit.currentDialogue!.choices[manifestIdx];
+    const mapsChoice = atSummit.currentDialogue!.choices[mapsIdx];
 
     const lockedFlags = wasmEngine.getChoiceLockedFlags?.(atSummit);
-    expect(lockedFlags?.[exposeIdx]).toBe(true);
+    expect(lockedFlags?.[ledgerIdx]).toBe(true);
+    expect(lockedFlags?.[manifestIdx]).toBe(true);
+    expect(lockedFlags?.[mapsIdx]).toBe(true);
 
-    const nextLockedTs = tsConversationEngine.applyChoice(atSummit, exposeChoice);
-    const nextLockedWasm = wasmEngine.applyChoice(atSummit, exposeChoice);
-    expect(nextLockedTs).toBe(atSummit);
-    expect(nextLockedWasm).toBe(atSummit);
+    expect(tsConversationEngine.applyChoice(atSummit, ledgerChoice)).toBe(atSummit);
+    expect(wasmEngine.applyChoice(atSummit, ledgerChoice)).toBe(atSummit);
 
     const withLedgerProof = {
       ...atSummit,
@@ -229,10 +236,12 @@ describe('uqmWasmConversationEngine', () => {
     };
 
     const unlockedLedger = wasmEngine.getChoiceLockedFlags?.(withLedgerProof);
-    expect(unlockedLedger?.[exposeIdx]).toBe(false);
+    expect(unlockedLedger?.[ledgerIdx]).toBe(false);
+    expect(unlockedLedger?.[manifestIdx]).toBe(true);
+    expect(unlockedLedger?.[mapsIdx]).toBe(true);
 
-    const nextLedgerTs = tsConversationEngine.applyChoice(withLedgerProof, exposeChoice);
-    const nextLedgerWasm = wasmEngine.applyChoice(withLedgerProof, exposeChoice);
+    const nextLedgerTs = tsConversationEngine.applyChoice(withLedgerProof, ledgerChoice);
+    const nextLedgerWasm = wasmEngine.applyChoice(withLedgerProof, ledgerChoice);
     expectParity(nextLedgerTs, nextLedgerWasm);
     expect(nextLedgerWasm.currentDialogue?.id).toBe('ending-embers-fall-ledger');
 
@@ -242,10 +251,12 @@ describe('uqmWasmConversationEngine', () => {
     };
 
     const unlockedManifest = wasmEngine.getChoiceLockedFlags?.(withManifestProof);
-    expect(unlockedManifest?.[exposeIdx]).toBe(false);
+    expect(unlockedManifest?.[ledgerIdx]).toBe(true);
+    expect(unlockedManifest?.[manifestIdx]).toBe(false);
+    expect(unlockedManifest?.[mapsIdx]).toBe(true);
 
-    const nextManifestTs = tsConversationEngine.applyChoice(withManifestProof, exposeChoice);
-    const nextManifestWasm = wasmEngine.applyChoice(withManifestProof, exposeChoice);
+    const nextManifestTs = tsConversationEngine.applyChoice(withManifestProof, manifestChoice);
+    const nextManifestWasm = wasmEngine.applyChoice(withManifestProof, manifestChoice);
     expectParity(nextManifestTs, nextManifestWasm);
     expect(nextManifestWasm.currentDialogue?.id).toBe('ending-embers-fall-manifest');
 
@@ -255,12 +266,28 @@ describe('uqmWasmConversationEngine', () => {
     };
 
     const unlockedMaps = wasmEngine.getChoiceLockedFlags?.(withMapsProof);
-    expect(unlockedMaps?.[exposeIdx]).toBe(false);
+    expect(unlockedMaps?.[ledgerIdx]).toBe(true);
+    expect(unlockedMaps?.[manifestIdx]).toBe(true);
+    expect(unlockedMaps?.[mapsIdx]).toBe(false);
 
-    const nextMapsTs = tsConversationEngine.applyChoice(withMapsProof, exposeChoice);
-    const nextMapsWasm = wasmEngine.applyChoice(withMapsProof, exposeChoice);
+    const nextMapsTs = tsConversationEngine.applyChoice(withMapsProof, mapsChoice);
+    const nextMapsWasm = wasmEngine.applyChoice(withMapsProof, mapsChoice);
     expectParity(nextMapsTs, nextMapsWasm);
     expect(nextMapsWasm.currentDialogue?.id).toBe('ending-embers-fall-maps');
+
+    const withMultipleProofs = {
+      ...atSummit,
+      knownSecrets: [
+        'Renzo\'s ledger pages show coded payments tied to the border killings.',
+        'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+        'The Ember Throne forged maps to manipulate the border dispute.',
+      ],
+    };
+
+    const unlockedMultiple = wasmEngine.getChoiceLockedFlags?.(withMultipleProofs);
+    expect(unlockedMultiple?.[ledgerIdx]).toBe(false);
+    expect(unlockedMultiple?.[manifestIdx]).toBe(false);
+    expect(unlockedMultiple?.[mapsIdx]).toBe(false);
   });
 
   it('keeps lock behavior aligned (UI/TS helper vs engine execution) for summit choices', () => {
@@ -339,18 +366,26 @@ describe('uqmWasmConversationEngine', () => {
     const keepSecret = atMaps.currentDialogue!.choices.find(c => c.id === 'keep-secret');
     if (!keepSecret) throw new Error('Expected keep-secret choice');
 
-    const afterKeep = wasmEngine.applyChoice(atMaps, keepSecret);
-    expect(afterKeep.selectedChoiceIds).toContain('keep-secret');
+    const afterKeepTs = tsConversationEngine.applyChoice(atMaps, keepSecret);
+    const afterKeepWasm = wasmEngine.applyChoice(atMaps, keepSecret);
+    expectParity(afterKeepTs, afterKeepWasm);
+    expect(afterKeepWasm.selectedChoiceIds).toContain('keep-secret');
 
-    const revisitMaps = {
-      ...afterKeep,
+    const revisitMapsTs = {
+      ...afterKeepTs,
       currentDialogue: dialogueTree['map-revelation'],
     };
 
-    const revealForgery = revisitMaps.currentDialogue!.choices.find(c => c.id === 'reveal-forgery');
+    const revisitMapsWasm = {
+      ...afterKeepWasm,
+      currentDialogue: dialogueTree['map-revelation'],
+    };
+
+    const revealForgery = revisitMapsWasm.currentDialogue!.choices.find(c => c.id === 'reveal-forgery');
     if (!revealForgery) throw new Error('Expected reveal-forgery choice');
 
-    expect(wasmEngine.applyChoice(revisitMaps, revealForgery)).toBe(revisitMaps);
+    expect(tsConversationEngine.applyChoice(revisitMapsTs, revealForgery)).toBe(revisitMapsTs);
+    expect(wasmEngine.applyChoice(revisitMapsWasm, revealForgery)).toBe(revisitMapsWasm);
 
     const atArchives = {
       ...initial,
@@ -361,18 +396,26 @@ describe('uqmWasmConversationEngine', () => {
     const sellAccord = atArchives.currentDialogue!.choices.find(c => c.id === 'archives-renzo');
     if (!sellAccord) throw new Error('Expected archives-renzo choice');
 
-    const afterSellAccord = wasmEngine.applyChoice(atArchives, sellAccord);
-    expect(afterSellAccord.selectedChoiceIds).toContain('archives-renzo');
+    const afterSellAccordTs = tsConversationEngine.applyChoice(atArchives, sellAccord);
+    const afterSellAccordWasm = wasmEngine.applyChoice(atArchives, sellAccord);
+    expectParity(afterSellAccordTs, afterSellAccordWasm);
+    expect(afterSellAccordWasm.selectedChoiceIds).toContain('archives-renzo');
 
-    const revisitArchives = {
-      ...afterSellAccord,
+    const revisitArchivesTs = {
+      ...afterSellAccordTs,
       currentDialogue: dialogueTree['hall-archives'],
     };
 
-    const showToAldric = revisitArchives.currentDialogue!.choices.find(c => c.id === 'archives-aldric');
+    const revisitArchivesWasm = {
+      ...afterSellAccordWasm,
+      currentDialogue: dialogueTree['hall-archives'],
+    };
+
+    const showToAldric = revisitArchivesWasm.currentDialogue!.choices.find(c => c.id === 'archives-aldric');
     if (!showToAldric) throw new Error('Expected archives-aldric choice');
 
-    expect(wasmEngine.applyChoice(revisitArchives, showToAldric)).toBe(revisitArchives);
+    expect(tsConversationEngine.applyChoice(revisitArchivesTs, showToAldric)).toBe(revisitArchivesTs);
+    expect(wasmEngine.applyChoice(revisitArchivesWasm, showToAldric)).toBe(revisitArchivesWasm);
 
     const atRenzoOffer = {
       ...initial,
@@ -383,18 +426,26 @@ describe('uqmWasmConversationEngine', () => {
     const refuse = atRenzoOffer.currentDialogue!.choices.find(c => c.id === 'offer-refuse');
     if (!refuse) throw new Error('Expected offer-refuse choice');
 
-    const afterRefuse = wasmEngine.applyChoice(atRenzoOffer, refuse);
-    expect(afterRefuse.selectedChoiceIds).toContain('offer-refuse');
+    const afterRefuseTs = tsConversationEngine.applyChoice(atRenzoOffer, refuse);
+    const afterRefuseWasm = wasmEngine.applyChoice(atRenzoOffer, refuse);
+    expectParity(afterRefuseTs, afterRefuseWasm);
+    expect(afterRefuseWasm.selectedChoiceIds).toContain('offer-refuse');
 
-    const revisitOffer = {
-      ...afterRefuse,
+    const revisitOfferTs = {
+      ...afterRefuseTs,
       currentDialogue: dialogueTree['renzo-offer'],
     };
 
-    const sign = revisitOffer.currentDialogue!.choices.find(c => c.id === 'offer-sign');
+    const revisitOfferWasm = {
+      ...afterRefuseWasm,
+      currentDialogue: dialogueTree['renzo-offer'],
+    };
+
+    const sign = revisitOfferWasm.currentDialogue!.choices.find(c => c.id === 'offer-sign');
     if (!sign) throw new Error('Expected offer-sign choice');
 
-    expect(wasmEngine.applyChoice(revisitOffer, sign)).toBe(revisitOffer);
+    expect(tsConversationEngine.applyChoice(revisitOfferTs, sign)).toBe(revisitOfferTs);
+    expect(wasmEngine.applyChoice(revisitOfferWasm, sign)).toBe(revisitOfferWasm);
 
     const atLedgerRequest = {
       ...initial,
@@ -405,18 +456,26 @@ describe('uqmWasmConversationEngine', () => {
     const buy = atLedgerRequest.currentDialogue!.choices.find(c => c.id === 'ledger-buy');
     if (!buy) throw new Error('Expected ledger-buy choice');
 
-    const afterBuy = wasmEngine.applyChoice(atLedgerRequest, buy);
-    expect(afterBuy.selectedChoiceIds).toContain('ledger-buy');
+    const afterBuyTs = tsConversationEngine.applyChoice(atLedgerRequest, buy);
+    const afterBuyWasm = wasmEngine.applyChoice(atLedgerRequest, buy);
+    expectParity(afterBuyTs, afterBuyWasm);
+    expect(afterBuyWasm.selectedChoiceIds).toContain('ledger-buy');
 
-    const revisitLedgerRequest = {
-      ...afterBuy,
+    const revisitLedgerRequestTs = {
+      ...afterBuyTs,
       currentDialogue: dialogueTree['renzo-ledger-request'],
     };
 
-    const steal = revisitLedgerRequest.currentDialogue!.choices.find(c => c.id === 'ledger-steal');
+    const revisitLedgerRequestWasm = {
+      ...afterBuyWasm,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+    };
+
+    const steal = revisitLedgerRequestWasm.currentDialogue!.choices.find(c => c.id === 'ledger-steal');
     if (!steal) throw new Error('Expected ledger-steal choice');
 
-    expect(wasmEngine.applyChoice(revisitLedgerRequest, steal)).toBe(revisitLedgerRequest);
+    expect(tsConversationEngine.applyChoice(revisitLedgerRequestTs, steal)).toBe(revisitLedgerRequestTs);
+    expect(wasmEngine.applyChoice(revisitLedgerRequestWasm, steal)).toBe(revisitLedgerRequestWasm);
 
     const atStolenLedger = {
       ...initial,
@@ -427,18 +486,26 @@ describe('uqmWasmConversationEngine', () => {
     const sellBack = atStolenLedger.currentDialogue!.choices.find(c => c.id === 'stolen-sell');
     if (!sellBack) throw new Error('Expected stolen-sell choice');
 
-    const afterSell = wasmEngine.applyChoice(atStolenLedger, sellBack);
-    expect(afterSell.selectedChoiceIds).toContain('stolen-sell');
+    const afterSellTs = tsConversationEngine.applyChoice(atStolenLedger, sellBack);
+    const afterSellWasm = wasmEngine.applyChoice(atStolenLedger, sellBack);
+    expectParity(afterSellTs, afterSellWasm);
+    expect(afterSellWasm.selectedChoiceIds).toContain('stolen-sell');
 
-    const revisitStolenLedger = {
-      ...afterSell,
+    const revisitStolenLedgerTs = {
+      ...afterSellTs,
       currentDialogue: dialogueTree['renzo-ledger-stolen'],
     };
 
-    const takeToAldric = revisitStolenLedger.currentDialogue!.choices.find(c => c.id === 'stolen-to-aldric');
+    const revisitStolenLedgerWasm = {
+      ...afterSellWasm,
+      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+    };
+
+    const takeToAldric = revisitStolenLedgerWasm.currentDialogue!.choices.find(c => c.id === 'stolen-to-aldric');
     if (!takeToAldric) throw new Error('Expected stolen-to-aldric choice');
 
-    expect(wasmEngine.applyChoice(revisitStolenLedger, takeToAldric)).toBe(revisitStolenLedger);
+    expect(tsConversationEngine.applyChoice(revisitStolenLedgerTs, takeToAldric)).toBe(revisitStolenLedgerTs);
+    expect(wasmEngine.applyChoice(revisitStolenLedgerWasm, takeToAldric)).toBe(revisitStolenLedgerWasm);
   });
 
   it('keeps choice history after resolving an encounter (summit-adjourn effects are not re-applied)', () => {

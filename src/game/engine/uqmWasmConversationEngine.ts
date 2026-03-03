@@ -5,7 +5,6 @@ import { dialogueTree } from '../data';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
-import { resolveNextNodeId } from '../choiceNext';
 import { getChapter } from '../chapters';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
@@ -251,11 +250,11 @@ function applyChoiceUsingWasm(
   // `-1` can mean either "end conversation" or "invalid". Disambiguate using the
   // TS node id on the choice; if the choice expects a next node but wasm returned
   // an invalid index, fall back.
-  const expectsNextNode =
-    choice.nextNodeId != null || (choice.nextNodeIdBySecrets?.some(r => r.nextNodeId != null) ?? false);
-
-  if (!(nextNodeIdx >= 0 && nextNodeIdx < graph.nodeIds.length)) {
-    if (expectsNextNode) return null;
+  let nextDialogueId: string | null = null;
+  if (nextNodeIdx >= 0 && nextNodeIdx < graph.nodeIds.length) {
+    nextDialogueId = graph.nodeIds[nextNodeIdx];
+  } else if (choice.nextNodeId != null) {
+    return null;
   }
 
   const newRep0 = clamp(exp.uqm_conv_get_rep(0), -100, 100);
@@ -309,8 +308,7 @@ function applyChoiceUsingWasm(
   const chapter = getChapter(prev.chapterId);
   const hub = dialogueTree[chapter.hubNodeId] ?? null;
 
-  const resolvedNextNodeId = resolveNextNodeId(choice, newSecrets);
-  const nextDialogue = resolvedNextNodeId ? dialogueTree[resolvedNextNodeId] ?? null : hub;
+  const nextDialogue = nextDialogueId ? dialogueTree[nextDialogueId] ?? null : hub;
 
   // Check events (same logic as TS engine)
   const newEvents = prev.events.map(event => {

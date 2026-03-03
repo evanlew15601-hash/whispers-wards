@@ -6,7 +6,6 @@ import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
 import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '../choiceLocks';
-import { resolveNextNodeId } from '../choiceNext';
 import { applyEffects, type GameEffect } from '../effects';
 import { evaluateChapterTransition, getChapter } from '../chapters';
 import { advanceProjectsOneTurn } from '../projects';
@@ -156,8 +155,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   // Most scenes should resolve back to the chapter hub rather than dropping the player
   // into a "no dialogue" state.
-  const resolvedNextNodeId = resolveNextNodeId(choice, withEffects.knownSecrets);
-  const nextDialogue = resolvedNextNodeId ? dialogueTree[resolvedNextNodeId] || null : hub;
+  const nextDialogue = choice.nextNodeId ? dialogueTree[choice.nextNodeId] || null : hub;
 
   return {
     ...withEffects,

@@ -29,24 +29,6 @@ describe('dialogueTree integrity', () => {
           expect(dialogueTree[choice.nextNodeId]).toBeTruthy();
         }
 
-        if (choice.nextNodeIdBySecrets) {
-          expect(Array.isArray(choice.nextNodeIdBySecrets)).toBe(true);
-          expect(choice.nextNodeIdBySecrets.length).toBeGreaterThan(0);
-
-          for (const rule of choice.nextNodeIdBySecrets) {
-            expect(Array.isArray(rule.requiresAnySecrets)).toBe(true);
-            expect(rule.requiresAnySecrets.length).toBeGreaterThan(0);
-            for (const secret of rule.requiresAnySecrets) {
-              expect(typeof secret).toBe('string');
-              expect(secret.trim().length).toBeGreaterThan(0);
-            }
-
-            if (rule.nextNodeId !== null) {
-              expect(dialogueTree[rule.nextNodeId]).toBeTruthy();
-            }
-          }
-        }
-
         if (choice.requiredReputation) {
           expect(factionIds.has(choice.requiredReputation.factionId)).toBe(true);
           expect(typeof choice.requiredReputation.min).toBe('number');
