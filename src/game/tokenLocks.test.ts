@@ -70,4 +70,37 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-4:resolved:publish');
     expect(next.knownTokens).toContain('tok:ch04:outcome:publish');
   });
+
+  it('locks chapter-6 outcomes behind proof tokens', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-6');
+
+    const decision = tree['ch6-decision'];
+    if (!decision) throw new Error('Expected ch6-decision');
+
+    const raid = decision.choices.find(c => c.id === 'ch6-decision-raid');
+    if (!raid) throw new Error('Expected ch6-decision-raid');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-6',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, raid)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch06:proof:seal'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, raid);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch6-ending-raid');
+    expect(next.milestones).toContain('chapter-6:resolved');
+    expect(next.milestones).toContain('chapter-6:resolved:raid');
+    expect(next.knownTokens).toContain('tok:ch06:outcome:raid');
+  });
 });

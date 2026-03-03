@@ -87,6 +87,23 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch05:proof:ember-price': [
     'Ask Renzo how to fund restraint: bonds, escrow, and compensation for legal harms.',
   ],
+
+  // Chapter VI — The Quiet Office
+  'tok:ch06:proof:visitor-log': [
+    'Check the visitor list in the quiet office. Initials and docket numbers can still point to a pattern.',
+  ],
+  'tok:ch06:proof:ledger': [
+    'Search the desk for the reroute schedule the office uses to steer trade without debate.',
+  ],
+  'tok:ch06:proof:seal': [
+    'Compare seal impressions to the annex authority mark. A signature disguised as routine is still a signature.',
+  ],
+  'tok:ch06:proof:ward-scratch': [
+    'Inspect the latch and hinge line for ward-scratches. Quiet magic is still policy.',
+  ],
+  'tok:ch06:proof:confession': [
+    'Press the registrar to admit what continuity means: authority that does not ask.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {
