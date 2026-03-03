@@ -5,7 +5,7 @@ import { buildEncounterDialogueNode } from '../encounters';
 import { dialogueTree } from '../data';
 import { getChapter } from '../chapters';
 import { applyManagementAction } from '../management/applyManagementAction';
-import { canEndTurn, canEnterPendingEncounter, canReturnToHub } from './gameMode';
+import { canEndTurn, canEnterPendingEncounter, canMakeChoice, canReturnToHub } from './gameMode';
 
 export type GameFlowEvent =
   | { type: 'choice'; choice: DialogueChoice }
@@ -16,6 +16,7 @@ export type GameFlowEvent =
 
 export function applyGameFlowEvent(prev: GameState, event: GameFlowEvent, engine: ConversationEngine): GameState {
   if (event.type === 'choice') {
+    if (!canMakeChoice(prev)) return prev;
     return engine.applyChoice(prev, event.choice);
   }
 
@@ -30,9 +31,13 @@ export function applyGameFlowEvent(prev: GameState, event: GameFlowEvent, engine
   if (event.type === 'enterPendingEncounter') {
     if (!canEnterPendingEncounter(prev)) return prev;
 
+    const encounter = prev.pendingEncounter!;
+
     return {
       ...prev,
-      currentDialogue: buildEncounterDialogueNode(prev.pendingEncounter!),
+      stepNumber: prev.stepNumber + 1,
+      currentDialogue: buildEncounterDialogueNode(encounter),
+      log: [...prev.log, `⚔ Encounter: ${encounter.title}`],
     };
   }
 

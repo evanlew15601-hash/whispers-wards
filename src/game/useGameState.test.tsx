@@ -107,6 +107,7 @@ describe('useGameState', () => {
       knownSecrets: [],
       turnNumber: 10,
       log: [],
+      stepNumber: 10,
       pendingEncounter: {
         id: 'enc-test',
         kind: 'embargo',
@@ -149,12 +150,18 @@ describe('useGameState', () => {
     expect(result.current.state.pendingEncounter?.id).toBe('enc-test');
     expect(result.current.state.currentDialogue?.id).toBe('concord-hub');
 
+    const beforeStep = result.current.state.stepNumber;
+    const beforeLogLen = result.current.state.log.length;
+
     await act(async () => {
       result.current.enterPendingEncounter();
     });
 
     expect(result.current.state.currentDialogue?.id).toBe('encounter:enc-test');
     expect(result.current.state.currentDialogue?.choices.length).toBeGreaterThan(0);
+    expect(result.current.state.stepNumber).toBe(beforeStep + 1);
+    expect(result.current.state.log.length).toBe(beforeLogLen + 1);
+    expect(result.current.state.log.at(-1)).toBe('⚔ Encounter: Embargo crisis on Ash Road');
   });
 
   it('returnToHub logs and increments stepNumber when leaving a scene', async () => {

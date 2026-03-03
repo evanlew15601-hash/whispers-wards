@@ -27,6 +27,11 @@ export function isInEncounter(state: GameState): boolean {
   return getGameMode(state) === 'encounter';
 }
 
+export function canMakeChoice(state: GameState): boolean {
+  const mode = getGameMode(state);
+  return (mode === 'hub' || mode === 'scene' || mode === 'encounter') && Boolean(state.currentDialogue);
+}
+
 export function canEndTurn(state: GameState): boolean {
   return isInHub(state);
 }
