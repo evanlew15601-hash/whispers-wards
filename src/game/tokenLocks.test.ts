@@ -202,4 +202,37 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-9:resolved:freeze');
     expect(next.knownTokens).toContain('tok:ch09:outcome:freeze');
   });
+
+  it('locks chapter-10 oversight option behind charter + templates proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-10');
+
+    const decision = tree['ch10-decision'];
+    if (!decision) throw new Error('Expected ch10-decision');
+
+    const oversight = decision.choices.find(c => c.id === 'ch10-decision-oversight');
+    if (!oversight) throw new Error('Expected ch10-decision-oversight');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-10',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, oversight)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch10:proof:charter', 'tok:ch10:proof:templates'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, oversight);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch10-ending-oversight');
+    expect(next.milestones).toContain('chapter-10:resolved');
+    expect(next.milestones).toContain('chapter-10:resolved:oversight');
+    expect(next.knownTokens).toContain('tok:ch10:outcome:oversight');
+  });
 });

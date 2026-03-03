@@ -149,6 +149,26 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch09:proof:seal': [
     'Compare seal impressions tied to registry entries. A bribe is still a clue if it names a hand.',
   ],
+
+  // Chapter X — The Corridor King
+  'tok:ch10:proof:charter': [
+    'Read the envoy charter copy near the top landing. Old clauses sometimes become new weapons.',
+  ],
+  'tok:ch10:proof:signet': [
+    'Inspect the signet book for new emergency impressions used too often to still be “rare.”',
+  ],
+  'tok:ch10:proof:templates': [
+    'Study the continuity templates. The corridor teaches clerks what to obey without naming authority.',
+  ],
+  'tok:ch10:proof:memoirs': [
+    'Find the memoir of an earlier envoy. The failures they wrote down are still maps.',
+  ],
+  'tok:ch10:proof:bundle': [
+    'Use public attention to demand a sealed docket bundle. Docket ranges can reveal a Concord hand behind reroutes.',
+  ],
+  'tok:ch10:proof:seal-match': [
+    'Compare seized stampwork to the stair signets. If the impressions match, the corridor has a recognized toolset.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {
