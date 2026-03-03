@@ -169,6 +169,23 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch10:proof:seal-match': [
     'Compare seized stampwork to the stair signets. If the impressions match, the corridor has a recognized toolset.',
   ],
+
+  // Chapter XI — Drafting Table
+  'tok:ch11:proof:oathlog': [
+    'Read the Iron oath-log and what it expects from signatures, rank, and consequence.',
+  ],
+  'tok:ch11:proof:wardfolio': [
+    'Study Verdant ward craft with an eye for what it treats as permanent harm and what it makes expensive.',
+  ],
+  'tok:ch11:proof:charter': [
+    'Review the Ember charter annex and the enforcement assumptions baked into its permissions.',
+  ],
+  'tok:ch11:proof:precedent': [
+    'Consult Concord precedent notes: legitimacy is witnessed and repeated, not declared once.',
+  ],
+  'tok:ch11:proof:margin': [
+    'Track the red-ink margin edits across drafts. An unsigned edit is still a decision.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {

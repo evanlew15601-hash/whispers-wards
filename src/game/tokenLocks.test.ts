@@ -235,4 +235,37 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-10:resolved:oversight');
     expect(next.knownTokens).toContain('tok:ch10:outcome:oversight');
   });
+
+  it('locks chapter-11 red-ink clause behind margin proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-11');
+
+    const draft = tree['ch11-draft'];
+    if (!draft) throw new Error('Expected ch11-draft');
+
+    const margin = draft.choices.find(c => c.id === 'ch11-draft-expose');
+    if (!margin) throw new Error('Expected ch11-draft-expose');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-11',
+      chapterTurn: 1,
+      currentDialogue: draft,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, margin)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch11:proof:margin'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, margin);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch11-ending-margin');
+    expect(next.milestones).toContain('chapter-11:resolved');
+    expect(next.milestones).toContain('chapter-11:resolved:margin');
+    expect(next.knownTokens).toContain('tok:ch11:outcome:margin');
+  });
 });
