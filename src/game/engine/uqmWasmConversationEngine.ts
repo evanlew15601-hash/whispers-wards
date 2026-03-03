@@ -598,13 +598,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
         const reqMin = exp.uqm_conv_choice_get_req_min!(i);
         const reqFactionId = reqFaction >= 0 ? factionIdFromIndex(reqFaction) : null;
 
-        const effects: ChoiceUiHint['effects'] = [];
-        const d0 = exp.uqm_conv_choice_get_d0!(i);
-        const d1 = exp.uqm_conv_choice_get_d1!(i);
-        const d2 = exp.uqm_conv_choice_get_d2!(i);
-        if (d0) effects.push({ factionId: 'iron-pact', reputationChange: d0 });
-        if (d1) effects.push({ factionId: 'verdant-court', reputationChange: d1 });
-        if (d2) effects.push({ factionId: 'ember-throne', reputationChange: d2 });
+        const effects = choice.effects;
 
         const revealLo = exp.uqm_conv_choice_get_reveal_lo!(i) >>> 0;
         const revealHi = exp.uqm_conv_choice_get_reveal_hi!(i) >>> 0;

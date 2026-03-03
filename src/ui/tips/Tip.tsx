@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { CircleHelp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useTips } from '@/ui/tips/useTips';
 
 export type TipProps = {
@@ -53,12 +53,14 @@ const Tip = ({ id, content, label, kind, className }: TipProps) => {
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{trigger}</TooltipTrigger>
-      <TooltipContent>
-        <div className="max-w-72 text-sm">{content}</div>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+        <TooltipContent>
+          <div className="max-w-72 text-sm">{content}</div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 

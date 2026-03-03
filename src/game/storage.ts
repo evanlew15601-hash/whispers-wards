@@ -363,10 +363,12 @@ const migrateSlotV1ToV2 = (slot: PersistedSlotV1 | undefined): PersistedSlotV2 |
 
   const s = (slot as PersistedSlotV1).state as Record<string, unknown> | null;
   const stateCandidate = {
+    player: s?.player,
     factions: s?.factions,
     events: s?.events,
     knownSecrets: s?.knownSecrets,
     knownTokens: s?.knownTokens,
+    selectedChoiceIds: s?.selectedChoiceIds,
     turnNumber: s?.turnNumber,
     log: s?.log,
     rngSeed: s?.rngSeed,

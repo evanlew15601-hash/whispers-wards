@@ -157,5 +157,3 @@ export function useGameState() {
     returnToHub,
   };
 }
-
-}

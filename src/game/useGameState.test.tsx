@@ -18,7 +18,7 @@ vi.mock('sonner', () => ({
 
 describe('useGameState', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     localStorage.clear();
     vi.resetModules();
   });

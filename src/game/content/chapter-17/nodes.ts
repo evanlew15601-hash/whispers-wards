@@ -11,7 +11,7 @@ export const dialogueTree = defineDialogueTree({
   'chapter-17-hub': {
     id: 'chapter-17-hub',
     speaker: 'Field Notes',
-    text: 'A government always serves someone first.
+    text: `A government always serves someone first.
 
 Not the public.
 
@@ -23,39 +23,39 @@ You have followed desks.
 
 You have followed rooms.
 
-Now you follow what gets delivered first, and to whom.',
+Now you follow what gets delivered first, and to whom.`,
     choices: [
       {
         id: 'ch17-hub-distribution',
-        text: 'Find the distribution schedule and see which offices receive approved templates before the archive does.',
+        text: `Find the distribution schedule and see which offices receive approved templates before the archive does.`,
         effects: [],
         grantsTokens: ['tok:ch17:proof:distribution'],
         nextNodeId: 'ch17-distribution',
       },
       {
         id: 'ch17-hub-private',
-        text: 'Follow the approval seal’s travel log and see where it goes when it is “not in use.”',
+        text: `Follow the approval seal’s travel log and see where it goes when it is “not in use.”`,
         effects: [],
         grantsTokens: ['tok:ch17:proof:seallog'],
         nextNodeId: 'ch17-seallog',
       },
       {
         id: 'ch17-hub-queue',
-        text: 'Check which cases get “routine” fast-tracked after your last intervention.',
+        text: `Check which cases get “routine” fast-tracked after your last intervention.`,
         effects: [],
         grantsTokens: ['tok:ch17:proof:queue'],
         nextNodeId: 'ch17-queue',
       },
       {
         id: 'ch17-hub-benefit',
-        text: 'Compare the first deliveries to the delegations’ stated foundations and see who is being insulated from blame.',
+        text: `Compare the first deliveries to the delegations’ stated foundations and see who is being insulated from blame.`,
         effects: [],
         grantsTokens: ['tok:ch17:proof:beneficiary'],
         nextNodeId: 'ch17-beneficiary',
       },
       {
         id: 'ch17-hub-decision',
-        text: 'Decide what to do with the first beneficiary.',
+        text: `Decide what to do with the first beneficiary.`,
         effects: [],
         hideWhenLockedBySecrets: true,
         requiresAnyTokens: [
@@ -68,7 +68,7 @@ Now you follow what gets delivered first, and to whom.',
       },
       {
         id: 'ch17-hub-back',
-        text: 'End here for now.',
+        text: `End here for now.`,
         effects: [],
         nextNodeId: null,
       },
@@ -78,7 +78,7 @@ Now you follow what gets delivered first, and to whom.',
   'ch17-distribution': {
     id: 'ch17-distribution',
     speaker: 'Field Notes',
-    text: 'The distribution schedule is a list of rooms that pretend to be equal.
+    text: `The distribution schedule is a list of rooms that pretend to be equal.
 
 The order gives it away.
 
@@ -94,11 +94,11 @@ One to a warden’s clerk.
 
 One to a counting-house courier.
 
-The delegations receive tomorrow before Concord is allowed to remember it.',
+The delegations receive tomorrow before Concord is allowed to remember it.`,
     choices: [
       {
         id: 'ch17-distribution-note',
-        text: 'Keep the order in mind: delegation liaisons receive approved language before the archive does.',
+        text: `Keep the order in mind: delegation liaisons receive approved language before the archive does.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
         revealsInfo: 'Distribution schedules send sealed packets to delegation liaison offices before witness desks or archives, giving delegations early access to approved language.',
@@ -109,7 +109,7 @@ The delegations receive tomorrow before Concord is allowed to remember it.',
   'ch17-seallog': {
     id: 'ch17-seallog',
     speaker: 'Field Notes',
-    text: 'The seal’s travel log is kept like a confession nobody intends to make.
+    text: `The seal’s travel log is kept like a confession nobody intends to make.
 
 Hours.
 
@@ -125,11 +125,11 @@ Not a committee.
 
 Private rooms where people can claim they never approved anything.
 
-They only “held the seal.”',
+They only “held the seal.”`,
     choices: [
       {
         id: 'ch17-seallog-note',
-        text: 'Keep the custody trick in mind: approvals hide inside “holding,” not signing.',
+        text: `Keep the custody trick in mind: approvals hide inside “holding,” not signing.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
         revealsInfo: 'The approval seal travel log emphasizes “custody” over “use,” implying approvals are hidden as mere holding rather than named signing.',
@@ -140,7 +140,7 @@ They only “held the seal.”',
   'ch17-queue': {
     id: 'ch17-queue',
     speaker: 'Field Notes',
-    text: 'You read the fast-track queue.
+    text: `You read the fast-track queue.
 
 The cases that move first are not the most urgent.
 
@@ -152,11 +152,11 @@ The corridor exists to spare them that sentence.
 
 It is not mercy.
 
-It is insulation.',
+It is insulation.`,
     choices: [
       {
         id: 'ch17-queue-note',
-        text: 'Keep the pattern in mind: fast-tracked cases are the ones that would force an explicit delegation yes.',
+        text: `Keep the pattern in mind: fast-tracked cases are the ones that would force an explicit delegation yes.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
         revealsInfo: 'Fast-tracked cases cluster around politically dangerous decisions that would otherwise require explicit delegation approval.',
@@ -167,7 +167,7 @@ It is insulation.',
   'ch17-beneficiary': {
     id: 'ch17-beneficiary',
     speaker: 'Field Notes',
-    text: 'You compare the first deliveries to the delegations’ foundations.
+    text: `You compare the first deliveries to the delegations’ foundations.
 
 Iron wants consequence without debate.
 
@@ -187,11 +187,11 @@ It is the people who need to be surprised last: delegation principals and their 
 
 They get policy without signatures.
 
-They get outcomes without ownership.',
+They get outcomes without ownership.`,
     choices: [
       {
         id: 'ch17-beneficiary-note',
-        text: 'Keep the conclusion in mind: the loop first serves leaders who need plausible deniability.',
+        text: `Keep the conclusion in mind: the loop first serves leaders who need plausible deniability.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
         revealsInfo: 'Comparing deliveries suggests the loop serves delegation principals and fixers first, giving them outcomes without signatures and insulating them from blame.',
@@ -202,17 +202,17 @@ They get outcomes without ownership.',
   'ch17-decision': {
     id: 'ch17-decision',
     speaker: 'Field Notes',
-    text: 'You have enough to act.
+    text: `You have enough to act.
 
 A corridor survives by serving whoever can punish it.
 
 If you want it to stop serving deniability first, you have to change what gets delivered first.
 
-You decide what Concord will repeat.',
+You decide what Concord will repeat.`,
     choices: [
       {
         id: 'ch17-decision-concord',
-        text: 'Force simultaneous delivery: archive and witness desks receive approved templates at the same time as delegations.',
+        text: `Force simultaneous delivery: archive and witness desks receive approved templates at the same time as delegations.`,
         effects: [],
         exclusiveGroup: 'ch17-beneficiary',
         requiresAnyTokens: ['tok:ch17:proof:distribution', 'tok:ch17:proof:seallog'],
@@ -228,7 +228,7 @@ You decide what Concord will repeat.',
       },
       {
         id: 'ch17-decision-iron',
-        text: 'Force ownership: delegation liaisons must attach a named rank to any request for fast-track routine.',
+        text: `Force ownership: delegation liaisons must attach a named rank to any request for fast-track routine.`,
         effects: [{ factionId: 'iron-pact', reputationChange: 2 }],
         exclusiveGroup: 'ch17-beneficiary',
         requiresAnyTokens: ['tok:ch17:proof:queue', 'tok:ch17:proof:beneficiary'],
@@ -243,7 +243,7 @@ You decide what Concord will repeat.',
       },
       {
         id: 'ch17-decision-verdant',
-        text: 'Force durable traces: delegation packets must carry a ward mark that survives copying and reveals first recipients.',
+        text: `Force durable traces: delegation packets must carry a ward mark that survives copying and reveals first recipients.`,
         effects: [{ factionId: 'verdant-court', reputationChange: 2 }],
         exclusiveGroup: 'ch17-beneficiary',
         requiresAnyTokens: ['tok:ch17:proof:distribution', 'tok:ch17:proof:beneficiary'],
@@ -259,7 +259,7 @@ You decide what Concord will repeat.',
       },
       {
         id: 'ch17-decision-ember',
-        text: 'Force prices: delegation requests for routine fast-track become bondable liabilities.',
+        text: `Force prices: delegation requests for routine fast-track become bondable liabilities.`,
         effects: [{ factionId: 'ember-throne', reputationChange: 1 }],
         exclusiveGroup: 'ch17-beneficiary',
         requiresAnyTokens: ['tok:ch17:proof:queue', 'tok:ch17:proof:seallog'],
@@ -275,7 +275,7 @@ You decide what Concord will repeat.',
       },
       {
         id: 'ch17-decision-expose',
-        text: 'Expose the order: publish the distribution schedule and the seal custody column as proof of deniability first.',
+        text: `Expose the order: publish the distribution schedule and the seal custody column as proof of deniability first.`,
         effects: [{ factionId: 'iron-pact', reputationChange: 1 }, { factionId: 'ember-throne', reputationChange: -1 }],
         exclusiveGroup: 'ch17-beneficiary',
         requiresAllTokens: ['tok:ch17:proof:distribution', 'tok:ch17:proof:seallog'],
@@ -291,7 +291,7 @@ You decide what Concord will repeat.',
       },
       {
         id: 'ch17-decision-quiet',
-        text: 'Do not strike yet. Watch which principal uses the first delivery to steer the next crisis.',
+        text: `Do not strike yet. Watch which principal uses the first delivery to steer the next crisis.`,
         effects: [],
         exclusiveGroup: 'ch17-beneficiary',
         grantsTokens: ['tok:ch17:outcome:quiet'],
@@ -305,7 +305,7 @@ You decide what Concord will repeat.',
       },
       {
         id: 'ch17-decision-back',
-        text: 'Not yet. Return to the schedule.',
+        text: `Not yet. Return to the schedule.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
       },
@@ -315,7 +315,7 @@ You decide what Concord will repeat.',
   'ch17-ending-concord': {
     id: 'ch17-ending-concord',
     speaker: 'Field Notes',
-    text: 'You force simultaneity.
+    text: `You force simultaneity.
 
 It does not make the delegations honest.
 
@@ -323,11 +323,11 @@ It makes them early no longer.
 
 That is enough to change how a corridor thinks.
 
-Now it cannot protect deniability without creating record at the same time.',
+Now it cannot protect deniability without creating record at the same time.`,
     choices: [
       {
         id: 'ch17-ending-concord-back',
-        text: 'Return to the Hall.',
+        text: `Return to the Hall.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
       },
@@ -337,7 +337,7 @@ Now it cannot protect deniability without creating record at the same time.',
   'ch17-ending-iron': {
     id: 'ch17-ending-iron',
     speaker: 'Field Notes',
-    text: 'You force rank ownership.
+    text: `You force rank ownership.
 
 Someone will refuse.
 
@@ -345,11 +345,11 @@ Refusal is evidence.
 
 Iron was built on the belief that a promise without consequence is a lie.
 
-Now the corridor will have to decide whether it wants speed more than it wants to stay anonymous.',
+Now the corridor will have to decide whether it wants speed more than it wants to stay anonymous.`,
     choices: [
       {
         id: 'ch17-ending-iron-back',
-        text: 'Return to the Hall.',
+        text: `Return to the Hall.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
       },
@@ -359,7 +359,7 @@ Now the corridor will have to decide whether it wants speed more than it wants t
   'ch17-ending-verdant': {
     id: 'ch17-ending-verdant',
     speaker: 'Field Notes',
-    text: 'You force traces into the delegation packets.
+    text: `You force traces into the delegation packets.
 
 Verdant will call it restraint.
 
@@ -367,11 +367,11 @@ A trace does not stop a hand.
 
 It tells you which hand to watch.
 
-Now first beneficiaries will leave marks when they take tomorrow.',
+Now first beneficiaries will leave marks when they take tomorrow.`,
     choices: [
       {
         id: 'ch17-ending-verdant-back',
-        text: 'Return to the Hall.',
+        text: `Return to the Hall.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
       },
@@ -381,7 +381,7 @@ Now first beneficiaries will leave marks when they take tomorrow.',
   'ch17-ending-ember': {
     id: 'ch17-ending-ember',
     speaker: 'Field Notes',
-    text: 'You put a price on fast-track deniability.
+    text: `You put a price on fast-track deniability.
 
 Ember will understand.
 
@@ -389,11 +389,11 @@ So will everyone who has ever tried to call a bribe a fee.
 
 Now the first beneficiary will have to pay to avoid owning the outcome.
 
-Paying is a kind of confession.',
+Paying is a kind of confession.`,
     choices: [
       {
         id: 'ch17-ending-ember-back',
-        text: 'Return to the Hall.',
+        text: `Return to the Hall.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
       },
@@ -403,7 +403,7 @@ Paying is a kind of confession.',
   'ch17-ending-expose': {
     id: 'ch17-ending-expose',
     speaker: 'Field Notes',
-    text: 'You publish the order of delivery.
+    text: `You publish the order of delivery.
 
 It looks small.
 
@@ -417,11 +417,11 @@ Now the Hall has to argue about why delegations receive tomorrow first.
 
 That argument is a blade.
 
-It cuts deniability.',
+It cuts deniability.`,
     choices: [
       {
         id: 'ch17-ending-expose-back',
-        text: 'Return to the Hall.',
+        text: `Return to the Hall.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
       },
@@ -431,7 +431,7 @@ It cuts deniability.',
   'ch17-ending-quiet': {
     id: 'ch17-ending-quiet',
     speaker: 'Field Notes',
-    text: 'You choose to watch.
+    text: `You choose to watch.
 
 A corridor that serves deniability will always be used.
 
@@ -443,11 +443,11 @@ By a principal who cannot afford to sign.
 
 You will see the hand.
 
-Then you will decide what kind of peace Concord deserves.',
+Then you will decide what kind of peace Concord deserves.`,
     choices: [
       {
         id: 'ch17-ending-quiet-back',
-        text: 'Return to the Hall.',
+        text: `Return to the Hall.`,
         effects: [],
         nextNodeId: 'chapter-17-hub',
       },

@@ -102,7 +102,7 @@ describe('GameMenu', () => {
 
     const dialog = await openMenu();
 
-    fireEvent.click(within(dialog).getByRole('tab', { name: /^load$/i }));
+    fireEvent.mouseDown(within(dialog).getByRole('tab', { name: /^load$/i }));
 
     const loadPanel = getActiveTabPanel(dialog);
     const loadButtons = within(loadPanel).getAllByRole('button', { name: /^load$/i });
@@ -128,7 +128,7 @@ describe('GameMenu', () => {
 
     const dialog = await openMenu();
 
-    fireEvent.click(within(dialog).getByRole('tab', { name: /^load$/i }));
+    fireEvent.mouseDown(within(dialog).getByRole('tab', { name: /^load$/i }));
 
     const loadPanel = getActiveTabPanel(dialog);
 
@@ -158,7 +158,7 @@ describe('GameMenu', () => {
     );
 
     const dialog = await openMenu();
-    fireEvent.click(within(dialog).getByRole('tab', { name: /^campaign$/i }));
+    fireEvent.mouseDown(within(dialog).getByRole('tab', { name: /^campaign$/i }));
 
     const panel = getActiveTabPanel(dialog);
     fireEvent.click(within(panel).getByRole('button', { name: /^exit to title$/i }));
@@ -187,7 +187,7 @@ describe('GameMenu', () => {
     );
 
     const dialog = await openMenu();
-    fireEvent.click(within(dialog).getByRole('tab', { name: /^campaign$/i }));
+    fireEvent.mouseDown(within(dialog).getByRole('tab', { name: /^campaign$/i }));
 
     const panel = getActiveTabPanel(dialog);
     fireEvent.click(within(panel).getByRole('button', { name: /^restart campaign$/i }));

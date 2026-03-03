@@ -87,7 +87,7 @@ describe('SaveLoadDialog', () => {
 
     const dialog = await screen.findByRole('dialog');
 
-    fireEvent.click(within(dialog).getByRole('tab', { name: /^load$/i }));
+    fireEvent.mouseDown(within(dialog).getByRole('tab', { name: /^load$/i }));
 
     const loadPanel = getActiveTabPanel(dialog);
     const loadButtons = within(loadPanel).getAllByRole('button', { name: /^load$/i });
