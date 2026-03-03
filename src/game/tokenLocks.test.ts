@@ -136,4 +136,70 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-7:resolved:expose');
     expect(next.knownTokens).toContain('tok:ch07:outcome:expose');
   });
+
+  it('locks chapter-8 audit option behind ledger + signature proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-8');
+
+    const decision = tree['ch8-decision'];
+    if (!decision) throw new Error('Expected ch8-decision');
+
+    const audit = decision.choices.find(c => c.id === 'ch8-decision-audit');
+    if (!audit) throw new Error('Expected ch8-decision-audit');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-8',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, audit)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch08:proof:ledger', 'tok:ch08:proof:signature'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, audit);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch8-ending-audit');
+    expect(next.milestones).toContain('chapter-8:resolved');
+    expect(next.milestones).toContain('chapter-8:resolved:audit');
+    expect(next.knownTokens).toContain('tok:ch08:outcome:audit');
+  });
+
+  it('locks chapter-9 freeze option behind registry proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-9');
+
+    const decision = tree['ch9-decision'];
+    if (!decision) throw new Error('Expected ch9-decision');
+
+    const freeze = decision.choices.find(c => c.id === 'ch9-decision-freeze');
+    if (!freeze) throw new Error('Expected ch9-decision-freeze');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-9',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, freeze)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch09:proof:registry'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, freeze);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch9-ending-freeze');
+    expect(next.milestones).toContain('chapter-9:resolved');
+    expect(next.milestones).toContain('chapter-9:resolved:freeze');
+    expect(next.knownTokens).toContain('tok:ch09:outcome:freeze');
+  });
 });

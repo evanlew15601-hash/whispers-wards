@@ -121,6 +121,34 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch07:proof:ward': [
     'Ask the Verdant warder what marks emergency authority leaves on lock-gates and stampwork.',
   ],
+
+  // Chapter VIII — The Quay Ledger
+  'tok:ch08:proof:ledger': [
+    'Locate the quay ledger and look for tallies that track compliance rather than coin.',
+  ],
+  'tok:ch08:proof:signature': [
+    'Inspect the reroute slips and stamp formats. The paper may never name authority, but it can still show it.',
+  ],
+  'tok:ch08:proof:cutouts': [
+    'Search discarded manifests for cut names and overwritten numbers. Corrections are camouflage.',
+  ],
+  'tok:ch08:proof:bond': [
+    'Ask who is collecting emergency fees and where the coin is routed. Bonds leave trails.',
+  ],
+
+  // Chapter IX — The Docket Stair
+  'tok:ch09:proof:stairlog': [
+    'Check the docket-stair logbook for initials and ranges that repeat whenever reroutes surge.',
+  ],
+  'tok:ch09:proof:registry': [
+    'Find the archive index that maps docket ranges to templates. The corridor has a catalog.',
+  ],
+  'tok:ch09:proof:ward': [
+    'Inspect the banister and landings for ward-scratches and wiped counterseals. The stair is where marks get sanded down.',
+  ],
+  'tok:ch09:proof:seal': [
+    'Compare seal impressions tied to registry entries. A bribe is still a clue if it names a hand.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {
