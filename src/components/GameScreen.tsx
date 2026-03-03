@@ -540,37 +540,3 @@ const GameScreen = ({
 };
 
 export default GameScreen;
-oice={makeChoice}
-                  knownSecrets={state.knownSecrets}
-                  factions={state.factions}
-                  selectedChoiceIds={state.selectedChoiceIds}
-                  playerName={state.player.name}
-                  playerPortraitId={state.player.portraitId}
-                  lockedChoices={choiceLockedFlags}
-                  choiceUiHints={choiceUiHints}
-                />
-              )}
-            </>
-          )}
-        </main>
-
-        {!focusMode && (
-          <motion.aside className="w-full shrink-0 lg:w-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-            <InfoPanel
-              currentDialogue={state.currentDialogue}
-              knownSecrets={state.knownSecrets}
-              turnNumber={state.turnNumber}
-              log={state.log}
-              world={state.world}
-              factions={state.factions}
-              pendingEncounter={state.pendingEncounter}
-              player={state.player}
-            />
-          </motion.aside>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default GameScreen;
