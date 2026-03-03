@@ -311,7 +311,9 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, knownTokens = EMPTY_TOKEN
   const aura = node.speakerFaction ? factionAuraVars[node.speakerFaction] ?? 'var(--gold-glow)' : 'var(--gold-glow)';
   const SpeakerIcon = node.speakerFaction ? factionIcons[node.speakerFaction] ?? Sparkles : Sparkles;
 
-  const portrait = useMemo(() => getSpeakerPortrait(node.speaker, node.speakerFaction), [node.speaker, node.speakerFaction]);
+  const displaySpeaker = node.speaker === 'Narrator' ? 'Field Notes' : node.speaker;
+
+  const portrait = useMemo(() => getSpeakerPortrait(displaySpeaker, node.speakerFaction), [displaySpeaker, node.speakerFaction]);
 
   const isEncounterNode = node.id.startsWith('encounter:');
 
@@ -348,7 +350,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, knownTokens = EMPTY_TOKEN
 
             <div className="flex flex-col">
               <span className="font-display text-sm tracking-widest text-primary uppercase">
-                {node.speaker}
+                {displaySpeaker}
               </span>
               <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
                 {isRevealing

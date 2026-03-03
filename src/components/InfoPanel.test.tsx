@@ -31,7 +31,7 @@ describe('InfoPanel leads', () => {
 
   const node: DialogueNode = {
     id: 'test-node',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'A short line of dialogue.',
     choices: [
       {

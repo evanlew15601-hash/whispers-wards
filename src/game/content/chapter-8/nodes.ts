@@ -358,7 +358,7 @@ The work is neat. The intent is not.',
 
 "Fees are how you keep promises when nobody trusts vows," she says.
 
-She taps the ledger box with one finger. "Someone else is learning the same lesson."',
+"Ash Road taught us that routes are only as real as the paper that survives a bad season." She taps the ledger box with one finger. "Someone else is learning the same lesson."',
     choices: [
       {
         id: 'ch8-fees-escrow',

@@ -146,6 +146,28 @@ export const codexEntries: CodexEntry[] = [
     ],
   },
   {
+    id: 'administrative-continuity',
+    title: 'Administrative Continuity',
+    category: 'Law & Custom',
+    summary: 'A Concord habit: turning decisions into procedure so nobody has to admit they chose.',
+    paragraphs: [
+      'Continuity is not a law and not a delegation. It is a method: templates, docket ranges, neutral seals, and language designed to sound inevitable.',
+      'It thrives after crises. When delegations agree on an outcome but fear the blame, continuity offers a way to act “routinely” while calling the choice an emergency.',
+      'An envoy can fight it by naming owners (signatories, countersigns, witnesses) or by making its actions leave marks that survive filing.',
+    ],
+  },
+  {
+    id: 'docket-stair',
+    title: 'The Docket Stair',
+    category: 'Places',
+    summary: 'A service stair behind the records rooms where corridor authority becomes docket ranges.',
+    paragraphs: [
+      'Clerks use the docket stair to move bundles between copy rooms, registries, and the archive without drawing attention.',
+      'It is rumored to have been cut after an earlier Concord settlement collapsed into interpretive warfare: a year spent arguing what the words meant.',
+      'On the stair, decisions shed names. They become numbers. That distance is the point.',
+    ],
+  },
+  {
     id: 'wards',
     title: 'Wards',
     category: 'Magic',

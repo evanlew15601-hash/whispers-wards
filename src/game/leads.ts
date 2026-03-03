@@ -186,6 +186,23 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch11:proof:margin': [
     'Track the red-ink margin edits across drafts. An unsigned edit is still a decision.',
   ],
+
+  // Chapter XII — The Red Margin
+  'tok:ch12:proof:copyroom': [
+    'Visit the copy room. The people who move drafts know where red ink enters the process.',
+  ],
+  'tok:ch12:proof:ink': [
+    'Track the red ink requisitions. Scarce supplies create a paper trail even when names are hidden.',
+  ],
+  'tok:ch12:proof:witness': [
+    'Check the witness desk for which edits were made in the open and which were treated as routine.',
+  ],
+  'tok:ch12:proof:wardmarks': [
+    'Inspect the filing corridor for subtle ward marks that delay scrutiny without looking like a barrier.',
+  ],
+  'tok:ch12:proof:counter': [
+    'Compare your protocol to the red ink edits. A counter-protocol in the margins reveals what the corridor fears.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {

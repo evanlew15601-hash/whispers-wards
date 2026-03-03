@@ -268,4 +268,37 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-11:resolved:margin');
     expect(next.knownTokens).toContain('tok:ch11:outcome:margin');
   });
+
+  it('locks chapter-12 expose option behind counter-protocol proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-12');
+
+    const decision = tree['ch12-decision'];
+    if (!decision) throw new Error('Expected ch12-decision');
+
+    const expose = decision.choices.find(c => c.id === 'ch12-decision-expose');
+    if (!expose) throw new Error('Expected ch12-decision-expose');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-12',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, expose)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch12:proof:counter'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, expose);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch12-ending-expose');
+    expect(next.milestones).toContain('chapter-12:resolved');
+    expect(next.milestones).toContain('chapter-12:resolved:expose');
+    expect(next.knownTokens).toContain('tok:ch12:outcome:expose');
+  });
 });

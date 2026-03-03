@@ -149,7 +149,9 @@ Continuity is learning how to look like traffic.',
     speaker: 'Deputy Registrar Lysa Renn',
     text: '"It is for distance," Renn says.
 
-"Orders come down the stair as docket numbers, not as decisions. If a delegation objects, the paper says the paper did it."',
+"Iron issues ranks. Verdant issues wards. Ember issues invoices." They gesture toward the stair.
+
+"This issues numbers. Orders come down as docket ranges, not as decisions. If a delegation objects, the paper says the paper did it."',
     choices: [
       {
         id: 'ch9-registrar-ask-back',
