@@ -10,7 +10,7 @@ export const initialEvents: GameEvent[] = chapter1Events;
 export const dialogueTree = defineDialogueTree({
   'chapter-12-hub': {
     id: 'chapter-12-hub',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'Every law has a margin.
 
 You have seen what the delegations write when they expect to be obeyed.
@@ -174,7 +174,7 @@ They slide a sheet toward you. "These edits were witnessed. These were not."',
 
   'ch12-wardmarks': {
     id: 'ch12-wardmarks',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'The corridor outside the copy rooms carries small ward marks.
 
 Not the kind that stop you.
@@ -197,7 +197,7 @@ Concord calls it “workflow.”',
 
   'ch12-payoff-margin': {
     id: 'ch12-payoff-margin',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'You compare your protocol draft to the red ink edits.
 
 The edits are surgical.
@@ -218,7 +218,7 @@ The corridor is not only moving paper. It is rewriting the meaning of restraint.
 
   'ch12-decision': {
     id: 'ch12-decision',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'You have enough to act.
 
 Red ink is not a person. It is a practice.
@@ -333,7 +333,7 @@ You choose what kind of proof the Hall will be forced to live with.',
 
   'ch12-ending-chain': {
     id: 'ch12-ending-chain',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'Rank is a kind of honesty.
 
 It does not stop abuse. It tells you whose hand to watch.
@@ -353,7 +353,7 @@ You have made that pretense more expensive.',
 
   'ch12-ending-ward': {
     id: 'ch12-ending-ward',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'You bind margin edits to marks that survive filing.
 
 Verdant will call it restraint.
@@ -373,7 +373,7 @@ The corridor will call it an obstacle and start looking for a cleaner color of i
 
   'ch12-ending-bond': {
     id: 'ch12-ending-bond',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'You attach debt to edits.
 
 Someone will stop writing in red.
@@ -393,7 +393,7 @@ In the Hall, accountability often arrives dressed as accounting.',
 
   'ch12-ending-record': {
     id: 'ch12-ending-record',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'You force edits back into the witness cycle.
 
 That does not stop the corridor.
@@ -413,7 +413,7 @@ The corridor will now choose its moments more carefully, and the Hall will have 
 
   'ch12-ending-expose': {
     id: 'ch12-ending-expose',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'You publish the counter-protocol.
 
 You do not prove one villain.
@@ -433,7 +433,7 @@ The Hall will argue about whether the habit was “necessary.” That argument i
 
   'ch12-ending-quiet': {
     id: 'ch12-ending-quiet',
-    speaker: 'Narrator',
+    speaker: 'Field Notes',
     text: 'You keep the red ink examples.
 
 You wait.

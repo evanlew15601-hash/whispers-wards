@@ -203,6 +203,43 @@ const proofLeadHintsBySecret: Record<string, string[]> = {
   'tok:ch12:proof:counter': [
     'Compare your protocol to the red ink edits. A counter-protocol in the margins reveals what the corridor fears.',
   ],
+
+  // Chapter XIII — The First Recipient
+  'tok:ch13:proof:bundlelog': [
+    'Check the delivery log for corrected bundles. The corridor’s first address is often a desk, not a title.',
+  ],
+  'tok:ch13:proof:runner': [
+    'Speak to a stair runner. Runners know who is allowed to be surprised last.',
+  ],
+  'tok:ch13:proof:seals': [
+    'Inspect bundle seals and compare them to the signet book. Routine use of emergency marks is a tell.',
+  ],
+  'tok:ch13:proof:desk': [
+    'Search the first recipient desk and note what tools it keeps close.',
+  ],
+  'tok:ch13:proof:route': [
+    'Follow the ink requisition range. If the trail points to a desk, someone designed anonymity.',
+  ],
+  'tok:ch13:proof:unwitnessed': [
+    'Identify which corrections are never witnessed. Unwitnessed edits cluster where ownership would otherwise be forced.',
+  ],
+
+  // Chapter XIV — Second Address
+  'tok:ch14:proof:timing': [
+    'Watch the mezzanine routes and note who takes corrected bundles between correction and filing.',
+  ],
+  'tok:ch14:proof:oathtrail': [
+    'Track where rank-language appears in margin corrections. Iron handwriting is never neutral.',
+  ],
+  'tok:ch14:proof:wardtrail': [
+    'Track ward residue in margins. Verdant traces are designed to survive filing.',
+  ],
+  'tok:ch14:proof:receipts': [
+    'Track obligation language and fee annexes. Ember turns uncertainty into leverage by pricing it.',
+  ],
+  'tok:ch14:proof:second': [
+    'Follow the next corrected bundle to its second address. Corridors survive by choosing their audience.',
+  ],
 };
 
 function collectMissingProofKeys(node: DialogueNode, knownSecrets: string[], knownTokens: string[]): Set<string> {

@@ -301,4 +301,70 @@ describe('token gating', () => {
     expect(next.milestones).toContain('chapter-12:resolved:expose');
     expect(next.knownTokens).toContain('tok:ch12:outcome:expose');
   });
+
+  it('locks chapter-13 expose option behind bundlelog + seals proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-13');
+
+    const decision = tree['ch13-decision'];
+    if (!decision) throw new Error('Expected ch13-decision');
+
+    const expose = decision.choices.find(c => c.id === 'ch13-decision-expose');
+    if (!expose) throw new Error('Expected ch13-decision-expose');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-13',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, expose)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch13:proof:bundlelog', 'tok:ch13:proof:seals'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, expose);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch13-ending-expose');
+    expect(next.milestones).toContain('chapter-13:resolved');
+    expect(next.milestones).toContain('chapter-13:resolved:expose');
+    expect(next.knownTokens).toContain('tok:ch13:outcome:expose');
+  });
+
+  it('locks chapter-14 iron binding behind oath trail proof', () => {
+    const base = tsConversationEngine.startNewGame();
+    const tree = getDialogueTree('chapter-14');
+
+    const decision = tree['ch14-decision'];
+    if (!decision) throw new Error('Expected ch14-decision');
+
+    const iron = decision.choices.find(c => c.id === 'ch14-decision-iron');
+    if (!iron) throw new Error('Expected ch14-decision-iron');
+
+    const locked = {
+      ...base,
+      chapterId: 'chapter-14',
+      chapterTurn: 1,
+      currentDialogue: decision,
+      knownTokens: [],
+    };
+
+    expect(tsConversationEngine.applyChoice(locked, iron)).toBe(locked);
+
+    const unlocked = {
+      ...locked,
+      knownTokens: ['tok:ch14:proof:oathtrail'],
+    };
+
+    const next = tsConversationEngine.applyChoice(unlocked, iron);
+    expect(next).not.toBe(unlocked);
+    expect(next.currentDialogue?.id).toBe('ch14-ending-iron');
+    expect(next.milestones).toContain('chapter-14:resolved');
+    expect(next.milestones).toContain('chapter-14:resolved:iron');
+    expect(next.knownTokens).toContain('tok:ch14:outcome:iron');
+  });
 });
