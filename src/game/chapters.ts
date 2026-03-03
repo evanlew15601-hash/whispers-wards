@@ -2,6 +2,7 @@ import type { GameState } from './types';
 
 import { dialogueTree } from './data';
 import { applyEffects, type GameEffect } from './effects';
+import { GREENMARCH_SUMMIT_CONCLUDED_SECRET } from './progress';
 
 export type ChapterExitCondition =
   | { kind: 'turnsAtLeast'; n: number }
@@ -27,6 +28,16 @@ export const CHAPTERS: Record<string, ChapterDefinition> = {
     title: 'Chapter I — The Concord Hall',
     hubNodeId: 'concord-hub',
     encounterPoolId: 'encounters:chapter-1',
+    managementPoolId: 'management:chapter-1',
+    projectPoolId: 'projects:chapter-1',
+    exitConditions: [{ kind: 'secretKnown', secret: GREENMARCH_SUMMIT_CONCLUDED_SECRET }],
+    exitToChapterId: 'chapter-2',
+  },
+  'chapter-2': {
+    id: 'chapter-2',
+    title: 'Chapter II — Patterns of Dispute',
+    hubNodeId: 'concord-hub-2',
+    encounterPoolId: 'encounters:chapter-2',
     managementPoolId: 'management:chapter-1',
     projectPoolId: 'projects:chapter-1',
     exitConditions: [],

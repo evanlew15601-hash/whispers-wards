@@ -5,8 +5,18 @@ import type { SaveSlotInfo } from '@/game/storage';
 import GameMenu from '@/components/GameMenu';
 
 const getActiveTabPanel = (dialog: HTMLElement) => {
+  const tabs = within(dialog).getAllByRole('tab');
+  const selected = tabs.find(tab => tab.getAttribute('aria-selected') === 'true') ?? tabs[0];
+  if (!selected) throw new Error('Expected at least one tab');
+
+  const controls = selected.getAttribute('aria-controls');
+  if (controls) {
+    const byId = document.getElementById(controls);
+    if (byId) return byId;
+  }
+
   const panels = within(dialog).getAllByRole('tabpanel');
-  const active = panels.find(panel => !panel.hasAttribute('hidden'));
+  const active = panels.find(panel => panel.getAttribute('data-state') === 'active') ?? panels.find(panel => !panel.hasAttribute('hidden'));
   if (!active) throw new Error('Expected an active tab panel');
   return active;
 };

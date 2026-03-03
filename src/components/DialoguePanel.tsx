@@ -100,22 +100,35 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
   const visibleChoices = useMemo(() => {
     if (knownSecrets.includes('override')) return node.choices;
 
-    return node.choices.filter(choice => {
-      // Preserve visibility if it was already selected; we still want “already decided” to show.
-      const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
-      if (alreadyDecided) return true;
-
+    const candidates = node.choices.filter(choice => {
       if (choice.hideWhenHasAnySecrets?.length) {
         const shouldHide = choice.hideWhenHasAnySecrets.some(s => knownSecrets.includes(s));
         if (shouldHide) return false;
       }
 
-      if (!choice.hideWhenLockedBySecrets) return true;
+      const secretsLocked = isChoiceLockedBySecrets(choice, knownSecrets);
 
-      // Only hide when the lock is due to missing secrets.
-      return !isChoiceLockedBySecrets(choice, knownSecrets);
+      if (choice.hideWhenLockedBySecrets && secretsLocked) {
+        return false;
+      }
+
+      // Hide choices that are only locked due to exclusiveGroup (post-decision branch swapping).
+      const repReq = choice.requiredReputation ?? null;
+      const repLocked = Boolean(
+        repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+      );
+
+      const locked = isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+      if (locked && !repLocked && !secretsLocked) return false;
+
+      return true;
     });
-  }, [knownSecrets, node.choices, selectedChoiceIds]);
+
+    const undecided = candidates.filter(choice => !isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets));
+
+    // Only hide already-decided responses when the player still has other options in this node.
+    return undecided.length ? undecided : candidates;
+  }, [factions, knownSecrets, node.choices, selectedChoiceIds]);
 
   const skipReveal = useCallback(() => {
     playSfx('ui.skip');

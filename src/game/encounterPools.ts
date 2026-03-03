@@ -52,6 +52,31 @@ export const ENCOUNTER_POOLS: Record<string, EncounterPool> = {
     ],
   },
 
+  // Act II pool. For now it reuses the same encounter candidates, but lives under a
+  // distinct id so chapters can progress cleanly.
+  'encounters:chapter-2': {
+    id: 'encounters:chapter-2',
+    rules: [
+      { id: 'summit:iron-verdant', kind: 'summit', a: 'iron-pact', b: 'verdant-court', weight: 0.6 },
+      { id: 'summit:iron-ember', kind: 'summit', a: 'iron-pact', b: 'ember-throne', weight: 0.6 },
+      { id: 'summit:verdant-ember', kind: 'summit', a: 'verdant-court', b: 'ember-throne', weight: 0.6 },
+
+      { id: 'embargo:ashroad', kind: 'embargo', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad', weight: 1 },
+      { id: 'embargo:rootway', kind: 'embargo', a: 'ember-throne', b: 'verdant-court', routeId: 'rootway', weight: 1 },
+      { id: 'embargo:passcourier', kind: 'embargo', a: 'iron-pact', b: 'verdant-court', routeId: 'passcourier', weight: 1 },
+
+      { id: 'raid:ashroad', kind: 'raid', a: 'ember-throne', b: 'iron-pact', routeId: 'ashroad', weight: 1 },
+      { id: 'raid:rootway', kind: 'raid', a: 'ember-throne', b: 'verdant-court', routeId: 'rootway', weight: 1 },
+      { id: 'raid:passcourier', kind: 'raid', a: 'iron-pact', b: 'verdant-court', routeId: 'passcourier', weight: 1 },
+
+      {
+        id: 'skirmish:greenmarch',
+        templateId: 'skirmish:iron-pact|verdant-court:region:greenmarch',
+        weight: 0.9,
+      },
+    ],
+  },
+
   // Utility pools for tests / authoring.
   'encounters:none': {
     id: 'encounters:none',

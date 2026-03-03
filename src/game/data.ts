@@ -1,4 +1,5 @@
 import { Faction, DialogueNode, GameEvent } from './types';
+import { GREENMARCH_SUMMIT_CONCLUDED_SECRET } from './progress';
 
 export const initialFactions: Faction[] = [
   {
@@ -285,8 +286,70 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'hub-summit',
         text: 'Call the summit and force everyone into the same light.',
+        hideWhenLockedBySecrets: true,
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
+        requiresAnySecrets: [
+          'Commander Vane suspects the Ember Throne of orchestrating the border killings.',
+          'The Ember Throne forged maps to manipulate the border dispute.',
+          'Renzo\'s ledger pages show coded payments tied to the border killings.',
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+          'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.',
+          'The archives confirm Greenmarch Pass was once neutral ground under a tripartite accord.',
+          'A Verdant ward anchor was scraped and dusted with furnace salt to make the ward slip temporarily.',
+        ],
         effects: [],
         nextNodeId: 'summit-start',
+      },
+    ],
+  },
+  'concord-hub-2': {
+    id: 'concord-hub-2',
+    speaker: 'Narrator',
+    text: 'The Greenmarch dispute is no longer a single argument in a single chamber. It has become a pattern: border deaths, doctored precedents, incentives that reward escalation.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
+    choices: [
+      {
+        id: 'hub2-briefing',
+        text: 'Review new petitions arriving from the realm\'s edges.',
+        effects: [],
+        nextNodeId: 'act2-briefing',
+      },
+      {
+        id: 'hub2-aldric',
+        text: 'Check in with Vane and hear how the Pact interprets the new settlement.',
+        effects: [],
+        nextNodeId: 'aldric-followup',
+      },
+      {
+        id: 'hub2-thessaly',
+        text: 'Find Thessaly and ask what the forest is already preparing for.',
+        effects: [],
+        nextNodeId: 'thessaly-followup',
+      },
+      {
+        id: 'hub2-renzo',
+        text: 'Summon Renzo. Merchants never stop counting.',
+        effects: [],
+        nextNodeId: 'renzo-intro',
+      },
+      {
+        id: 'hub2-archives',
+        text: 'Return to the archives and look for older patterns in older ink.',
+        effects: [],
+        nextNodeId: 'hall-archives',
+      },
+    ],
+  },
+  'act2-briefing': {
+    id: 'act2-briefing',
+    speaker: 'Narrator',
+    text: 'Sealed packets stack on your desk by the hour. A trade route threatened by bandits. A border charter contested by two claimants. A delegation requesting a "quiet summit" before tempers boil over.\n\nGreenmarch was only the first hinge. The realm has more.',
+    choices: [
+      {
+        id: 'act2-briefing-back',
+        text: 'Return to the hall and choose where to apply pressure next.',
+        effects: [],
+        nextNodeId: null,
       },
     ],
   },
@@ -307,6 +370,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'map-call-summit',
         text: '"We\'ll settle this publicly. Call the summit and force the truth into the light."',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [
           { factionId: 'iron-pact', reputationChange: 3 },
           { factionId: 'verdant-court', reputationChange: 3 },
@@ -387,6 +451,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'council-summit',
         text: '"No more private corners. We settle this at the summit."',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [
           { factionId: 'iron-pact', reputationChange: 3 },
         ],
@@ -409,6 +474,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'war-to-summit',
         text: 'Go to the summit and press the Iron Pact\'s claim.',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [],
         nextNodeId: 'summit-start',
       },
@@ -729,7 +795,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         nextNodeId: 'aldric-burns-warning',
       },
       {
-        id: 'burns-back',
+        id: 'thessaly-burns-back',
         text: 'Return to the corridor-crossroads.',
         effects: [],
         nextNodeId: 'concord-hub',
@@ -1020,6 +1086,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         id: 'stolen-summit',
         text: 'Keep the pages and use them at the summit when all eyes are watching.',
         exclusiveGroup: 'stolen-ledger-disposition',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [],
         nextNodeId: 'summit-start',
       },
@@ -1040,6 +1107,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'bought-summit',
         text: 'Use the ledger copy as a wedge at the summit.',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [],
         nextNodeId: 'summit-start',
       },
@@ -1054,6 +1122,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'charter-summit',
         text: 'Go to the summit and argue for Ember arbitration.',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [],
         nextNodeId: 'summit-start',
       },
@@ -1088,6 +1157,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'ledger-summit',
         text: '"Then we take it to the summit and make Ember answer."',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [
           { factionId: 'iron-pact', reputationChange: 5 },
           { factionId: 'verdant-court', reputationChange: 3 },
@@ -1095,7 +1165,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         nextNodeId: 'summit-start',
       },
       {
-        id: 'ledger-back',
+        id: 'aldric-ledger-back',
         text: 'Hold the proof for now and keep negotiating in the corridors.',
         effects: [],
         nextNodeId: 'concord-hub',
@@ -1111,6 +1181,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'tledger-summit',
         text: 'Expose Ember at the summit. Let retaliation come in the open.',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [
           { factionId: 'verdant-court', reputationChange: 5 },
           { factionId: 'iron-pact', reputationChange: 3 },
@@ -1137,6 +1208,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         id: 'archives-summit',
         text: 'Take the treaty to the summit as leverage.',
         exclusiveGroup: 'greenmarch-accord-disposition',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [
           { factionId: 'iron-pact', reputationChange: 3 },
           { factionId: 'verdant-court', reputationChange: 3 },
@@ -1193,6 +1265,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'aarchives-summit',
         text: '"Then we put it on the table at the summit and force a new pact."',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [
           { factionId: 'iron-pact', reputationChange: 3 },
         ],
@@ -1215,6 +1288,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'tarchives-summit',
         text: 'Take the accord to the summit and argue for shared stewardship.',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [
           { factionId: 'verdant-court', reputationChange: 3 },
           { factionId: 'iron-pact', reputationChange: 3 },
@@ -1383,6 +1457,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Let the ink dry.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
@@ -1396,6 +1471,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Let the ink dry.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
@@ -1409,6 +1485,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Accept the consequences.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
@@ -1422,6 +1499,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Leave the door locked.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
@@ -1435,6 +1513,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Count the profits.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
@@ -1448,6 +1527,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Watch the strings snap.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
@@ -1461,6 +1541,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Let the auditors come.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
@@ -1474,6 +1555,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Make them answer in daylight.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
@@ -1487,6 +1569,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Watch the puppeteer\'s strings snap.',
         effects: [],
         nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
