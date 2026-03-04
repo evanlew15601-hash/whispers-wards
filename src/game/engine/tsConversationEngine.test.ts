@@ -111,7 +111,7 @@ describe('tsConversationEngine', () => {
     expect(next.knownSecrets).toEqual(['dup']);
   });
 
-  it('locks the Hall summit destination until the envoy has earned the right to call it', () => {
+  it('allows calling the Hall summit without requiring prior leverage (demo-friendly)', () => {
     const initial = tsConversationEngine.startNewGame();
 
     const atHub = {
@@ -124,15 +124,7 @@ describe('tsConversationEngine', () => {
     expect(summitIdx).toBeGreaterThanOrEqual(0);
 
     const lockedFlags = tsConversationEngine.getChoiceLockedFlags(atHub);
-    expect(lockedFlags?.[summitIdx]).toBe(true);
-
-    const withLeverage = {
-      ...atHub,
-      knownSecrets: ['The Ember Throne forged maps to manipulate the border dispute.'],
-    };
-
-    const unlockedFlags = tsConversationEngine.getChoiceLockedFlags(withLeverage);
-    expect(unlockedFlags?.[summitIdx]).toBe(false);
+    expect(lockedFlags?.[summitIdx]).toBe(false);
   });
 
   it('advances to chapter 2 after resolving the Greenmarch summit', () => {

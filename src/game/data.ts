@@ -285,19 +285,8 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'hub-summit',
-        text: 'Call the summit and force everyone into the same light.',
-        hideWhenLockedBySecrets: true,
+        text: 'Call the summit. Force a decision—even without proof.',
         hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
-        requiresAnySecrets: [
-          'Commander Vane suspects the Ember Throne of orchestrating the border killings.',
-          'The Ember Throne forged maps to manipulate the border dispute.',
-          'Renzo\'s ledger pages show coded payments tied to the border killings.',
-          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
-          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
-          'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.',
-          'The archives confirm Greenmarch Pass was once neutral ground under a tripartite accord.',
-          'A Verdant ward anchor was scraped and dusted with furnace salt to make the ward slip temporarily.',
-        ],
         effects: [],
         nextNodeId: 'summit-start',
       },
@@ -313,6 +302,12 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Review new petitions arriving from the realm\'s edges.',
         effects: [],
         nextNodeId: 'act2-briefing',
+      },
+      {
+        id: 'hub2-demo-end',
+        text: 'Close the packets and file your report (end of demo).',
+        effects: [],
+        nextNodeId: 'act2-demo-end',
       },
       {
         id: 'hub2-aldric',
@@ -348,6 +343,25 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'act2-briefing-back',
         text: 'Return to the hall and choose where to apply pressure next.',
+        effects: [],
+        nextNodeId: null,
+      },
+      {
+        id: 'act2-briefing-demo-end',
+        text: 'Set the packets aside. For now, the story pauses here. (End demo)',
+        effects: [],
+        nextNodeId: 'act2-demo-end',
+      },
+    ],
+  },
+  'act2-demo-end': {
+    id: 'act2-demo-end',
+    speaker: 'Narrator',
+    text: 'You stack the petitions, seal your notes, and set the pen down.\n\nThe Concord will call again—but not in this build.\n\nEND OF DEMO',
+    choices: [
+      {
+        id: 'act2-demo-end-back',
+        text: 'Return to Concord Hall.',
         effects: [],
         nextNodeId: null,
       },
@@ -1436,6 +1450,16 @@ export const dialogueTree: Record<string, DialogueNode> = {
         revealsInfo: 'You publicly accused the Ember Throne, citing forged maps as the first lever of escalation.',
       },
       {
+        id: 'summit-breakdown',
+        text: 'Fail to broker a deal. Let threats become marching orders.',
+        effects: [
+          { factionId: 'iron-pact', reputationChange: -5 },
+          { factionId: 'verdant-court', reputationChange: -5 },
+          { factionId: 'ember-throne', reputationChange: 5 },
+        ],
+        nextNodeId: 'ending-summit-breakdown',
+      },
+      {
         id: 'summit-adjourn',
         text: 'Call for recess. Adjourn until you have documents everyone will accept as proof.',
         effects: [
@@ -1444,6 +1468,20 @@ export const dialogueTree: Record<string, DialogueNode> = {
           { factionId: 'ember-throne', reputationChange: -2 },
         ],
         nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'ending-summit-breakdown': {
+    id: 'ending-summit-breakdown',
+    speaker: 'Narrator',
+    text: 'You ask for restraint. You ask for precedent. You ask for a pause long enough for the realm to breathe.\n\nBut the chamber was never built for breathing.\n\nAldric leaves first, jaw set—already counting formations. Thessaly follows without another word, vines withdrawing like a tide. Renzo stays long enough to make a note, then smiles as if disaster were a dividend.\n\nNo treaty is signed. The Greenmarch does not quiet.\n\nThe Concord will still look to you tomorrow. It always does.',
+    choices: [
+      {
+        id: 'end-breakdown',
+        text: 'Step out of the chamber and into Chapter II.',
+        effects: [],
+        nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
