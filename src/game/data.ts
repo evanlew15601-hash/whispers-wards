@@ -299,7 +299,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'concord-hub-2': {
     id: 'concord-hub-2',
     speaker: 'Narrator',
-    text: 'The Greenmarch dispute is no longer a single argument in a single chamber. It has become a pattern: border deaths, doctored precedents, incentives that reward escalation.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
+    text: 'Greenmarch was written into record, but it did not end the realm\'s appetite for leverage.\n\nNew petitions stack beside the summit minutes: routes disrupted, charters challenged, small quarrels with the shape of future wars.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
     choices: [
       {
         id: 'hub2-briefing',
@@ -308,34 +308,246 @@ export const dialogueTree: Record<string, DialogueNode> = {
         nextNodeId: 'act2-briefing',
       },
       {
-        id: 'hub2-demo-end',
-        text: 'Close the packets and file your report (end of demo).',
+        id: 'hub2-minutes',
+        text: 'Read the summit minutes and the first reactions they sparked.',
         effects: [],
-        nextNodeId: 'act2-demo-end',
+        nextNodeId: 'act2-summit-minutes',
+      },
+      {
+        id: 'hub2-clerks',
+        text: 'Meet the Hall clerks and see which disputes are ripening into crises.',
+        effects: [],
+        nextNodeId: 'act2-clerks',
       },
       {
         id: 'hub2-aldric',
-        text: 'Check in with Vane and hear how the Pact interprets the new settlement.',
+        text: 'Summon Vane. Hear how the Pact intends to interpret the record.',
         effects: [],
-        nextNodeId: 'aldric-followup',
+        nextNodeId: 'act2-aldric',
       },
       {
         id: 'hub2-thessaly',
-        text: 'Find Thessaly and ask what the forest is already preparing for.',
+        text: 'Send for Thessaly. Ask what the forest is already preparing for.',
         effects: [],
-        nextNodeId: 'thessaly-followup',
+        nextNodeId: 'act2-thessaly',
       },
       {
         id: 'hub2-renzo',
         text: 'Summon Renzo. Merchants never stop counting.',
+        hideWhenHasAnySecrets: [
+          'You publicly accused the Ember Throne, citing ledger entries that trace coin to violence.',
+          'You publicly accused the Ember Throne, citing manifests and a Hall docket trail.',
+          'You publicly accused the Ember Throne, citing forged maps as the first lever of escalation.',
+        ],
         effects: [],
-        nextNodeId: 'renzo-intro',
+        nextNodeId: 'act2-renzo',
+      },
+      {
+        id: 'hub2-audit',
+        text: 'Oversee the audit and the orders that follow.',
+        hideWhenLockedBySecrets: true,
+        requiresAnySecrets: [
+          'You publicly accused the Ember Throne, citing ledger entries that trace coin to violence.',
+          'You publicly accused the Ember Throne, citing manifests and a Hall docket trail.',
+          'You publicly accused the Ember Throne, citing forged maps as the first lever of escalation.',
+        ],
+        effects: [],
+        nextNodeId: 'act2-audit',
       },
       {
         id: 'hub2-archives',
         text: 'Return to the archives and look for older patterns in older ink.',
         effects: [],
-        nextNodeId: 'hall-archives',
+        nextNodeId: 'act2-archives',
+      },
+      {
+        id: 'hub2-demo-end',
+        text: 'Close the packets and file your report (end of demo).',
+        effects: [],
+        nextNodeId: 'act2-demo-end',
+      },
+    ],
+  },
+  'act2-summit-minutes': {
+    id: 'act2-summit-minutes',
+    speaker: 'Narrator',
+    text: 'The minutes read colder than the chamber felt. Names reduced to titles. Threats reduced to phrasing. Each clause you forced into the record becomes something smaller officials can cite in faraway disputes.\n\nA clerk has already copied the pages twice. Ink travels faster than soldiers.',
+    choices: [
+      {
+        id: 'act2-minutes-circulate',
+        text: 'Order certified copies sent to every regional docket office.',
+        effects: [],
+        nextNodeId: null,
+        revealsInfo: 'You ordered the Greenmarch minutes copied and circulated as binding precedent.',
+      },
+      {
+        id: 'act2-minutes-back',
+        text: 'Close the book and return to the hall floor.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'act2-clerks': {
+    id: 'act2-clerks',
+    speaker: 'Chief Clerk Maren Vale',
+    text: 'Maren Vale has ink stains up both sleeves and the expression of someone who has watched a thousand men discover that paper can cut.\n\n"The summit quieted Greenmarch," she says, tapping a stack of fresh petitions. "But it taught the provinces what to ask for. Everyone wants a decision that looks inevitable."\n\nShe slides one packet forward. "Bandits on a trade road. A charter dispute that will turn into a border clash. A request for a quiet summit before tempers boil over. Different masks. Same hunger."',
+    choices: [
+      {
+        id: 'act2-clerks-briefing',
+        text: 'Ask for the full briefing on the new petitions.',
+        effects: [],
+        nextNodeId: 'act2-briefing',
+      },
+      {
+        id: 'act2-clerks-back',
+        text: 'Thank her and return to the center of the hall.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'act2-aldric': {
+    id: 'act2-aldric',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: 'Vane arrives without ceremony. The summit did not soften him. If anything, it taught him where ceremony can be used as a weapon.\n\n"The Hall wrote words," he says. "Now I need to know what those words mean when someone tests them at the border."\n\nHe keeps his voice low. "My scouts are already hearing of other corridors warming up. Tell me where you want iron to stand."',
+    choices: [
+      {
+        id: 'act2-aldric-scouts',
+        text: 'Ask for his scout reports and the names behind them.',
+        effects: [
+          { factionId: 'iron-pact', reputationChange: 5 },
+        ],
+        nextNodeId: null,
+        revealsInfo: 'Aldric agreed to share Iron scout reports on emerging disputes beyond Greenmarch.',
+      },
+      {
+        id: 'act2-aldric-restraint',
+        text: 'Press him on restraint. "If we keep turning disputes into marches, we will run out of marches."',
+        effects: [
+          { factionId: 'iron-pact', reputationChange: -2 },
+          { factionId: 'verdant-court', reputationChange: 2 },
+        ],
+        nextNodeId: null,
+      },
+      {
+        id: 'act2-aldric-back',
+        text: 'Dismiss him and return to the petitions.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'act2-thessaly': {
+    id: 'act2-thessaly',
+    speaker: 'Emissary Thessaly',
+    speakerFaction: 'verdant-court',
+    text: 'Thessaly does not hurry. When she appears, it is as if the corridor decided it had always been hers.\n\n"Greenmarch was never only Greenmarch," she says. "It was a test. A place to see whether the Hall still remembers how to bind hungry powers without feeding them."\n\nHer gaze settles on the petition stacks. "Now the provinces will copy what they saw. They will ask for your voice to bless their quarrels."',
+    choices: [
+      {
+        id: 'act2-thessaly-watchers',
+        text: 'Ask what Verdant eyes can learn from the petitioners before steel moves.',
+        effects: [
+          { factionId: 'verdant-court', reputationChange: 5 },
+        ],
+        nextNodeId: null,
+        revealsInfo: 'Thessaly offered Verdant watchers to trace who is funding the next round of disputes.',
+      },
+      {
+        id: 'act2-thessaly-quiet',
+        text: 'Ask how to keep the Hall from becoming another weapon.',
+        effects: [
+          { factionId: 'verdant-court', reputationChange: 2 },
+          { factionId: 'iron-pact', reputationChange: 1 },
+        ],
+        nextNodeId: null,
+      },
+      {
+        id: 'act2-thessaly-back',
+        text: 'Let her go and return to the petitions.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'act2-renzo': {
+    id: 'act2-renzo',
+    speaker: 'Trade Consul Renzo',
+    speakerFaction: 'ember-throne',
+    text: 'Renzo arrives with a fresh smile and an older calculation behind it.\n\n"Envoy," he says, "you have proved something useful: the Hall will act when it must. The provinces will see that and bring you their problems like offerings."\n\nHe gestures to the petition stacks. "Let Ember help you sort which offerings are sincere, and which are bait."',
+    choices: [
+      {
+        id: 'act2-renzo-ledgers',
+        text: 'Demand transparency. "If you want to advise, you do it with open books."',
+        effects: [
+          { factionId: 'ember-throne', reputationChange: -3 },
+          { factionId: 'iron-pact', reputationChange: 1 },
+        ],
+        nextNodeId: null,
+      },
+      {
+        id: 'act2-renzo-brokers',
+        text: 'Hear his offer, but set terms on what he can influence.',
+        effects: [
+          { factionId: 'ember-throne', reputationChange: 3 },
+        ],
+        nextNodeId: null,
+      },
+      {
+        id: 'act2-renzo-back',
+        text: 'Send him away and return to the petitions.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'act2-audit': {
+    id: 'act2-audit',
+    speaker: 'Narrator',
+    text: 'Seals are broken. Locks are re-set. The Hall clerks move through Ember offices with gloves and witnesses, copying ledgers before any hand can "misplace" them.\n\nSomeone will call this justice. Someone will call it theft. Either way, it teaches the realm that the Hall can take what it needs in daylight.',
+    choices: [
+      {
+        id: 'act2-audit-iron',
+        text: 'Assign Iron escorts to guarantee the chain of custody.',
+        effects: [
+          { factionId: 'iron-pact', reputationChange: 3 },
+        ],
+        nextNodeId: null,
+      },
+      {
+        id: 'act2-audit-verdant',
+        text: 'Assign Verdant witnesses to ensure nothing is altered after the fact.',
+        effects: [
+          { factionId: 'verdant-court', reputationChange: 3 },
+        ],
+        nextNodeId: null,
+      },
+      {
+        id: 'act2-audit-back',
+        text: 'Let the clerks finish and return to the hall floor.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'act2-archives': {
+    id: 'act2-archives',
+    speaker: 'Archivist Sera Quill',
+    text: 'Archivist Sera Quill meets you with a stack of docket indexes and a look of quiet triumph.\n\n"Greenmarch was not the only hinge-ground," she says. "We keep records of other settlements that were supposed to prevent wars, and instead taught people how to start them."\n\nShe opens an index to a page dense with repeats: the same families, the same toll roads, the same phrases used as excuses. Patterns, waiting to be named.',
+    choices: [
+      {
+        id: 'act2-archives-index',
+        text: 'Copy the index entries that repeat. Start building a map of the pattern.',
+        effects: [],
+        nextNodeId: null,
+        revealsInfo: 'You began an index of repeating docket names, routes, and phrases that signal manufactured disputes.',
+      },
+      {
+        id: 'act2-archives-back',
+        text: 'Thank her and return to the petitions.',
+        effects: [],
+        nextNodeId: null,
       },
     ],
   },
@@ -1411,6 +1623,25 @@ export const dialogueTree: Record<string, DialogueNode> = {
   },
   'summit-start': {
     id: 'summit-start',
+    speaker: 'Greenmarch Summit',
+    text: 'The bells of Concord Hall toll once, and the central chamber is cleared.\n\nThis is not a corridor bargain. Once you step under the stained glass, every word becomes record.\n\nProceed?',
+    choices: [
+      {
+        id: 'summit-enter',
+        text: 'Enter the chamber and take the floor.',
+        effects: [],
+        nextNodeId: 'summit-floor',
+      },
+      {
+        id: 'summit-back',
+        text: 'Not yet. Return to the Hall.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
+  'summit-floor': {
+    id: 'summit-floor',
     speaker: 'Narrator',
     text: 'At your request, the three emissaries gather in the central chamber beneath the stained glass. Aldric stands rigid, a hand never far from his sword. Thessaly sits still, watching every face. Renzo smiles as if the outcome is already a number on a page.\n\nAll three look to you. In this moment, your words become policy. Your silence becomes a sentence.',
     choices: [
@@ -1545,7 +1776,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
           { factionId: 'verdant-court', reputationChange: -2 },
           { factionId: 'ember-throne', reputationChange: -2 },
         ],
-        nextNodeId: 'concord-hub',
+        nextNodeId: null,
       },
     ],
   },

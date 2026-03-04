@@ -47,6 +47,24 @@ export const CHAPTERS: Record<string, ChapterDefinition> = {
 
 export const getChapter = (chapterId: string): ChapterDefinition => CHAPTERS[chapterId] ?? CHAPTERS['chapter-1'];
 
+const HUB_NODE_IDS = new Set(Object.values(CHAPTERS).map(ch => ch.hubNodeId));
+
+const normalizeHubDialogue = (state: GameState): GameState => {
+  if (!state.currentDialogue) return state;
+
+  const chapter = getChapter(state.chapterId);
+  const hubId = chapter.hubNodeId;
+
+  // Treat explicit jumps to other chapter hubs as "return to the Hall".
+  if (!HUB_NODE_IDS.has(state.currentDialogue.id)) return state;
+  if (state.currentDialogue.id === hubId) return state;
+
+  const hub = dialogueTree[hubId] ?? null;
+  if (!hub) return state;
+
+  return { ...state, currentDialogue: hub };
+};
+
 const isExitMet = (state: GameState, def: ChapterDefinition): boolean => {
   if (!def.exitConditions.length) return false;
 
@@ -73,28 +91,30 @@ const isExitMet = (state: GameState, def: ChapterDefinition): boolean => {
 };
 
 export const evaluateChapterTransition = (prev: GameState): GameState => {
-  const current = getChapter(prev.chapterId);
-  if (!current.exitToChapterId) return prev;
-  if (!isExitMet(prev, current)) return prev;
+  const normalized = normalizeHubDialogue(prev);
+
+  const current = getChapter(normalized.chapterId);
+  if (!current.exitToChapterId) return normalized;
+  if (!isExitMet(normalized, current)) return normalized;
 
   const nextDef = getChapter(current.exitToChapterId);
 
   let next: GameState = {
-    ...prev,
+    ...normalized,
     chapterId: nextDef.id,
     chapterTurn: 1,
     management: {
-      ...prev.management,
+      ...normalized.management,
       usedThisChapter: {},
     },
     world: {
-      ...prev.world,
-      encounterMemory: prev.world.encounterMemory
+      ...normalized.world,
+      encounterMemory: normalized.world.encounterMemory
         ? {
-            ...prev.world.encounterMemory,
+            ...normalized.world.encounterMemory,
             seenThisChapter: {},
           }
-        : prev.world.encounterMemory,
+        : normalized.world.encounterMemory,
     },
   };
 

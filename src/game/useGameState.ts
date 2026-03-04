@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { GameState, DialogueChoice, PlayerProfile } from './types';
 import { dialogueTree } from './data';
+import { CHAPTERS, getChapter } from './chapters';
 import { normalizePlayerProfile } from './player';
 import {
   SaveSlotInfo,
@@ -52,6 +53,8 @@ const inferSelectedChoiceIdsFromLog = (selectedChoiceIds: string[], log: string[
 
   return [...out];
 };
+
+const HUB_NODE_IDS = new Set(Object.values(CHAPTERS).map(ch => ch.hubNodeId));
 
 export function useGameState() {
   const engineRef = useRef(tsConversationEngine);
@@ -183,7 +186,7 @@ export function useGameState() {
 
     const loadedTurnNumber = typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber;
 
-    const hydrated: GameState = {
+    let hydrated: GameState = {
       ...base,
       ...loadedAny,
       player: normalizePlayerProfile(loadedAny.player ?? base.player),
@@ -234,6 +237,14 @@ export function useGameState() {
       // Always resume gameplay after loading a save.
       currentScene: 'game',
     };
+
+    if (hydrated.currentDialogue && HUB_NODE_IDS.has(hydrated.currentDialogue.id)) {
+      const hubId = getChapter(hydrated.chapterId).hubNodeId;
+      if (hydrated.currentDialogue.id !== hubId) {
+        const hub = dialogueTree[hubId] ?? null;
+        if (hub) hydrated = { ...hydrated, currentDialogue: hub };
+      }
+    }
 
     suppressEncounterToastRef.current = true;
     setState(hydrated);
