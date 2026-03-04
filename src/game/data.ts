@@ -1,5 +1,9 @@
 import { Faction, DialogueNode, GameEvent } from './types';
-import { GREENMARCH_SUMMIT_CONCLUDED_SECRET } from './progress';
+import {
+  ALDRIC_THESSALY_MEETING_CONFIRMED_SECRET,
+  GREENMARCH_SUMMIT_CONCLUDED_SECRET,
+  THESSALY_ALDRIC_MEETING_ARRANGED_SECRET,
+} from './progress';
 
 export const initialFactions: Faction[] = [
   {
@@ -285,19 +289,8 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
       {
         id: 'hub-summit',
-        text: 'Call the summit and force everyone into the same light.',
-        hideWhenLockedBySecrets: true,
+        text: 'Call the summit. Force a decision—even without proof.',
         hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
-        requiresAnySecrets: [
-          'Commander Vane suspects the Ember Throne of orchestrating the border killings.',
-          'The Ember Throne forged maps to manipulate the border dispute.',
-          'Renzo\'s ledger pages show coded payments tied to the border killings.',
-          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
-          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
-          'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.',
-          'The archives confirm Greenmarch Pass was once neutral ground under a tripartite accord.',
-          'A Verdant ward anchor was scraped and dusted with furnace salt to make the ward slip temporarily.',
-        ],
         effects: [],
         nextNodeId: 'summit-start',
       },
@@ -313,6 +306,12 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Review new petitions arriving from the realm\'s edges.',
         effects: [],
         nextNodeId: 'act2-briefing',
+      },
+      {
+        id: 'hub2-demo-end',
+        text: 'Close the packets and file your report (end of demo).',
+        effects: [],
+        nextNodeId: 'act2-demo-end',
       },
       {
         id: 'hub2-aldric',
@@ -348,6 +347,25 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'act2-briefing-back',
         text: 'Return to the hall and choose where to apply pressure next.',
+        effects: [],
+        nextNodeId: null,
+      },
+      {
+        id: 'act2-briefing-demo-end',
+        text: 'Set the packets aside. For now, the story pauses here. (End demo)',
+        effects: [],
+        nextNodeId: 'act2-demo-end',
+      },
+    ],
+  },
+  'act2-demo-end': {
+    id: 'act2-demo-end',
+    speaker: 'Narrator',
+    text: 'You stack the petitions, seal your notes, and set the pen down.\n\nThe Concord will call again—but not in this build.\n\nEND OF DEMO',
+    choices: [
+      {
+        id: 'act2-demo-end-back',
+        text: 'Return to Concord Hall.',
         effects: [],
         nextNodeId: null,
       },
@@ -395,6 +413,17 @@ export const dialogueTree: Record<string, DialogueNode> = {
     text: 'Vane waits beside the war table, fingers drumming a steady cadence against the hilt of his sword.\n\n"Well, envoy? Are the druids willing to stop bleeding my border patrols? Or do I send steel into the trees?"',
     choices: [
       {
+        id: 'aldric-private-meeting',
+        text: '"Thessaly will meet you in private. One room, one hour, no banners."',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET, ALDRIC_THESSALY_MEETING_CONFIRMED_SECRET],
+        requiresAllSecrets: [THESSALY_ALDRIC_MEETING_ARRANGED_SECRET],
+        effects: [
+          { factionId: 'iron-pact', reputationChange: 3 },
+          { factionId: 'verdant-court', reputationChange: 3 },
+        ],
+        nextNodeId: 'aldric-meeting-confirmed',
+      },
+      {
         id: 'aldric-council',
         text: '"There\'s a third path: shared stewardship of the Pass. No banners. No monopolies."',
         effects: [
@@ -433,6 +462,21 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Step back and pursue other leads first.',
         effects: [],
         nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'aldric-meeting-confirmed': {
+    id: 'aldric-meeting-confirmed',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: 'For a moment the cadence stops.\n\nVane exhales through his nose. "Private," he repeats. "No banners." His eyes flick to the corridor, as if expecting a trap to step out of the stone.\n\n"Fine," he says at last. "One hour. Witnesses of our choosing. And if she tries to bind me with druid blood, you\'ll be the one cutting the cord."',
+    choices: [
+      {
+        id: 'aldric-meeting-confirmed-back',
+        text: 'Send the confirmation to Thessaly and return to the hall.',
+        effects: [],
+        nextNodeId: 'concord-hub',
+        revealsInfo: ALDRIC_THESSALY_MEETING_CONFIRMED_SECRET,
       },
     ],
   },
@@ -644,13 +688,59 @@ export const dialogueTree: Record<string, DialogueNode> = {
         effects: [
           { factionId: 'verdant-court', reputationChange: 3 },
         ],
-        nextNodeId: 'concord-hub',
+        nextNodeId: 'thessaly-meeting-terms',
+      },
+      {
+        id: 'followup-present-proof',
+        text: 'Present what you\'ve found and ask Thessaly to meet Aldric in private.',
+        hideWhenLockedBySecrets: true,
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET, THESSALY_ALDRIC_MEETING_ARRANGED_SECRET],
+        requiresAnySecrets: [
+          'The Ember Throne forged maps to manipulate the border dispute.',
+          'Renzo\'s ledger pages show coded payments tied to the border killings.',
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+          'A Verdant ward anchor was scraped and dusted with furnace salt to make the ward slip temporarily.',
+        ],
+        effects: [
+          { factionId: 'verdant-court', reputationChange: 3 },
+        ],
+        nextNodeId: 'thessaly-meeting-arranged',
       },
       {
         id: 'followup-back',
         text: 'Return to the corridor-crossroads.',
         effects: [],
         nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'thessaly-meeting-terms': {
+    id: 'thessaly-meeting-terms',
+    speaker: 'Emissary Thessaly',
+    speakerFaction: 'verdant-court',
+    text: 'Thessaly studies you without blinking.\n\n"Proof," she says. "Not suspicion. Not Iron stories. Something that would hold up under lantern-light and witnesses."\n\nShe turns her palm up. A thin cut opens without a blade, a bead of blood bright as a berry.\n\n"Bring me that," she says. "And I\'ll meet your commander where he can\'t posture for his soldiers."',
+    choices: [
+      {
+        id: 'thessaly-meeting-terms-back',
+        text: 'Return to the hall and keep digging.',
+        effects: [],
+        nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'thessaly-meeting-arranged': {
+    id: 'thessaly-meeting-arranged',
+    speaker: 'Emissary Thessaly',
+    speakerFaction: 'verdant-court',
+    text: 'You lay out the details—ink, dates, seals, all the small things liars forget. Thessaly\'s expression goes very still.\n\n"So it isn\'t just fear," she murmurs. "It\'s design."\n\nShe looks past you, toward the western wing. "Fine. I\'ll meet him. One room, one hour, no banners."',
+    choices: [
+      {
+        id: 'thessaly-meeting-arranged-send',
+        text: 'Send word to Aldric and return to the hall.',
+        effects: [],
+        nextNodeId: 'concord-hub',
+        revealsInfo: THESSALY_ALDRIC_MEETING_ARRANGED_SECRET,
       },
     ],
   },
@@ -1089,6 +1179,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [],
         nextNodeId: 'summit-start',
+        revealsInfo: 'Renzo\'s ledger pages show coded payments tied to the border killings.',
       },
     ],
   },
@@ -1110,6 +1201,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
         hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET],
         effects: [],
         nextNodeId: 'summit-start',
+        revealsInfo: 'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
       },
     ],
   },
@@ -1436,6 +1528,16 @@ export const dialogueTree: Record<string, DialogueNode> = {
         revealsInfo: 'You publicly accused the Ember Throne, citing forged maps as the first lever of escalation.',
       },
       {
+        id: 'summit-breakdown',
+        text: 'Fail to broker a deal. Let threats become marching orders.',
+        effects: [
+          { factionId: 'iron-pact', reputationChange: -5 },
+          { factionId: 'verdant-court', reputationChange: -5 },
+          { factionId: 'ember-throne', reputationChange: 5 },
+        ],
+        nextNodeId: 'ending-summit-breakdown',
+      },
+      {
         id: 'summit-adjourn',
         text: 'Call for recess. Adjourn until you have documents everyone will accept as proof.',
         effects: [
@@ -1444,6 +1546,20 @@ export const dialogueTree: Record<string, DialogueNode> = {
           { factionId: 'ember-throne', reputationChange: -2 },
         ],
         nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'ending-summit-breakdown': {
+    id: 'ending-summit-breakdown',
+    speaker: 'Narrator',
+    text: 'You ask for restraint. You ask for precedent. You ask for a pause long enough for the realm to breathe.\n\nBut the chamber was never built for breathing.\n\nAldric leaves first, jaw set—already counting formations. Thessaly follows without another word, vines withdrawing like a tide. Renzo stays long enough to make a note, then smiles as if disaster were a dividend.\n\nNo treaty is signed. The Greenmarch does not quiet.\n\nThe Concord will still look to you tomorrow. It always does.',
+    choices: [
+      {
+        id: 'end-breakdown',
+        text: 'Step out of the chamber and into Chapter II.',
+        effects: [],
+        nextNodeId: null,
+        revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
       },
     ],
   },
