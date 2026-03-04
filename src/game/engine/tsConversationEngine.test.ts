@@ -211,6 +211,157 @@ describe('tsConversationEngine', () => {
     expect(next.currentDialogue?.id).toBe('ending-embers-fall-ledger');
   });
 
+  it('carries proof-forward when going straight from Renzo\'s ledgers to the summit (bought copy)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atBought = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-bought'],
+      rngSeed: 123456789,
+      factions: initial.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
+      knownSecrets: [],
+    };
+
+    const toSummit = atBought.currentDialogue!.choices.find(c => c.id === 'bought-summit');
+    if (!toSummit) throw new Error('Expected bought-summit choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atBought, toSummit);
+    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    expect(atSummit.knownSecrets).toContain(
+      'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.'
+    );
+
+    const expose = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-expose-ledger');
+    if (!expose) throw new Error('Expected summit-expose-ledger choice');
+
+    const afterExpose = tsConversationEngine.applyChoice(atSummit, expose);
+    expect(afterExpose.currentDialogue?.id).toBe('ending-embers-fall-ledger');
+  });
+
+  it('carries proof-forward when going straight from stolen ledger pages to the summit', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atStolen = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-stolen'],
+      rngSeed: 123456789,
+      factions: initial.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
+      knownSecrets: [],
+    };
+
+    const toSummit = atStolen.currentDialogue!.choices.find(c => c.id === 'stolen-summit');
+    if (!toSummit) throw new Error('Expected stolen-summit choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atStolen, toSummit);
+    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    expect(atSummit.knownSecrets).toContain('Renzo\'s ledger pages show coded payments tied to the border killings.');
+
+    const expose = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-expose-ledger');
+    if (!expose) throw new Error('Expected summit-expose-ledger choice');
+
+    const afterExpose = tsConversationEngine.applyChoice(atSummit, expose);
+    expect(afterExpose.currentDialogue?.id).toBe('ending-embers-fall-ledger');
+  });
+
+  it('unlocks and follows up on the forged map proof path', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atMaps = {
+      ...initial,
+      currentDialogue: dialogueTree['map-revelation'],
+      rngSeed: 123456789,
+      knownSecrets: [],
+    };
+
+    const revealForgery = atMaps.currentDialogue!.choices.find(c => c.id === 'reveal-forgery');
+    if (!revealForgery) throw new Error('Expected reveal-forgery choice');
+
+    const afterReveal = tsConversationEngine.applyChoice(atMaps, revealForgery);
+    expect(afterReveal.currentDialogue?.id).toBe('aldric-map-confront');
+    expect(afterReveal.knownSecrets).toContain('The Ember Throne forged maps to manipulate the border dispute.');
+
+    const toSummit = afterReveal.currentDialogue!.choices.find(c => c.id === 'map-call-summit');
+    if (!toSummit) throw new Error('Expected map-call-summit choice');
+
+    const atSummit = tsConversationEngine.applyChoice(afterReveal, toSummit);
+    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+
+    const expose = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-expose-maps');
+    if (!expose) throw new Error('Expected summit-expose-maps choice');
+
+    const afterExpose = tsConversationEngine.applyChoice(atSummit, expose);
+    expect(afterExpose.currentDialogue?.id).toBe('ending-embers-fall-maps');
+  });
+
+  it('unlocks and follows up on the manifest/docket proof path', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atLedger = {
+      ...initial,
+      currentDialogue: dialogueTree['renzo-ledger-request'],
+      rngSeed: 123456789,
+      knownSecrets: [],
+    };
+
+    const toManifests = atLedger.currentDialogue!.choices.find(c => c.id === 'ledger-manifests');
+    if (!toManifests) throw new Error('Expected ledger-manifests choice');
+
+    const atManifests = tsConversationEngine.applyChoice(atLedger, toManifests);
+    expect(atManifests.currentDialogue?.id).toBe('ember-manifest-check');
+
+    const backToHub = atManifests.currentDialogue!.choices.find(c => c.id === 'manifest-back');
+    if (!backToHub) throw new Error('Expected manifest-back choice');
+
+    const afterProof = tsConversationEngine.applyChoice(atManifests, backToHub);
+    expect(afterProof.currentDialogue?.id).toBe('concord-hub');
+    expect(afterProof.knownSecrets).toContain(
+      'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.'
+    );
+
+    const withIronRep = {
+      ...afterProof,
+      factions: afterProof.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
+    };
+
+    const toSummit = withIronRep.currentDialogue!.choices.find(c => c.id === 'hub-summit');
+    if (!toSummit) throw new Error('Expected hub-summit choice');
+
+    const atSummit = tsConversationEngine.applyChoice(withIronRep, toSummit);
+    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+
+    const expose = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-expose-manifest');
+    if (!expose) throw new Error('Expected summit-expose-manifest choice');
+
+    const afterExpose = tsConversationEngine.applyChoice(atSummit, expose);
+    expect(afterExpose.currentDialogue?.id).toBe('ending-embers-fall-manifest');
+  });
+
+  it('unlocks and follows up on the old accord proof path', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atArchives = {
+      ...initial,
+      currentDialogue: dialogueTree['hall-archives'],
+      rngSeed: 123456789,
+      knownSecrets: [],
+    };
+
+    const toSummit = atArchives.currentDialogue!.choices.find(c => c.id === 'archives-summit');
+    if (!toSummit) throw new Error('Expected archives-summit choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atArchives, toSummit);
+    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    expect(atSummit.knownSecrets).toContain(
+      'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.'
+    );
+
+    const accord = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-compact-accord');
+    if (!accord) throw new Error('Expected summit-compact-accord choice');
+
+    const afterAccord = tsConversationEngine.applyChoice(atSummit, accord);
+    expect(afterAccord.currentDialogue?.id).toBe('ending-greenmarch-compact-accord');
+  });
+
   it('suppresses reputation effects when repeating rep-affecting choices in legacy saves', () => {
     const initial = tsConversationEngine.startNewGame();
 
