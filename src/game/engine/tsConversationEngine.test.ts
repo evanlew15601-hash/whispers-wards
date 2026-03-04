@@ -146,6 +146,36 @@ describe('tsConversationEngine', () => {
     expect(after.log.some(l => l.includes('Chapter II'))).toBe(true);
   });
 
+  it('lets the player complete the summit with no proof and transition into Chapter II', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atHub = {
+      ...initial,
+      currentDialogue: dialogueTree['concord-hub'],
+      chapterId: 'chapter-1',
+      chapterTurn: 3,
+      knownSecrets: [],
+    };
+
+    const summitFromHub = atHub.currentDialogue!.choices.find(c => c.id === 'hub-summit');
+    if (!summitFromHub) throw new Error('Expected hub-summit choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atHub, summitFromHub);
+    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+
+    const breakdown = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-breakdown');
+    if (!breakdown) throw new Error('Expected summit-breakdown choice');
+
+    const atEnding = tsConversationEngine.applyChoice(atSummit, breakdown);
+    expect(atEnding.currentDialogue?.id).toBe('ending-summit-breakdown');
+
+    const endChoice = atEnding.currentDialogue!.choices[0];
+    const after = tsConversationEngine.applyChoice(atEnding, endChoice);
+
+    expect(after.chapterId).toBe('chapter-2');
+    expect(after.currentDialogue?.id).toBe('concord-hub-2');
+  });
+
   it('locks proof-gated summit actions until evidence is discovered', () => {
     const initial = tsConversationEngine.startNewGame();
 
