@@ -109,7 +109,7 @@ export const evaluateChapterTransition = (prev: GameState): GameState => {
 
   next = {
     ...next,
-    log: [...next.log, `📘 ${nextDef.title}`],
+    log: [...next.log, `[CH] ${nextDef.title}`],
   };
 
   return next;

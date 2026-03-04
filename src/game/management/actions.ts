@@ -256,7 +256,7 @@ const mkProjectStart = (args: {
     costs: costs.length ? costs : undefined,
     effects: [
       { kind: 'project:start', templateId: args.templateId },
-      { kind: 'log', message: `📌 Project started: ${args.title}` },
+      { kind: 'log', message: `[PROJ] Project started: ${args.title}` },
     ],
   };
 };
@@ -289,7 +289,7 @@ const mkProjectAccelerate = (args: {
     costs: costs.length ? costs : undefined,
     effects: [
       { kind: 'project:accelerateByTemplate', templateId: args.templateId, deltaTurns: args.deltaTurns },
-      { kind: 'log', message: `⏩ Project accelerated: ${args.title}` },
+      { kind: 'log', message: `[PROJ] Project accelerated: ${args.title}` },
     ],
   };
 };
@@ -324,7 +324,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     cooldownTurns: 0,
     effects: [
       { kind: 'project:pauseByTemplate', templateId: 'scribe-audit' },
-      { kind: 'log', message: '⏸ Project paused: Scribes’ Audit of the Ledgers' },
+      { kind: 'log', message: '[PROJ] Project paused: Scribes’ Audit of the Ledgers' },
     ],
   },
   {
@@ -337,7 +337,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     cooldownTurns: 0,
     effects: [
       { kind: 'project:resumeByTemplate', templateId: 'scribe-audit' },
-      { kind: 'log', message: '▶️ Project resumed: Scribes’ Audit of the Ledgers' },
+      { kind: 'log', message: '[PROJ] Project resumed: Scribes’ Audit of the Ledgers' },
     ],
   },
   {
@@ -350,7 +350,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     cooldownTurns: 0,
     effects: [
       { kind: 'project:cancelByTemplate', templateId: 'scribe-audit' },
-      { kind: 'log', message: '✖️ Project cancelled: Scribes’ Audit of the Ledgers' },
+      { kind: 'log', message: '[PROJ] Project cancelled: Scribes’ Audit of the Ledgers' },
     ],
   },
 
@@ -383,7 +383,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     cooldownTurns: 0,
     effects: [
       { kind: 'project:pauseByTemplate', templateId: 'frontier-relief' },
-      { kind: 'log', message: '⏸ Project paused: Frontier Relief Convoys' },
+      { kind: 'log', message: '[PROJ] Project paused: Frontier Relief Convoys' },
     ],
   },
   {
@@ -396,7 +396,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     cooldownTurns: 0,
     effects: [
       { kind: 'project:resumeByTemplate', templateId: 'frontier-relief' },
-      { kind: 'log', message: '▶️ Project resumed: Frontier Relief Convoys' },
+      { kind: 'log', message: '[PROJ] Project resumed: Frontier Relief Convoys' },
     ],
   },
   {
@@ -409,7 +409,7 @@ export const MANAGEMENT_ACTIONS: ManagementAction[] = [
     cooldownTurns: 0,
     effects: [
       { kind: 'project:cancelByTemplate', templateId: 'frontier-relief' },
-      { kind: 'log', message: '✖️ Project cancelled: Frontier Relief Convoys' },
+      { kind: 'log', message: '[PROJ] Project cancelled: Frontier Relief Convoys' },
     ],
   },
 

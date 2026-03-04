@@ -32,7 +32,7 @@ describe('applyManagementAction', () => {
     expect(next.world.tensions['iron-pact']?.['verdant-court']).toBe(6);
     expect(next.world.tensions['verdant-court']?.['iron-pact']).toBe(6);
 
-    expect(next.log[next.log.length - 1]).toContain('🛠 Action:');
+    expect(next.log[next.log.length - 1]).toContain('[ACT]');
   });
 
   it('prevents repeating the same action within the same turn', () => {

@@ -25,6 +25,6 @@ describe('projects system', () => {
     expect(after1.milestones).toContain('project:scribe-audit:complete');
     expect(after1.resources.intel).toBeGreaterThan(started.resources.intel);
     expect(after1.log.some(l => l.includes('Project completed:'))).toBe(true);
-    expect(after1.log.some(l => l.includes('🔍 Project complete:'))).toBe(true);
+    expect(after1.log.some(l => l.includes('[PROJ] Project complete:'))).toBe(true);
   });
 });

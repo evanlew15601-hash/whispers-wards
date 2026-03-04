@@ -64,7 +64,7 @@ describe('encounter resolution (engine integration)', () => {
 
       expect(next.pendingEncounter).toBeNull();
       expect(next.currentDialogue?.id).toBe('concord-hub');
-      expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
+      expect(next.log.some(l => l.startsWith('[CRISIS]'))).toBe(true);
 
       const resolution = parseEncounterResolutionChoiceId(choice.id)!.resolution;
       const tension = next.world.tensions[a][b];
@@ -127,7 +127,7 @@ describe('encounter resolution (engine integration)', () => {
 
       expect(next.pendingEncounter).toBeNull();
       expect(next.currentDialogue?.id).toBe('concord-hub');
-      expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
+      expect(next.log.some(l => l.startsWith('[CRISIS]'))).toBe(true);
 
       const resolution = parseEncounterResolutionChoiceId(choice.id)!.resolution;
       const tension = next.world.tensions[a][b];
@@ -187,7 +187,7 @@ describe('encounter resolution (engine integration)', () => {
 
       expect(next.pendingEncounter).toBeNull();
       expect(next.currentDialogue?.id).toBe('concord-hub');
-      expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
+      expect(next.log.some(l => l.startsWith('[CRISIS]'))).toBe(true);
 
       const resolution = parseEncounterResolutionChoiceId(choice.id)!.resolution;
       const tension = next.world.tensions[a][b];
@@ -244,7 +244,7 @@ describe('encounter resolution (engine integration)', () => {
 
       expect(next.pendingEncounter).toBeNull();
       expect(next.currentDialogue?.id).toBe('concord-hub');
-      expect(next.log.some(l => l.startsWith('⚔'))).toBe(true);
+      expect(next.log.some(l => l.startsWith('[CRISIS]'))).toBe(true);
 
       const resolution = parseEncounterResolutionChoiceId(choice.id)!.resolution;
       const tension = next.world.tensions[a][b];

@@ -205,7 +205,7 @@ describe('useGameState', () => {
 
     expect(result.current.state.currentDialogue?.id).toBe('concord-hub');
     expect(result.current.state.stepNumber).toBe(before + 1);
-    expect(result.current.state.log.at(-1)).toBe('↩ Returned to Concord Hall');
+    expect(result.current.state.log.at(-1)).toBe('[HALL] Returned to Concord Hall');
   });
 
   it('saveToSlot reports failure when persistence fails', async () => {

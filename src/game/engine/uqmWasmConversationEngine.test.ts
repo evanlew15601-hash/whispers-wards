@@ -166,8 +166,8 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextWasm2.knownSecrets).toEqual(nextTs2.knownSecrets);
 
     // Secret learning is now derived from the WASM secrets mask; ensure the log reflects that too.
-    const learnedInTs = nextTs.log.filter(l => l.startsWith('🔍 Secret learned: '));
-    const learnedInWasm = nextWasm.log.filter(l => l.startsWith('🔍 Secret learned: '));
+    const learnedInTs = nextTs.log.filter(l => l.startsWith('[INTEL] Secret learned: '));
+    const learnedInWasm = nextWasm.log.filter(l => l.startsWith('[INTEL] Secret learned: '));
     expect(learnedInWasm).toEqual(learnedInTs);
   });
 

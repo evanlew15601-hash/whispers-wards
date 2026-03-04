@@ -15,7 +15,7 @@ import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
 import { buildEncounterDialogueNode } from './encounters';
 import { applyManagementAction } from './management/applyManagementAction';
-import { getChapter } from './chapters';
+import { enterPendingEncounter as enterPendingEncounterTransition, returnToHub as returnToHubTransition } from './hubActions';
 
 const uniqueRepChoiceIdByText = (() => {
   const seen = new Map<string, string | null>();
@@ -271,31 +271,11 @@ export function useGameState() {
   }, []);
 
   const enterPendingEncounter = useCallback(() => {
-    setState(prev => {
-      if (!prev.pendingEncounter) return prev;
-      return {
-        ...prev,
-        currentDialogue: buildEncounterDialogueNode(prev.pendingEncounter),
-      };
-    });
+    setState(prev => enterPendingEncounterTransition(prev));
   }, []);
 
   const returnToHub = useCallback(() => {
-    setState(prev => {
-      if (prev.currentScene !== 'game') return prev;
-      const chapter = getChapter(prev.chapterId);
-      const hub = dialogueTree[chapter.hubNodeId] ?? null;
-      if (!hub) return prev;
-
-      if (prev.currentDialogue?.id === hub.id) return prev;
-
-      return {
-        ...prev,
-        stepNumber: prev.stepNumber + 1,
-        currentDialogue: hub,
-        log: [...prev.log, '↩ Returned to Concord Hall'],
-      };
-    });
+    setState(prev => returnToHubTransition(prev));
   }, []);
 
   const choiceLockedFlags = engineRef.current.getChoiceLockedFlags?.(state) ?? null;

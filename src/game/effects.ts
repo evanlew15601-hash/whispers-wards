@@ -252,7 +252,7 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
       if (completed) {
         const template = getProjectTemplateById(p.templateId);
         if (template) followUpEffects.push(...template.onCompleteEffects);
-        followUpEffects.push({ kind: 'log', message: `📌 Project completed: ${p.title}` });
+        followUpEffects.push({ kind: 'log', message: `[PROJ] Project completed: ${p.title}` });
       }
 
       continue;
@@ -278,7 +278,7 @@ export const applyEffects = (prev: GameState, effects: GameEffect[]): GameState 
       if (completed) {
         const template = getProjectTemplateById(p.templateId);
         if (template) followUpEffects.push(...template.onCompleteEffects);
-        followUpEffects.push({ kind: 'log', message: `📌 Project completed: ${p.title}` });
+        followUpEffects.push({ kind: 'log', message: `[PROJ] Project completed: ${p.title}` });
       }
 
       continue;

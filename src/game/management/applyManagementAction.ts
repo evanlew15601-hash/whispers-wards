@@ -1,6 +1,7 @@
 import type { GameState } from '../types';
 
 import { applyEffects } from '../effects';
+import { evaluateChapterTransition } from '../chapters';
 import { getManagementActionAvailability, getManagementActionById } from './actions';
 
 export const applyManagementAction = (prev: GameState, actionId: string): GameState => {
@@ -17,6 +18,7 @@ export const applyManagementAction = (prev: GameState, actionId: string): GameSt
   let next: GameState = {
     ...prev,
     stepNumber: prev.stepNumber + 1,
+    log: [...prev.log, `[ACT] ${action.title}`],
     management: {
       ...prev.management,
       apRemaining: nextAp,
@@ -48,8 +50,5 @@ export const applyManagementAction = (prev: GameState, actionId: string): GameSt
 
   next = applyEffects(next, action.effects);
 
-  return {
-    ...next,
-    log: [...next.log, `🛠 Action: ${action.title}`],
-  };
+  return evaluateChapterTransition(next);
 };
