@@ -270,9 +270,9 @@ const InfoPanel = (
                     className={`font-body text-xs ${
                       entry.startsWith('>')
                         ? 'text-primary/80 italic'
-                        : entry.startsWith('⚡')
+                        : entry.startsWith('[EVT]')
                         ? 'text-accent font-semibold'
-                        : entry.startsWith('🔍')
+                        : entry.startsWith('[INTEL]')
                         ? 'text-accent/80'
                         : 'text-muted-foreground'
                     }`}

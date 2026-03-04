@@ -21,7 +21,7 @@ export const returnToHub = (prev: GameState): GameState => {
     ...prev,
     stepNumber: prev.stepNumber + 1,
     currentDialogue: hub,
-    log: [...prev.log, '↩ Returned to Concord Hall'],
+    log: [...prev.log, '[HALL] Returned to Concord Hall'],
   };
 };
 
@@ -40,6 +40,6 @@ export const enterPendingEncounter = (prev: GameState): GameState => {
     ...prev,
     stepNumber: prev.stepNumber + 1,
     currentDialogue: nextNode,
-    log: [...prev.log, `⚔ Addressing crisis: ${prev.pendingEncounter.title}`],
+    log: [...prev.log, `[CRISIS] Addressing crisis: ${prev.pendingEncounter.title}`],
   };
 };

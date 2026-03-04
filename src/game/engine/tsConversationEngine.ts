@@ -137,8 +137,8 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       log: [
         ...prev.log,
         `> ${choice.text}`,
-        ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-        ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+        ...triggeredEvents.map(e => `[EVT] ${e.title} — ${e.description}`),
+        ...(secretLearned ? [`[INTEL] Secret learned: ${choice.revealsInfo}`] : []),
         ...resolved.logEntries,
       ],
       world: resolved.world,
@@ -163,8 +163,8 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     log: [
       ...prev.log,
       `> ${choice.text}`,
-      ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-      ...(secretLearned ? [`🔍 Secret learned: ${choice.revealsInfo}`] : []),
+      ...triggeredEvents.map(e => `[EVT] ${e.title} — ${e.description}`),
+      ...(secretLearned ? [`[INTEL] Secret learned: ${choice.revealsInfo}`] : []),
     ],
   };
 
@@ -208,7 +208,7 @@ const endTurn = (prev: GameState): GameState => {
     encounterPoolId: chapter.encounterPoolId,
   });
 
-  const worldLog = sim.logEntries.map(e => `🌍 ${e}`);
+  const worldLog = sim.logEntries.map(e => `[WORLD] ${e}`);
   const nextEncounter = existingEncounter ?? sim.pendingEncounter;
 
   const baseCoinIncome = 1;
@@ -236,7 +236,7 @@ const endTurn = (prev: GameState): GameState => {
     stepNumber: prev.stepNumber + 1,
     turnNumber: nextTurnNumber,
     chapterTurn: prev.chapterTurn + 1,
-    log: [...prev.log, '⏭ End Turn', ...expiryLog, ...worldLog],
+    log: [...prev.log, '[TURN] End Turn', ...expiryLog, ...worldLog],
     world: sim.world,
     rngSeed: sim.rngSeed,
     pendingEncounter: nextEncounter,
@@ -250,7 +250,7 @@ const endTurn = (prev: GameState): GameState => {
   let withIncome = applyEffects(nextState, incomeEffects);
 
   const incomeLog =
-    `💰 Income: +${coinIncome} coin, +${baseInfluenceIncome} influence, +${baseSuppliesIncome} supplies` +
+    `[INC] Income: +${coinIncome} coin, +${baseInfluenceIncome} influence, +${baseSuppliesIncome} supplies` +
     (blockedRoutes ? ` (routes disrupted: ${blockedRoutes})` : '') +
     (baseIntelIncome ? `, +${baseIntelIncome} intel` : '');
 

@@ -18,7 +18,7 @@ export const applyManagementAction = (prev: GameState, actionId: string): GameSt
   let next: GameState = {
     ...prev,
     stepNumber: prev.stepNumber + 1,
-    log: [...prev.log, `🛠 Action: ${action.title}`],
+    log: [...prev.log, `[ACT] ${action.title}`],
     management: {
       ...prev.management,
       apRemaining: nextAp,

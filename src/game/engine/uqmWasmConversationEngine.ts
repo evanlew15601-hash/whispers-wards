@@ -321,8 +321,8 @@ function applyChoiceUsingWasm(
   const newLog = [
     ...prev.log,
     `> ${choice.text}`,
-    ...triggeredEvents.map(e => `⚡ Event: ${e.title} — ${e.description}`),
-    ...newlyLearned.map(s => `🔍 Secret learned: ${s}`),
+    ...triggeredEvents.map(e => `[EVT] ${e.title} — ${e.description}`),
+    ...newlyLearned.map(s => `[INTEL] Secret learned: ${s}`),
   ];
 
   return {

@@ -18,7 +18,7 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     onCompleteEffects: [
       { kind: 'milestone:add', id: 'project:scribe-audit:complete' },
       { kind: 'resource', resourceId: 'intel', delta: 1 },
-      { kind: 'log', message: '🔍 Project complete: The scribes deliver a tidy packet of contradictions and signatures.' },
+      { kind: 'log', message: '[PROJ] Project complete: The scribes deliver a tidy packet of contradictions and signatures.' },
     ],
   },
   {
@@ -31,7 +31,7 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
       { kind: 'resource', resourceId: 'supplies', delta: 2 },
       { kind: 'resource', resourceId: 'influence', delta: 1 },
       { kind: 'tension', a: 'iron-pact', b: 'verdant-court', delta: -4 },
-      { kind: 'log', message: '📦 Project complete: Relief convoys arrive on schedule; tempers cool where hunger would have sharpened them.' },
+      { kind: 'log', message: '[PROJ] Project complete: Relief convoys arrive on schedule; tempers cool where hunger would have sharpened them.' },
     ],
   },
 ];
@@ -56,11 +56,11 @@ export const advanceProjectsOneTurn = (state: GameState): {
     if (remainingTurns === 0) {
       const template = getProjectTemplateById(p.templateId);
       if (template) completionEffects.push(...template.onCompleteEffects);
-      logEntries.push(`📌 Project completed: ${p.title}`);
+      logEntries.push(`[PROJ] Project completed: ${p.title}`);
       return { ...p, remainingTurns, status: 'completed' };
     }
 
-    logEntries.push(`📌 Project progress: ${p.title} (${remainingTurns} turn${remainingTurns === 1 ? '' : 's'} remaining)`);
+    logEntries.push(`[PROJ] Project progress: ${p.title} (${remainingTurns} turn${remainingTurns === 1 ? '' : 's'} remaining)`);
     return { ...p, remainingTurns };
   });
 

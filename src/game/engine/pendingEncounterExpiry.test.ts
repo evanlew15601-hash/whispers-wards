@@ -73,7 +73,7 @@ describe('pendingEncounter expiry semantics', () => {
     expect(next2.pendingEncounter).toEqual(simPending);
 
     // Expiry should add a log entry and deterministic world consequences.
-    expect(next2.log).toContain('⏳ Encounter expired: existing (+5 tension)');
+    expect(next2.log).toContain('[CRISIS] Encounter expired: existing (+5 tension)');
     expect(next2.world.tensions['iron-pact']?.['verdant-court']).toBe(5);
     expect(next2.world.tradeRoutes['passcourier']?.status).toBe('raided');
     expect(next2.world.tradeRoutes['passcourier']?.untilTurn).toBe(next2.turnNumber + 1);

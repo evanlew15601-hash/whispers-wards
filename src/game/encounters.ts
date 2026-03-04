@@ -227,7 +227,7 @@ export function applyExpiredEncounterConsequence(args: {
 
   effects.push({ kind: 'tension', a, b, delta: 5 });
 
-  const logEntries = [`⏳ Encounter expired: ${args.encounter.title} (+5 tension)`];
+  const logEntries = [`[CRISIS] Encounter expired: ${args.encounter.title} (+5 tension)`];
 
   return { world: applyWorldEffects(args.world, effects), logEntries };
 }
@@ -256,13 +256,13 @@ export function resolveEncounter(args: {
         effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'open' });
       }
       effects.push({ kind: 'tension', a, b, delta: -12 });
-      logEntries.push(`⚔ Embargo lifted on ${routeName} (-12 tension).`);
+      logEntries.push(`[CRISIS] Embargo lifted on ${routeName} (-12 tension).`);
     } else if (args.resolution === 'embargo-compromise') {
       if (routeId) {
         effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'open' });
       }
       effects.push({ kind: 'tension', a, b, delta: -5 });
-      logEntries.push(`⚔ Compromise reached on ${routeName} (-5 tension).`);
+      logEntries.push(`[CRISIS] Compromise reached on ${routeName} (-5 tension).`);
     } else if (args.resolution === 'embargo-extend') {
       if (routeId) {
         effects.push({
@@ -274,7 +274,7 @@ export function resolveEncounter(args: {
         });
       }
       effects.push({ kind: 'tension', a, b, delta: 8 });
-      logEntries.push(`⚔ Embargo escalated on ${routeName} (+8 tension).`);
+      logEntries.push(`[CRISIS] Embargo escalated on ${routeName} (+8 tension).`);
     }
 
     return { world: applyWorldEffects(args.world, effects), logEntries };
@@ -288,19 +288,19 @@ export function resolveEncounter(args: {
         effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'open' });
       }
       effects.push({ kind: 'tension', a, b, delta: -10 });
-      logEntries.push(`⚔ Patrols secure ${routeName}; commerce resumes (-10 tension).`);
+      logEntries.push(`[CRISIS] Patrols secure ${routeName}; commerce resumes (-10 tension).`);
     } else if (args.resolution === 'raid-compensate') {
       if (routeId) {
         effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'open' });
       }
       effects.push({ kind: 'tension', a, b, delta: -4 });
-      logEntries.push(`⚔ Compensation pledged for losses on ${routeName} (-4 tension).`);
+      logEntries.push(`[CRISIS] Compensation pledged for losses on ${routeName} (-4 tension).`);
     } else if (args.resolution === 'raid-retaliate') {
       if (routeId) {
         effects.push({ kind: 'tradeRoute:setStatus', routeId, status: 'raided', untilTurn: args.turnNumber + 2 });
       }
       effects.push({ kind: 'tension', a, b, delta: 10 });
-      logEntries.push(`⚔ Reprisals ordered after raids on ${routeName} (+10 tension).`);
+      logEntries.push(`[CRISIS] Reprisals ordered after raids on ${routeName} (+10 tension).`);
     }
 
     return { world: applyWorldEffects(args.world, effects), logEntries };
@@ -317,19 +317,19 @@ export function resolveEncounter(args: {
         }
       }
       effects.push({ kind: 'tension', a, b, delta: -8 });
-      logEntries.push(`⚔ Ceasefire brokered in ${regionName} (-8 tension).`);
+      logEntries.push(`[CRISIS] Ceasefire brokered in ${regionName} (-8 tension).`);
     } else if (args.resolution === 'skirmish-back-a') {
       if (regionId) {
         effects.push({ kind: 'region:setControl', regionId, control: a, contested: false });
       }
       effects.push({ kind: 'tension', a, b, delta: 6 });
-      logEntries.push(`⚔ Claim endorsed in ${regionName} (+6 tension).`);
+      logEntries.push(`[CRISIS] Claim endorsed in ${regionName} (+6 tension).`);
     } else if (args.resolution === 'skirmish-back-b') {
       if (regionId) {
         effects.push({ kind: 'region:setControl', regionId, control: b, contested: false });
       }
       effects.push({ kind: 'tension', a, b, delta: 6 });
-      logEntries.push(`⚔ Claim endorsed in ${regionName} (+6 tension).`);
+      logEntries.push(`[CRISIS] Claim endorsed in ${regionName} (+6 tension).`);
     }
 
     return { world: applyWorldEffects(args.world, effects), logEntries };
@@ -338,13 +338,13 @@ export function resolveEncounter(args: {
   // summit
   if (args.resolution === 'summit-accord') {
     effects.push({ kind: 'tension', a, b, delta: -15 });
-    logEntries.push('⚔ Accord signed at the summit (-15 tension).');
+    logEntries.push('[CRISIS] Accord signed at the summit (-15 tension).');
   } else if (args.resolution === 'summit-slight-a') {
     effects.push({ kind: 'tension', a, b, delta: 10 });
-    logEntries.push('⚔ The summit ends in public rebuke (+10 tension).');
+    logEntries.push('[CRISIS] The summit ends in public rebuke (+10 tension).');
   } else if (args.resolution === 'summit-slight-b') {
     effects.push({ kind: 'tension', a, b, delta: 10 });
-    logEntries.push('⚔ The summit ends in public rebuke (+10 tension).');
+    logEntries.push('[CRISIS] The summit ends in public rebuke (+10 tension).');
   }
 
   return { world: applyWorldEffects(args.world, effects), logEntries };

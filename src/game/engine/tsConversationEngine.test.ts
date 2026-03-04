@@ -42,7 +42,7 @@ describe('tsConversationEngine', () => {
     expect(afterTurn.stepNumber).toBe(seeded.stepNumber + 2);
     expect(afterTurn.management.apRemaining).toBe(afterTurn.management.apMax);
     expect(afterTurn.management.actionsTakenThisTurn).toEqual([]);
-    expect(afterTurn.log.some(l => l.startsWith('🌍 '))).toBe(true);
+    expect(afterTurn.log.some(l => l.startsWith('[WORLD] '))).toBe(true);
 
     const routes = Object.values(afterTurn.world.tradeRoutes);
     const openRoutes = routes.filter(r => r.status === 'open').length;
@@ -51,7 +51,7 @@ describe('tsConversationEngine', () => {
     expect(afterTurn.resources.coin).toBe(drained.resources.coin + coinIncome);
     expect(afterTurn.resources.influence).toBe(drained.resources.influence + 1);
     expect(afterTurn.resources.supplies).toBe(drained.resources.supplies + 1);
-    expect(afterTurn.log.some(l => l.startsWith('💰 Income: '))).toBe(true);
+    expect(afterTurn.log.some(l => l.startsWith('[INC] Income: '))).toBe(true);
   });
 
   it('treats nextNodeId=null as returning to the chapter hub', () => {
@@ -86,12 +86,12 @@ describe('tsConversationEngine', () => {
     const ironAlliance = afterChoice.events.find(e => e.id === 'iron-pact-alliance');
     expect(ironAlliance?.triggered).toBe(true);
 
-    expect(afterChoice.log.some(l => l.startsWith('⚡ Event: '))).toBe(true);
-    expect(afterChoice.log.some(l => l.startsWith('🔍 Secret learned: '))).toBe(true);
-    expect(afterChoice.log.some(l => l.startsWith('🌍 '))).toBe(false);
+    expect(afterChoice.log.some(l => l.startsWith('[EVT] '))).toBe(true);
+    expect(afterChoice.log.some(l => l.startsWith('[INTEL] Secret learned: '))).toBe(true);
+    expect(afterChoice.log.some(l => l.startsWith('[WORLD] '))).toBe(false);
 
     const afterTurn = tsConversationEngine.endTurn(afterChoice);
-    expect(afterTurn.log.some(l => l.startsWith('🌍 '))).toBe(true);
+    expect(afterTurn.log.some(l => l.startsWith('[WORLD] '))).toBe(true);
   });
 
   it('dedupes knownSecrets while preserving insertion order', () => {
