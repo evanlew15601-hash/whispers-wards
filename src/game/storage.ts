@@ -408,7 +408,7 @@ const readStoreV3 = (): PersistedStoreV3 => {
   if (existingV2) {
     const storeV2 = parseStoreV2(existingV2);
     if (storeV2) {
-      const migrated: PersistedStoreV3 = { version: 3, slots: storeV2.slots as any };
+      const migrated: PersistedStoreV3 = { version: 3, slots: storeV2.slots as unknown as PersistedStoreV3['slots'] };
       writeStoreV3(migrated);
       return migrated;
     }
@@ -420,7 +420,10 @@ const readStoreV3 = (): PersistedStoreV3 => {
     const storeV1 = parseStoreV1(existingV1);
     if (storeV1) {
       const migratedV2 = migrateStoreV1ToV2(storeV1);
-      const migrated: PersistedStoreV3 = { version: 3, slots: migratedV2.slots as any };
+      const migrated: PersistedStoreV3 = {
+        version: 3,
+        slots: migratedV2.slots as unknown as PersistedStoreV3['slots'],
+      };
       writeStoreV3(migrated);
       return migrated;
     }
@@ -431,7 +434,10 @@ const readStoreV3 = (): PersistedStoreV3 => {
     const storeV1 = parseStoreV1(legacy);
     if (storeV1) {
       const migratedV2 = migrateStoreV1ToV2(storeV1);
-      const migrated: PersistedStoreV3 = { version: 3, slots: migratedV2.slots as any };
+      const migrated: PersistedStoreV3 = {
+        version: 3,
+        slots: migratedV2.slots as unknown as PersistedStoreV3['slots'],
+      };
       writeStoreV3(migrated);
       return migrated;
     }
@@ -485,9 +491,9 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
   store.slots[String(id)] = {
     meta: createMeta(state),
     state: {
-      player: state.player as any,
-      factions: state.factions as any,
-      events: state.events as any,
+      player: state.player,
+      factions: state.factions,
+      events: state.events,
       knownSecrets: state.knownSecrets,
       selectedChoiceIds: state.selectedChoiceIds,
       stepNumber: state.stepNumber,
@@ -500,8 +506,8 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
       management: state.management,
       log: state.log,
       rngSeed: state.rngSeed,
-      world: state.world as any,
-      pendingEncounter: state.pendingEncounter as any,
+      world: state.world,
+      pendingEncounter: state.pendingEncounter,
       currentScene: state.currentScene,
       currentDialogueId: state.currentDialogue?.id ?? null,
     },
@@ -521,9 +527,9 @@ export const loadGameFromSlot = (slotId: number): LoadableGameState | null => {
   const { currentDialogueId, ...state } = slot.state;
 
   return {
-    ...(state as any),
+    ...(state as unknown as LoadableGameState),
     currentDialogue: currentDialogueId ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue']) : null,
-  } as LoadableGameState;
+  };
 };
 
 export const deleteSaveSlot = (slotId: number): boolean => {

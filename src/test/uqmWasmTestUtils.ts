@@ -184,7 +184,9 @@ export function ensureUqmMinimalWasmBuilt(): void {
   }
 }
 
-function getFunction<T extends Function>(raw: Record<string, unknown>, names: string[]): T {
+type AnyFunction = (...args: unknown[]) => unknown;
+
+function getFunction<T extends AnyFunction>(raw: Record<string, unknown>, names: string[]): T {
   for (const name of names) {
     const v = raw[name];
     if (typeof v === 'function') return v as unknown as T;

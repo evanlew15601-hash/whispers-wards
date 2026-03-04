@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import type { SecondaryEncounter } from '../types';
+import type { SimulateWorldTurnArgs } from '../simulation';
 
 describe('pendingEncounter expiry semantics', () => {
   beforeEach(() => {
@@ -17,7 +18,7 @@ describe('pendingEncounter expiry semantics', () => {
       expiresOnTurn: 999,
     };
 
-    const simulateWorldTurn = vi.fn((args: { world: any; rngSeed: number }) => ({
+    const simulateWorldTurn = vi.fn((args: SimulateWorldTurnArgs) => ({
       world: args.world,
       pendingEncounter: simPending,
       logEntries: [],

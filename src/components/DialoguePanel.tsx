@@ -343,7 +343,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
             <div className="relative">
               <div
                 className="cc-speaker-sigil flex h-9 w-9 items-center justify-center rounded-sm border border-border bg-card"
-                style={{ ['--cc-aura' as any]: aura } as CSSProperties}
+                style={{ '--cc-aura': aura } as CSSProperties}
               >
                 <SpeakerIcon className="h-4 w-4 text-primary" />
               </div>
@@ -377,7 +377,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <div
             className="parchment-border relative overflow-hidden rounded-sm bg-card/40 p-4"
-            style={{ ['--cc-aura' as any]: aura } as CSSProperties}
+            style={{ '--cc-aura': aura } as CSSProperties}
           >
             <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-sm">
               <div className="cc-dialogue-aura absolute inset-0 opacity-70" />
@@ -416,7 +416,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 }
               }}
               className="parchment-border group relative cursor-pointer rounded-sm bg-card/40 p-6 outline-none transition-colors hover:bg-card/55 focus-visible:ring-2 focus-visible:ring-primary/60"
-              style={{ ['--cc-aura' as any]: aura } as CSSProperties}
+              style={{ '--cc-aura': aura } as CSSProperties}
             >
               <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-sm">
                 <div className="cc-dialogue-aura absolute inset-0 opacity-70" />

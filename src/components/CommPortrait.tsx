@@ -24,7 +24,7 @@ const CommPortrait = ({ portrait }: CommPortraitProps) => {
   return (
     <div
       className="cc-comm-frame relative flex h-full w-full items-center justify-center overflow-hidden rounded-sm"
-      style={{ ['--cc-aura' as any]: `var(${portrait.auraVar})` } as CSSProperties}
+      style={{ '--cc-aura': `var(${portrait.auraVar})` } as CSSProperties}
       aria-label={portrait.alt}
       role="img"
     >

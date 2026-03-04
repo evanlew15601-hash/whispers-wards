@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 
 import heroImage from '@/assets/hero-throne.jpg';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ const CharacterCreatorScreen = ({ initialProfile, onConfirm, onBack }: Character
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <div
             className="parchment-border relative overflow-hidden rounded-sm bg-card/40 p-4"
-            style={{ ['--cc-aura' as any]: 'var(--gold-glow)' }}
+            style={{ '--cc-aura': 'var(--gold-glow)' } as CSSProperties}
           >
             <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-sm">
               <div className="cc-dialogue-aura absolute inset-0 opacity-70" />
