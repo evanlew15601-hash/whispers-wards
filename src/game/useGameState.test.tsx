@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { STORAGE_KEY_V1, STORAGE_KEY_V3 } from './storage';
+import { STORAGE_KEY_SUMMIT_GATE_CHECKPOINT_V1, STORAGE_KEY_V1, STORAGE_KEY_V3 } from './storage';
 import { dialogueTree, initialEvents, initialFactions } from './data';
 
 vi.mock('./engine/uqmWasmRuntime', () => ({
@@ -127,6 +127,57 @@ describe('useGameState', () => {
 
     expect(result.current.state.chapterId).toBe('chapter-2');
     expect(result.current.state.currentDialogue?.id).toBe('concord-hub-2');
+  });
+
+  it('autosaves a Summit Gate checkpoint when reaching summit-start', async () => {
+    const factions = initialFactions.map(f => ({ ...f }));
+    const events = initialEvents.map(e => ({ ...e }));
+
+    const partialState = {
+      currentScene: 'game',
+      factions,
+      events,
+      knownSecrets: [],
+      selectedChoiceIds: [],
+      turnNumber: 12,
+      chapterId: 'chapter-1',
+      chapterTurn: 3,
+      currentDialogueId: 'summit-start',
+      log: [],
+      player: { name: 'Envoy', pronouns: 'they/them', portraitId: 'envoy-default' },
+    };
+
+    const meta = {
+      savedAt: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+      turnNumber: partialState.turnNumber,
+      factions: factions.map(f => ({ id: f.id, name: f.name, reputation: f.reputation })),
+    };
+
+    localStorage.setItem(
+      STORAGE_KEY_V3,
+      JSON.stringify({
+        version: 3,
+        slots: {
+          '1': { meta, state: partialState },
+        },
+      }),
+    );
+
+    expect(dialogueTree['summit-start']).toBeTruthy();
+
+    const { useGameState } = await import('./useGameState');
+    const { result } = renderHook(() => useGameState());
+
+    await act(async () => {
+      result.current.loadFromSlot(1);
+    });
+
+    await act(async () => {
+      // Flush effects (checkpoint autosave runs in a useEffect)
+      await Promise.resolve();
+    });
+
+    expect(localStorage.getItem(STORAGE_KEY_SUMMIT_GATE_CHECKPOINT_V1)).toBeTruthy();
   });
 
   it('openLoadScreen/backToTitle transition scenes', async () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { GameState, DialogueNode, SecondaryEncounter } from '@/game/types';
-import type { SaveSlotInfo } from '@/game/storage';
+import type { CheckpointInfo, SaveSlotInfo } from '@/game/storage';
 
 // DialoguePanel does async text-wrapping work which can cause act() warnings.
 // Stub it out: these tests only care about hub/focus encounter controls.
@@ -84,6 +84,7 @@ const baseState: GameState = {
 };
 
 const saveSlots: SaveSlotInfo[] = [{ id: 1, meta: null }];
+const checkpoint: CheckpointInfo = { label: 'Summit Gate', meta: null };
 
 const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
   render(
@@ -97,8 +98,10 @@ const renderScreen = (state: GameState, enterPendingEncounter = vi.fn()) =>
       takeManagementAction={vi.fn()}
       resetGame={vi.fn()}
       saveSlots={saveSlots}
+      summitGateCheckpoint={checkpoint}
       saveToSlot={vi.fn()}
       loadFromSlot={vi.fn()}
+      loadCheckpoint={vi.fn()}
       deleteSlot={vi.fn()}
       exitToTitle={vi.fn()}
       enterPendingEncounter={enterPendingEncounter}

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { GameState, DialogueNode } from '@/game/types';
-import type { SaveSlotInfo } from '@/game/storage';
+import type { CheckpointInfo, SaveSlotInfo } from '@/game/storage';
 
 vi.mock('@/components/DialoguePanel', () => ({
   default: () => <div data-testid="dialogue-panel" />,
@@ -60,6 +60,7 @@ const baseState: GameState = {
 };
 
 const saveSlots: SaveSlotInfo[] = [{ id: 1, meta: null }];
+const checkpoint: CheckpointInfo = { label: 'Summit Gate', meta: null };
 
 describe('GameScreen focus mode info sheet', () => {
   it('shows an Info button in focus mode and opens the info sheet', async () => {
@@ -74,8 +75,10 @@ describe('GameScreen focus mode info sheet', () => {
         takeManagementAction={vi.fn()}
         resetGame={vi.fn()}
         saveSlots={saveSlots}
+        summitGateCheckpoint={checkpoint}
         saveToSlot={vi.fn()}
         loadFromSlot={vi.fn()}
+        loadCheckpoint={vi.fn()}
         deleteSlot={vi.fn()}
         exitToTitle={vi.fn()}
         enterPendingEncounter={vi.fn()}

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { SaveSlotInfo } from '@/game/storage';
+import type { CheckpointInfo, SaveSlotInfo } from '@/game/storage';
 
 import GameMenu from '@/components/GameMenu';
 
@@ -37,6 +37,8 @@ describe('GameMenu', () => {
     },
   ];
 
+  const checkpoint: CheckpointInfo = { label: 'Summit Gate', meta: null };
+
   const openMenu = async () => {
     fireEvent.click(screen.getByRole('button', { name: /^menu$/i }));
     return await screen.findByRole('dialog');
@@ -46,8 +48,10 @@ describe('GameMenu', () => {
     render(
       <GameMenu
         slots={slots}
+        checkpoint={checkpoint}
         onSave={vi.fn()}
         onLoad={vi.fn()}
+        onLoadCheckpoint={vi.fn()}
         onDelete={vi.fn()}
         engineLabel="test"
         onExitToTitle={vi.fn()}
@@ -68,8 +72,10 @@ describe('GameMenu', () => {
     render(
       <GameMenu
         slots={slots}
+        checkpoint={checkpoint}
         onSave={onSave}
         onLoad={vi.fn()}
+        onLoadCheckpoint={vi.fn()}
         onDelete={vi.fn()}
         engineLabel="test"
         onExitToTitle={vi.fn()}
@@ -101,8 +107,10 @@ describe('GameMenu', () => {
     render(
       <GameMenu
         slots={slots}
+        checkpoint={checkpoint}
         onSave={vi.fn()}
         onLoad={vi.fn()}
+        onLoadCheckpoint={vi.fn()}
         onDelete={vi.fn()}
         engineLabel="test"
         onExitToTitle={vi.fn()}
@@ -117,8 +125,9 @@ describe('GameMenu', () => {
     const loadPanel = getActiveTabPanel(dialog);
     const loadButtons = within(loadPanel).getAllByRole('button', { name: /^load$/i });
 
-    expect(loadButtons[0]).toBeDisabled();
-    expect(loadButtons[1]).not.toBeDisabled();
+    expect(loadButtons[0]).toBeDisabled(); // checkpoint
+    expect(loadButtons[1]).toBeDisabled(); // slot 1
+    expect(loadButtons[2]).not.toBeDisabled(); // slot 2
   });
 
   it('Load tab: delete confirmation triggers onDelete', async () => {
@@ -127,8 +136,10 @@ describe('GameMenu', () => {
     render(
       <GameMenu
         slots={slots}
+        checkpoint={checkpoint}
         onSave={vi.fn()}
         onLoad={vi.fn()}
+        onLoadCheckpoint={vi.fn()}
         onDelete={onDelete}
         engineLabel="test"
         onExitToTitle={vi.fn()}
@@ -158,8 +169,10 @@ describe('GameMenu', () => {
     render(
       <GameMenu
         slots={slots}
+        checkpoint={checkpoint}
         onSave={vi.fn()}
         onLoad={vi.fn()}
+        onLoadCheckpoint={vi.fn()}
         onDelete={vi.fn()}
         engineLabel="test"
         onExitToTitle={onExitToTitle}
@@ -187,8 +200,10 @@ describe('GameMenu', () => {
     render(
       <GameMenu
         slots={slots}
+        checkpoint={checkpoint}
         onSave={vi.fn()}
         onLoad={vi.fn()}
+        onLoadCheckpoint={vi.fn()}
         onDelete={vi.fn()}
         engineLabel="test"
         onExitToTitle={vi.fn()}

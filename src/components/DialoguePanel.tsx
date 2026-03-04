@@ -56,6 +56,37 @@ const isUserTyping = () => {
   return el.isContentEditable;
 };
 
+const formatSecretLabel = (secret: string) => {
+  if (secret.startsWith('proof:')) return secret.slice('proof:'.length).replace(/-/g, ' ');
+
+  const lower = secret.toLowerCase();
+  if (lower.includes('ledger')) return 'ledger pages';
+  if (lower.includes('manifest')) return 'manifests';
+  if (lower.includes('forged') && lower.includes('map')) return 'forged maps';
+  if (lower.includes('map') && lower.includes('forg')) return 'forged maps';
+
+  return secret
+    .replace(/^(intel|evidence):/i, '')
+    .replace(/[-_]/g, ' ')
+    .trim();
+};
+
+const formatProofRequirement = (choice: Pick<DialogueChoice, 'requiresAllSecrets' | 'requiresAnySecrets'>, known: string[]) => {
+  const needsAll = choice.requiresAllSecrets ?? null;
+  if (needsAll?.length) {
+    const missingAll = needsAll.filter(s => !known.includes(s)).map(formatSecretLabel);
+    if (missingAll.length) return missingAll.join(' + ');
+  }
+
+  const needsAny = choice.requiresAnySecrets ?? null;
+  if (needsAny?.length) {
+    const okAny = needsAny.some(s => known.includes(s));
+    if (!okAny) return needsAny.map(formatSecretLabel).join(' / ');
+  }
+
+  return 'proof';
+};
+
 const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceIds = [], playerPortraitId, playerName, lockedChoices, choiceUiHints }: DialoguePanelProps) => {
   const { playSfx } = useAudio();
 
@@ -511,6 +542,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
               };
 
               const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
+              const proofRequirement = secretsLocked ? formatProofRequirement(choice, knownSecrets) : null;
               const historyLocked = alreadyDecided;
 
               const displayEffects = alreadyDecided
@@ -523,7 +555,15 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   type="button"
                   aria-disabled={locked}
                   aria-keyshortcuts={hotkey ?? undefined}
-                  title={locked && repReq ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}` : undefined}
+                  title={
+                    locked
+                      ? repReq
+                        ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}`
+                        : proofRequirement
+                          ? `Requires proof: ${proofRequirement}`
+                          : undefined
+                      : undefined
+                  }
                   onClick={onSelect}
                   className={`group relative overflow-hidden rounded-sm border border-border bg-secondary/45 p-4 text-left font-body text-sm transition-all sm:text-base
                     ${locked
@@ -573,7 +613,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                         {secretsLocked && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
                             <Lock className="h-3 w-3" />
-                            requires proof
+                            requires {proofRequirement}
                           </span>
                         )}
 
