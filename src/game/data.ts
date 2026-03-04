@@ -299,13 +299,19 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'concord-hub-2': {
     id: 'concord-hub-2',
     speaker: 'Narrator',
-    text: 'Greenmarch was written into record, but it did not end the realm\'s appetite for leverage.\n\nNew petitions stack beside the summit minutes: routes disrupted, charters challenged, small quarrels with the shape of future wars.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
+    text: 'CHAPTER II — Patterns of Dispute\n\nGreenmarch was written into record, but it did not end the realm\'s appetite for leverage.\n\nNew petitions stack beside the summit minutes: routes disrupted, charters challenged, small quarrels with the shape of future wars.\n\nIf you need the shortest line through the aftermath, start with the minutes—and then speak to the clerks who already know which ink will become blood.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
     choices: [
       {
-        id: 'hub2-briefing',
-        text: 'Review new petitions arriving from the realm\'s edges.',
+        id: 'hub2-continue',
+        text: 'Start with the summit minutes (recommended).',
         effects: [],
-        nextNodeId: 'act2-briefing',
+        nextNodeId: 'act2-summit-minutes',
+      },
+      {
+        id: 'hub2-recap',
+        text: 'Recap: what was decided at Greenmarch.',
+        effects: [],
+        nextNodeId: 'act2-recap',
       },
       {
         id: 'hub2-minutes',
@@ -318,6 +324,12 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Meet the Hall clerks and see which disputes are ripening into crises.',
         effects: [],
         nextNodeId: 'act2-clerks',
+      },
+      {
+        id: 'hub2-briefing',
+        text: 'Review new petitions arriving from the realm\'s edges.',
+        effects: [],
+        nextNodeId: 'act2-briefing',
       },
       {
         id: 'hub2-aldric',
@@ -368,6 +380,19 @@ export const dialogueTree: Record<string, DialogueNode> = {
       },
     ],
   },
+  'act2-recap': {
+    id: 'act2-recap',
+    speaker: 'Narrator',
+    text: 'A clerk hands you the one-page summary officials will pass around when they want certainty without context.\n\n• The Greenmarch dispute was forced into record.\n• Titles signed where names would not.\n• Precedent was set: the Hall can bind hungry powers with ink—if it is willing to spend legitimacy to do it.\n\nEverything that follows will be someone trying to use that precedent first.',
+    choices: [
+      {
+        id: 'act2-recap-back',
+        text: 'Return to the petitions.',
+        effects: [],
+        nextNodeId: null,
+      },
+    ],
+  },
   'act2-summit-minutes': {
     id: 'act2-summit-minutes',
     speaker: 'Narrator',
@@ -379,6 +404,12 @@ export const dialogueTree: Record<string, DialogueNode> = {
         effects: [],
         nextNodeId: null,
         revealsInfo: 'You ordered the Greenmarch minutes copied and circulated as binding precedent.',
+      },
+      {
+        id: 'act2-minutes-next-clerks',
+        text: 'Next: meet the clerks who are already triaging the fallout.',
+        effects: [],
+        nextNodeId: 'act2-clerks',
       },
       {
         id: 'act2-minutes-back',

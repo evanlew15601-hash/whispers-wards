@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { STORAGE_KEY_V1 } from './storage';
+import { STORAGE_KEY_V1, STORAGE_KEY_V3 } from './storage';
 import { dialogueTree, initialEvents, initialFactions } from './data';
 
 vi.mock('./engine/uqmWasmRuntime', () => ({
@@ -82,6 +82,51 @@ describe('useGameState', () => {
 
     expect(result.current.state.currentDialogue?.id).toBe('opening');
     expect(dialogueTree[result.current.state.currentDialogue?.id ?? '']).toBeTruthy();
+  });
+
+  it('loadFromSlot normalizes outdated hub ids to the current chapter hub', async () => {
+    const factions = initialFactions.map(f => ({ ...f }));
+    const events = initialEvents.map(e => ({ ...e }));
+
+    const partialState = {
+      currentScene: 'game',
+      factions,
+      events,
+      knownSecrets: [],
+      turnNumber: 12,
+      // Simulate a save after chapter transition that still points at the old hub.
+      chapterId: 'chapter-2',
+      chapterTurn: 2,
+      currentDialogueId: 'concord-hub',
+      log: [],
+      player: { name: 'Envoy', pronouns: 'they/them', portraitId: 'envoy-default' },
+    };
+
+    const meta = {
+      savedAt: new Date('2020-01-01T00:00:00.000Z').toISOString(),
+      turnNumber: partialState.turnNumber,
+      factions: factions.map(f => ({ id: f.id, name: f.name, reputation: f.reputation })),
+    };
+
+    localStorage.setItem(
+      STORAGE_KEY_V3,
+      JSON.stringify({
+        version: 3,
+        slots: {
+          '1': { meta, state: partialState },
+        },
+      }),
+    );
+
+    const { useGameState } = await import('./useGameState');
+    const { result } = renderHook(() => useGameState());
+
+    await act(async () => {
+      result.current.loadFromSlot(1);
+    });
+
+    expect(result.current.state.chapterId).toBe('chapter-2');
+    expect(result.current.state.currentDialogue?.id).toBe('concord-hub-2');
   });
 
   it('openLoadScreen/backToTitle transition scenes', async () => {
