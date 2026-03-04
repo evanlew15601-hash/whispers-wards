@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import type { GameState } from '@/game/types';
-import type { SaveSlotInfo } from '@/game/storage';
+import type { CheckpointInfo, SaveSlotInfo } from '@/game/storage';
 
 import GameScreen from '@/components/GameScreen';
 
@@ -77,6 +77,8 @@ const saveSlots: SaveSlotInfo[] = [
   },
 ];
 
+const checkpoint: CheckpointInfo = { label: 'Summit Gate', meta: null };
+
 const renderScreen = () =>
   render(
     <GameScreen
@@ -89,8 +91,10 @@ const renderScreen = () =>
       takeManagementAction={vi.fn()}
       resetGame={vi.fn()}
       saveSlots={saveSlots}
+      summitGateCheckpoint={checkpoint}
       saveToSlot={vi.fn()}
       loadFromSlot={vi.fn()}
+      loadCheckpoint={vi.fn()}
       deleteSlot={vi.fn()}
       exitToTitle={vi.fn()}
       enterPendingEncounter={vi.fn()}

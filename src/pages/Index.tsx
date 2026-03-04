@@ -16,8 +16,10 @@ const Index = () => {
     backToTitle,
     saveToSlot,
     loadFromSlot,
+    loadCheckpoint,
     deleteSlot,
     listSlots,
+    summitGateCheckpoint,
     makeChoice,
     endTurn,
     takeManagementAction,
@@ -70,8 +72,10 @@ const Index = () => {
       takeManagementAction={takeManagementAction}
       resetGame={resetGame}
       saveSlots={slots}
+      summitGateCheckpoint={summitGateCheckpoint}
       saveToSlot={saveToSlot}
       loadFromSlot={loadFromSlot}
+      loadCheckpoint={loadCheckpoint}
       deleteSlot={deleteSlot}
       exitToTitle={backToTitle}
       enterPendingEncounter={enterPendingEncounter}

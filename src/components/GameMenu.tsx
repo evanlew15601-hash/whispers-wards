@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { SaveSlotInfo } from '@/game/storage';
+import { CheckpointInfo, SaveSlotInfo } from '@/game/storage';
 import { useAudio } from '@/audio/useAudio';
 import { useTips } from '@/ui/tips/useTips';
 import { Button } from '@/components/ui/button';
@@ -31,8 +31,10 @@ type GameMenuTab = 'save' | 'load' | 'campaign' | 'about';
 
 interface GameMenuProps {
   slots: SaveSlotInfo[];
+  checkpoint: CheckpointInfo;
   onSave: (slotId: number) => void;
   onLoad: (slotId: number) => void;
+  onLoadCheckpoint: () => void;
   onDelete: (slotId: number) => void;
   engineLabel: string;
   onExitToTitle: () => void;
@@ -51,8 +53,10 @@ const formatSavedAt = (iso: string) => {
 
 const GameMenu = ({
   slots,
+  checkpoint,
   onSave,
   onLoad,
+  onLoadCheckpoint,
   onDelete,
   engineLabel,
   onExitToTitle,
@@ -194,6 +198,36 @@ const GameMenu = ({
             )}
 
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <div className="parchment-border rounded-sm bg-card p-4 sm:col-span-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                      Checkpoint — {checkpoint.label}
+                    </div>
+                    {checkpoint.meta ? (
+                      <>
+                        <div className="mt-1 text-sm text-card-foreground">Turn {checkpoint.meta.turnNumber}</div>
+                        <div className="mt-1 text-[11px] text-muted-foreground">Saved {formatSavedAt(checkpoint.meta.savedAt)}</div>
+                      </>
+                    ) : (
+                      <div className="mt-1 text-sm text-muted-foreground">Not created yet (autosaves at the Summit Gate).</div>
+                    )}
+                  </div>
+
+                  <Button
+                    size="sm"
+                    variant={checkpoint.meta ? 'default' : 'secondary'}
+                    disabled={!checkpoint.meta}
+                    onClick={() => {
+                      onLoadCheckpoint();
+                      setOpen(false);
+                    }}
+                  >
+                    Load
+                  </Button>
+                </div>
+              </div>
+
               {slots.map(slot => {
                 const meta = slot.meta;
                 const empty = !meta;

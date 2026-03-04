@@ -2,13 +2,18 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { GameState, DialogueChoice, PlayerProfile } from './types';
 import { dialogueTree } from './data';
+import { CHAPTERS, getChapter } from './chapters';
 import { normalizePlayerProfile } from './player';
 import {
   SaveSlotInfo,
+  CheckpointInfo,
   listSaveSlots,
   saveGameToSlot,
   loadGameFromSlot,
   deleteSaveSlot,
+  getSummitGateCheckpointInfo,
+  loadSummitGateCheckpoint,
+  saveSummitGateCheckpoint,
 } from './storage';
 import { tsConversationEngine } from './engine/tsConversationEngine';
 import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
@@ -53,6 +58,8 @@ const inferSelectedChoiceIdsFromLog = (selectedChoiceIds: string[], log: string[
   return [...out];
 };
 
+const HUB_NODE_IDS = new Set(Object.values(CHAPTERS).map(ch => ch.hubNodeId));
+
 export function useGameState() {
   const engineRef = useRef(tsConversationEngine);
 
@@ -60,10 +67,12 @@ export function useGameState() {
 
   const [state, setState] = useState<GameState>(() => engineRef.current.createInitialState());
   const [saveSlots, setSaveSlots] = useState<SaveSlotInfo[]>(() => listSaveSlots());
+  const [summitGateCheckpoint, setSummitGateCheckpoint] = useState<CheckpointInfo>(() => getSummitGateCheckpointInfo());
 
   const suppressEncounterToastRef = useRef(false);
   const lastEncounterToastIdRef = useRef<string | null>(null);
   const didInitEncounterToastRef = useRef(false);
+  const lastSummitGateCheckpointStepRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!didInitEncounterToastRef.current) {
@@ -105,7 +114,23 @@ export function useGameState() {
 
   const refreshSlots = useCallback(() => {
     setSaveSlots(listSaveSlots());
+    setSummitGateCheckpoint(getSummitGateCheckpointInfo());
   }, []);
+
+  useEffect(() => {
+    if (state.currentScene !== 'game') return;
+    if (state.currentDialogue?.id !== 'summit-start') return;
+
+    const step = state.stepNumber;
+    if (lastSummitGateCheckpointStepRef.current === step) return;
+
+    const ok = saveSummitGateCheckpoint(state);
+    if (!ok) return;
+
+    lastSummitGateCheckpointStepRef.current = step;
+    refreshSlots();
+    toast.info('Checkpoint saved: Summit Gate');
+  }, [state.currentScene, state.currentDialogue?.id, state.stepNumber, state, refreshSlots]);
 
   const startGame = useCallback(() => {
     // Route new games through the character creator.
@@ -152,13 +177,7 @@ export function useGameState() {
     }
   }, [state, refreshSlots]);
 
-  const loadFromSlot = useCallback((slotId: number) => {
-    const loaded = loadGameFromSlot(slotId);
-    if (!loaded) {
-      toast.error(`Slot ${slotId} is empty.`);
-      return;
-    }
-
+  const hydrateLoadedState = useCallback((loaded: unknown): GameState => {
     // Back/forward compatibility: hydrate missing fields and refresh dialogue from the current tree when possible.
     const base = engineRef.current.createInitialState();
     const loadedAny = loaded as unknown as Partial<GameState> & {
@@ -183,7 +202,7 @@ export function useGameState() {
 
     const loadedTurnNumber = typeof loadedAny.turnNumber === 'number' ? loadedAny.turnNumber : base.turnNumber;
 
-    const hydrated: GameState = {
+    let hydrated: GameState = {
       ...base,
       ...loadedAny,
       player: normalizePlayerProfile(loadedAny.player ?? base.player),
@@ -235,11 +254,46 @@ export function useGameState() {
       currentScene: 'game',
     };
 
+    if (hydrated.currentDialogue && HUB_NODE_IDS.has(hydrated.currentDialogue.id)) {
+      const hubId = getChapter(hydrated.chapterId).hubNodeId;
+      if (hydrated.currentDialogue.id !== hubId) {
+        const hub = dialogueTree[hubId] ?? null;
+        if (hub) hydrated = { ...hydrated, currentDialogue: hub };
+      }
+    }
+
+    return hydrated;
+  }, []);
+
+  const loadFromSlot = useCallback((slotId: number) => {
+    const loaded = loadGameFromSlot(slotId);
+    if (!loaded) {
+      toast.error(`Slot ${slotId} is empty.`);
+      return;
+    }
+
+    const hydrated = hydrateLoadedState(loaded);
+
     suppressEncounterToastRef.current = true;
     setState(hydrated);
     refreshSlots();
     toast.success(`Loaded Slot ${slotId}`);
-  }, [refreshSlots]);
+  }, [hydrateLoadedState, refreshSlots]);
+
+  const loadCheckpoint = useCallback(() => {
+    const loaded = loadSummitGateCheckpoint();
+    if (!loaded) {
+      toast.error('No Summit Gate checkpoint yet.');
+      return;
+    }
+
+    const hydrated = hydrateLoadedState(loaded);
+
+    suppressEncounterToastRef.current = true;
+    setState(hydrated);
+    refreshSlots();
+    toast.success('Loaded Checkpoint: Summit Gate');
+  }, [hydrateLoadedState, refreshSlots]);
 
   const deleteSlot = useCallback((slotId: number) => {
     const ok = deleteSaveSlot(slotId);
@@ -292,8 +346,10 @@ export function useGameState() {
     backToTitle,
     saveToSlot,
     loadFromSlot,
+    loadCheckpoint,
     deleteSlot,
     listSlots,
+    summitGateCheckpoint,
     makeChoice,
     endTurn,
     takeManagementAction,

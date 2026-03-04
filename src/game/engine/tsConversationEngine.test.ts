@@ -160,8 +160,14 @@ describe('tsConversationEngine', () => {
     const summitFromHub = atHub.currentDialogue!.choices.find(c => c.id === 'hub-summit');
     if (!summitFromHub) throw new Error('Expected hub-summit choice');
 
-    const atSummit = tsConversationEngine.applyChoice(atHub, summitFromHub);
-    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    const atSummitGate = tsConversationEngine.applyChoice(atHub, summitFromHub);
+    expect(atSummitGate.currentDialogue?.id).toBe('summit-start');
+
+    const enter = atSummitGate.currentDialogue!.choices.find(c => c.id === 'summit-enter');
+    if (!enter) throw new Error('Expected summit-enter choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atSummitGate, enter);
+    expect(atSummit.currentDialogue?.id).toBe('summit-floor');
 
     const breakdown = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-breakdown');
     if (!breakdown) throw new Error('Expected summit-breakdown choice');
@@ -181,7 +187,7 @@ describe('tsConversationEngine', () => {
 
     const atSummit = {
       ...initial,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: dialogueTree['summit-floor'],
       rngSeed: 123456789,
       factions: initial.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
       knownSecrets: [],
@@ -225,8 +231,14 @@ describe('tsConversationEngine', () => {
     const toSummit = atBought.currentDialogue!.choices.find(c => c.id === 'bought-summit');
     if (!toSummit) throw new Error('Expected bought-summit choice');
 
-    const atSummit = tsConversationEngine.applyChoice(atBought, toSummit);
-    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    const atSummitGate = tsConversationEngine.applyChoice(atBought, toSummit);
+    expect(atSummitGate.currentDialogue?.id).toBe('summit-start');
+
+    const enter = atSummitGate.currentDialogue!.choices.find(c => c.id === 'summit-enter');
+    if (!enter) throw new Error('Expected summit-enter choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atSummitGate, enter);
+    expect(atSummit.currentDialogue?.id).toBe('summit-floor');
     expect(atSummit.knownSecrets).toContain(
       'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.'
     );
@@ -252,8 +264,14 @@ describe('tsConversationEngine', () => {
     const toSummit = atStolen.currentDialogue!.choices.find(c => c.id === 'stolen-summit');
     if (!toSummit) throw new Error('Expected stolen-summit choice');
 
-    const atSummit = tsConversationEngine.applyChoice(atStolen, toSummit);
-    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    const atSummitGate = tsConversationEngine.applyChoice(atStolen, toSummit);
+    expect(atSummitGate.currentDialogue?.id).toBe('summit-start');
+
+    const enter = atSummitGate.currentDialogue!.choices.find(c => c.id === 'summit-enter');
+    if (!enter) throw new Error('Expected summit-enter choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atSummitGate, enter);
+    expect(atSummit.currentDialogue?.id).toBe('summit-floor');
     expect(atSummit.knownSecrets).toContain('Renzo\'s ledger pages show coded payments tied to the border killings.');
 
     const expose = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-expose-ledger');
@@ -283,8 +301,14 @@ describe('tsConversationEngine', () => {
     const toSummit = afterReveal.currentDialogue!.choices.find(c => c.id === 'map-call-summit');
     if (!toSummit) throw new Error('Expected map-call-summit choice');
 
-    const atSummit = tsConversationEngine.applyChoice(afterReveal, toSummit);
-    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    const atSummitGate = tsConversationEngine.applyChoice(afterReveal, toSummit);
+    expect(atSummitGate.currentDialogue?.id).toBe('summit-start');
+
+    const enter = atSummitGate.currentDialogue!.choices.find(c => c.id === 'summit-enter');
+    if (!enter) throw new Error('Expected summit-enter choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atSummitGate, enter);
+    expect(atSummit.currentDialogue?.id).toBe('summit-floor');
 
     const expose = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-expose-maps');
     if (!expose) throw new Error('Expected summit-expose-maps choice');
@@ -326,8 +350,14 @@ describe('tsConversationEngine', () => {
     const toSummit = withIronRep.currentDialogue!.choices.find(c => c.id === 'hub-summit');
     if (!toSummit) throw new Error('Expected hub-summit choice');
 
-    const atSummit = tsConversationEngine.applyChoice(withIronRep, toSummit);
-    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    const atSummitGate = tsConversationEngine.applyChoice(withIronRep, toSummit);
+    expect(atSummitGate.currentDialogue?.id).toBe('summit-start');
+
+    const enter = atSummitGate.currentDialogue!.choices.find(c => c.id === 'summit-enter');
+    if (!enter) throw new Error('Expected summit-enter choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atSummitGate, enter);
+    expect(atSummit.currentDialogue?.id).toBe('summit-floor');
 
     const expose = atSummit.currentDialogue!.choices.find(c => c.id === 'summit-expose-manifest');
     if (!expose) throw new Error('Expected summit-expose-manifest choice');
@@ -349,8 +379,14 @@ describe('tsConversationEngine', () => {
     const toSummit = atArchives.currentDialogue!.choices.find(c => c.id === 'archives-summit');
     if (!toSummit) throw new Error('Expected archives-summit choice');
 
-    const atSummit = tsConversationEngine.applyChoice(atArchives, toSummit);
-    expect(atSummit.currentDialogue?.id).toBe('summit-start');
+    const atSummitGate = tsConversationEngine.applyChoice(atArchives, toSummit);
+    expect(atSummitGate.currentDialogue?.id).toBe('summit-start');
+
+    const enter = atSummitGate.currentDialogue!.choices.find(c => c.id === 'summit-enter');
+    if (!enter) throw new Error('Expected summit-enter choice');
+
+    const atSummit = tsConversationEngine.applyChoice(atSummitGate, enter);
+    expect(atSummit.currentDialogue?.id).toBe('summit-floor');
     expect(atSummit.knownSecrets).toContain(
       'An old tripartite accord names Greenmarch Pass neutral hinge-ground and warns to keep the binding unbroken.'
     );
@@ -583,7 +619,7 @@ describe('tsConversationEngine', () => {
 
     const atSummit = {
       ...initial,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: dialogueTree['summit-floor'],
       rngSeed: 123456789,
     };
 
@@ -618,7 +654,7 @@ describe('tsConversationEngine', () => {
 
     const revisitSummit = {
       ...afterEncounter,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: dialogueTree['summit-floor'],
     };
 
     expect(revisitSummit.selectedChoiceIds).toContain('summit-adjourn');

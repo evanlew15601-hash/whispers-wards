@@ -54,6 +54,32 @@ describe('game storage', () => {
     expect(listSaveSlots()[0].meta).toBeNull();
   });
 
+  it('saves and loads the Summit Gate checkpoint', async () => {
+    const {
+      STORAGE_KEY_SUMMIT_GATE_CHECKPOINT_V1,
+      getSummitGateCheckpointInfo,
+      loadSummitGateCheckpoint,
+      saveSummitGateCheckpoint,
+    } = await importStorage();
+
+    const state = tsConversationEngine.startNewGame();
+
+    expect(getSummitGateCheckpointInfo().meta).toBeNull();
+
+    expect(saveSummitGateCheckpoint(state)).toBe(true);
+
+    const raw = localStorage.getItem(STORAGE_KEY_SUMMIT_GATE_CHECKPOINT_V1);
+    expect(raw).toBeTruthy();
+
+    const info = getSummitGateCheckpointInfo();
+    expect(info.label).toBe('Summit Gate');
+    expect(info.meta?.turnNumber).toBe(state.turnNumber);
+
+    const loaded = loadSummitGateCheckpoint();
+    expect(loaded?.currentDialogue?.id).toBe(state.currentDialogue?.id);
+    expect(loaded?.player).toEqual(state.player);
+  });
+
   it('ignores invalid slot ids', async () => {
     const { deleteSaveSlot, listSaveSlots, loadGameFromSlot, saveGameToSlot } = await importStorage();
 

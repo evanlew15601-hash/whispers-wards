@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useAmbience } from '@/audio/useAmbience';
 import { GameState, DialogueChoice } from '@/game/types';
-import { SaveSlotInfo } from '@/game/storage';
+import { SaveSlotInfo, CheckpointInfo } from '@/game/storage';
 import DialoguePanel from '@/components/DialoguePanel';
 import HubPanel from '@/components/HubPanel';
 import ManagementPanel from '@/components/ManagementPanel';
@@ -45,8 +45,10 @@ interface GameScreenProps {
   takeManagementAction: (actionId: string) => void;
   resetGame: () => void;
   saveSlots: SaveSlotInfo[];
+  summitGateCheckpoint: CheckpointInfo;
   saveToSlot: (slotId: number) => void;
   loadFromSlot: (slotId: number) => void;
+  loadCheckpoint: () => void;
   deleteSlot: (slotId: number) => void;
   exitToTitle: () => void;
   enterPendingEncounter: () => void;
@@ -75,8 +77,10 @@ const GameScreen = ({
   takeManagementAction,
   resetGame,
   saveSlots,
+  summitGateCheckpoint,
   saveToSlot,
   loadFromSlot,
+  loadCheckpoint,
   deleteSlot,
   exitToTitle,
   enterPendingEncounter,
@@ -372,8 +376,10 @@ const GameScreen = ({
 
           <GameMenu
             slots={saveSlots}
+            checkpoint={summitGateCheckpoint}
             onSave={saveToSlot}
             onLoad={loadFromSlot}
+            onLoadCheckpoint={loadCheckpoint}
             onDelete={deleteSlot}
             engineLabel={engineLabel}
             onExitToTitle={exitToTitle}

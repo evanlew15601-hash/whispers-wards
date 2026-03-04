@@ -20,6 +20,8 @@ export const STORAGE_KEY_V3 = `${STORAGE_KEY_PREFIX}:v${STORAGE_VERSION}`;
 export const STORAGE_KEY_V2 = `${STORAGE_KEY_PREFIX}:v2`;
 export const STORAGE_KEY_V1 = `${STORAGE_KEY_PREFIX}:v1`;
 
+export const STORAGE_KEY_SUMMIT_GATE_CHECKPOINT_V1 = `${STORAGE_KEY_PREFIX}:checkpoint:summit-gate:v1`;
+
 export interface SaveSlotMeta {
   savedAt: string; // ISO timestamp
   turnNumber: number;
@@ -32,6 +34,11 @@ export interface SaveSlotMeta {
 
 export interface SaveSlotInfo {
   id: number;
+  meta: SaveSlotMeta | null;
+}
+
+export interface CheckpointInfo {
+  label: string;
   meta: SaveSlotMeta | null;
 }
 
@@ -188,6 +195,15 @@ export const persistedStoreV3Schema = z.object({
   version: z.literal(3),
   slots: z.record(z.unknown()),
 });
+
+const persistedSummitGateCheckpointSchema = z
+  .object({
+    version: z.literal(1),
+    label: z.literal('Summit Gate'),
+    meta: saveSlotMetaSchema,
+    state: persistedStateV3Schema,
+  })
+  .passthrough();
 
 type PersistedSlotV2 = z.infer<typeof persistedSlotV2Schema>;
 interface PersistedStoreV2 {
@@ -543,4 +559,80 @@ export const deleteSaveSlot = (slotId: number): boolean => {
 
   delete store.slots[String(id)];
   return writeStoreV3(store);
+};
+
+export const getSummitGateCheckpointInfo = (): CheckpointInfo => {
+  const raw = safeGetItem(STORAGE_KEY_SUMMIT_GATE_CHECKPOINT_V1);
+  if (!raw) return { label: 'Summit Gate', meta: null };
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { label: 'Summit Gate', meta: null };
+  }
+
+  const checkpointParsed = persistedSummitGateCheckpointSchema.safeParse(parsed);
+  if (!checkpointParsed.success) return { label: 'Summit Gate', meta: null };
+
+  return {
+    label: checkpointParsed.data.label,
+    meta: checkpointParsed.data.meta,
+  };
+};
+
+export const saveSummitGateCheckpoint = (state: GameState): boolean => {
+  // If storage is blocked entirely, report failure rather than silently dropping saves.
+  if (!probeLocalStorage()) return false;
+
+  const payload = {
+    version: 1 as const,
+    label: 'Summit Gate' as const,
+    meta: createMeta(state),
+    state: {
+      player: state.player,
+      factions: state.factions,
+      events: state.events,
+      knownSecrets: state.knownSecrets,
+      selectedChoiceIds: state.selectedChoiceIds,
+      stepNumber: state.stepNumber,
+      turnNumber: state.turnNumber,
+      chapterId: state.chapterId,
+      chapterTurn: state.chapterTurn,
+      milestones: state.milestones,
+      resources: state.resources,
+      projects: state.projects,
+      management: state.management,
+      log: state.log,
+      rngSeed: state.rngSeed,
+      world: state.world,
+      pendingEncounter: state.pendingEncounter,
+      currentScene: state.currentScene,
+      currentDialogueId: state.currentDialogue?.id ?? null,
+    },
+  };
+
+  return safeSetItem(STORAGE_KEY_SUMMIT_GATE_CHECKPOINT_V1, JSON.stringify(payload));
+};
+
+export const loadSummitGateCheckpoint = (): LoadableGameState | null => {
+  const raw = safeGetItem(STORAGE_KEY_SUMMIT_GATE_CHECKPOINT_V1);
+  if (!raw) return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+
+  const checkpointParsed = persistedSummitGateCheckpointSchema.safeParse(parsed);
+  if (!checkpointParsed.success) return null;
+
+  const { currentDialogueId, ...rest } = checkpointParsed.data.state;
+
+  return {
+    ...(rest as unknown as LoadableGameState),
+    currentDialogue: currentDialogueId ? ({ id: currentDialogueId } as LoadableGameState['currentDialogue']) : null,
+  };
 };

@@ -87,7 +87,7 @@ describe('uqmWasmConversationEngine', () => {
     const start = tsConversationEngine.startNewGame();
     const seeded = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: dialogueTree['summit-floor'],
       rngSeed: 123456789,
     };
 
@@ -178,7 +178,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const atSummit = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: dialogueTree['summit-floor'],
       rngSeed: 123456789,
       factions: start.factions.map(f => (f.id === 'iron-pact' ? { ...f, reputation: 5 } : f)),
       knownSecrets: [],
@@ -214,7 +214,7 @@ describe('uqmWasmConversationEngine', () => {
     const start = tsConversationEngine.startNewGame();
     const base = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: dialogueTree['summit-floor'],
       rngSeed: 123456789,
       factions: start.factions.map(f => ({ ...f, reputation: 0 })),
     };
@@ -373,7 +373,7 @@ describe('uqmWasmConversationEngine', () => {
     const start = tsConversationEngine.startNewGame();
     const atSummit = {
       ...start,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: dialogueTree['summit-floor'],
       rngSeed: 123456789,
     };
 
@@ -407,7 +407,7 @@ describe('uqmWasmConversationEngine', () => {
 
     const revisitSummit = {
       ...afterEncounter,
-      currentDialogue: dialogueTree['summit-start'],
+      currentDialogue: dialogueTree['summit-floor'],
     };
 
     expect(revisitSummit.selectedChoiceIds).toContain('summit-adjourn');
