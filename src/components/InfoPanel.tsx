@@ -196,28 +196,29 @@ const InfoPanel = (
         {pendingEncounter && (
           <Collapsible defaultOpen={pendingUrgent}>
             <div className={`parchment-border rounded-sm bg-card p-4 ${pendingUrgent ? 'ring-1 ring-destructive/20' : ''}`}>
-              <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className="group flex w-full items-center justify-between gap-3"
-                  aria-label="Toggle crisis"
-                >
-                  <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="group flex flex-1 items-center justify-between gap-3"
+                    aria-label="Toggle crisis"
+                  >
                     <h3 className="flex items-center gap-2 font-display text-xs tracking-[0.2em] text-primary uppercase">
                       <Swords className="h-4 w-4" aria-hidden="true" />
                       Crisis pending
                     </h3>
-                    <Tip
-                      id="pending-encounter"
-                      label="Tip: Crisis"
-                      content={
-                        'A crisis can be addressed immediately from the Hall without advancing time. If it expires, tensions rise and the situation may worsen.'
-                      }
-                    />
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-                </button>
-              </CollapsibleTrigger>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </button>
+                </CollapsibleTrigger>
+
+                <Tip
+                  id="pending-encounter"
+                  label="Tip: Crisis"
+                  content={
+                    'A crisis can be addressed immediately from the Hall without advancing time. If it expires, tensions rise and the situation may worsen.'
+                  }
+                />
+              </div>
 
               <CollapsibleContent>
                 <div className="mt-2">

@@ -46,7 +46,6 @@ for (const a of assets) {
   if (!force) {
     try {
       await fs.access(outPath);
-      // eslint-disable-next-line no-console
       console.log(`[skip] ${a.outFile} already exists (use --force to overwrite)`);
       continue;
     } catch {
@@ -54,11 +53,9 @@ for (const a of assets) {
     }
   }
 
-  // eslint-disable-next-line no-console
   console.log(`[download] ${a.url}`);
   const buf = await download(a.url);
   await fs.writeFile(outPath, buf);
-  // eslint-disable-next-line no-console
   console.log(`[write] ${path.relative(ROOT, outPath)} (${buf.length} bytes)`);
 }
 
@@ -79,7 +76,6 @@ const ensureNoticeLines = async () => {
   const suffix = `\n\n# Audio assets (downloaded via scripts/fetch-ambience-assets.mjs)\n${missing.join('\n')}\n`;
   await fs.writeFile(noticePath, `${notice.replace(/\s*$/,'')}${suffix}`, 'utf8');
 
-  // eslint-disable-next-line no-console
   console.log(`\n[notice] updated NOTICE with ${missing.length} attribution line(s)`);
 };
 

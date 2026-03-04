@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 import type { DialogueNode, Faction } from '@/game/types';
 
 vi.mock('@/game/engine/uqmTextWrap', async () => {
@@ -15,8 +15,20 @@ vi.mock('@/game/engine/uqmTextWrap', async () => {
 
 import DialoguePanel from '@/components/DialoguePanel';
 
+const flushAsync = async () => {
+  await act(async () => {
+    await Promise.resolve();
+  });
+};
+
+const pressKey = async (key: string) => {
+  await act(async () => {
+    fireEvent.keyDown(window, { key });
+  });
+};
+
 describe('DialoguePanel', () => {
-  it('supports skipping reveal and choosing responses via number keys', () => {
+  it('supports skipping reveal and choosing responses via number keys', async () => {
     vi.useFakeTimers();
 
     const onChoice = vi.fn();
@@ -63,11 +75,13 @@ describe('DialoguePanel', () => {
       />,
     );
 
-    fireEvent.keyDown(window, { key: '1' });
+    await flushAsync();
+
+    await pressKey('1');
     expect(onChoice).not.toHaveBeenCalled();
 
-    fireEvent.keyDown(window, { key: ' ' });
-    fireEvent.keyDown(window, { key: '1' });
+    await pressKey(' ');
+    await pressKey('1');
 
     expect(onChoice).toHaveBeenCalledTimes(1);
     expect(onChoice).toHaveBeenCalledWith(node.choices[0]);
@@ -75,7 +89,7 @@ describe('DialoguePanel', () => {
     vi.useRealTimers();
   });
 
-  it('does not choose locked options via hotkeys', () => {
+  it('does not choose locked options via hotkeys', async () => {
     vi.useFakeTimers();
 
     const onChoice = vi.fn();
@@ -117,15 +131,17 @@ describe('DialoguePanel', () => {
       />,
     );
 
-    fireEvent.keyDown(window, { key: ' ' });
-    fireEvent.keyDown(window, { key: '1' });
+    await flushAsync();
+
+    await pressKey(' ');
+    await pressKey('1');
 
     expect(onChoice).not.toHaveBeenCalled();
 
     vi.useRealTimers();
   });
 
-  it('locks choices that require proof until the secret is known', () => {
+  it('locks choices that require proof until the secret is known', async () => {
     vi.useFakeTimers();
 
     const onChoice = vi.fn();
@@ -166,8 +182,10 @@ describe('DialoguePanel', () => {
       />,
     );
 
-    fireEvent.keyDown(window, { key: ' ' });
-    fireEvent.keyDown(window, { key: '1' });
+    await flushAsync();
+
+    await pressKey(' ');
+    await pressKey('1');
     expect(onChoice).not.toHaveBeenCalled();
 
     rerender(
@@ -179,7 +197,9 @@ describe('DialoguePanel', () => {
       />,
     );
 
-    fireEvent.keyDown(window, { key: '1' });
+    await flushAsync();
+
+    await pressKey('1');
     expect(onChoice).toHaveBeenCalledTimes(1);
 
     vi.useRealTimers();

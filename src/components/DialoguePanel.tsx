@@ -85,7 +85,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
       if (hint) map.set(choice.id, hint);
     });
     return map;
-  }, [node.id, node.choices, choiceUiHints]);
+  }, [node.choices, choiceUiHints]);
 
   const lockedChoiceFlagById = useMemo(() => {
     const map = new Map<string, boolean>();
@@ -95,7 +95,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
       if (typeof locked === 'boolean') map.set(choice.id, locked);
     });
     return map;
-  }, [node.id, node.choices, lockedChoices]);
+  }, [node.choices, lockedChoices]);
 
   const visibleChoices = useMemo(() => {
     if (knownSecrets.includes('override')) return node.choices;
@@ -152,6 +152,16 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     }, 220);
   }, [playSfx]);
 
+  const voiceSfxId = useMemo(() => (
+    node.speakerFaction === 'iron-pact'
+      ? 'voice.iron'
+      : node.speakerFaction === 'verdant-court'
+        ? 'voice.verdant'
+        : node.speakerFaction === 'ember-throne'
+          ? 'voice.ember'
+          : 'voice.narrator'
+  ), [node.speakerFaction]);
+
   useEffect(() => {
     playSfx('ui.page');
 
@@ -174,14 +184,6 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     const steps = Math.max(1, Math.ceil(durationMs / REVEAL_TICK_MS));
     const stepChars = Math.max(1, Math.ceil(fullText.length / steps));
 
-    const voiceId = node.speakerFaction === 'iron-pact'
-      ? 'voice.iron'
-      : node.speakerFaction === 'verdant-court'
-        ? 'voice.verdant'
-        : node.speakerFaction === 'ember-throne'
-          ? 'voice.ember'
-          : 'voice.narrator';
-
     lastVoiceAtRef.current = 0;
 
     revealTimerRef.current = window.setInterval(() => {
@@ -192,7 +194,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         if (chunk && /[A-Za-z0-9]/.test(chunk)) {
           const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
           if (now - lastVoiceAtRef.current > 70) {
-            playSfx(voiceId);
+            playSfx(voiceSfxId);
             lastVoiceAtRef.current = now;
           }
         }
@@ -218,7 +220,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         nudgeTimerRef.current = null;
       }
     };
-  }, [node.id, fullText, playSfx]);
+  }, [node.id, fullText, playSfx, voiceSfxId]);
 
   useEffect(() => {
     setDialogueLines(wrapTextLinesJs(visibleText, DIALOGUE_MAX_COLUMNS));
@@ -254,7 +256,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
     return () => {
       cancelled = true;
     };
-  }, [node.id]);
+  }, [node.id, node.choices]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
