@@ -1,31 +1,12 @@
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { playSfx as playZzfxSfx, type SfxId } from '@/audio/sfx';
-import { clamp01, DEFAULT_AUDIO_SETTINGS, loadAudioSettings, saveAudioSettings, type AudioSettings } from '@/audio/storage';
+import { clamp01, loadAudioSettings, saveAudioSettings, type AudioSettings } from '@/audio/storage';
 import { getHowlerRuntime } from '@/audio/howlerRuntime';
 import { getProceduralAmbienceUrl, type AmbienceId } from '@/audio/proceduralAmbience';
 import { getAuthoredAmbienceSources } from '@/audio/ambienceSources';
 import { resumeZzfx } from '@/audio/zzfx';
-
-export interface AudioApi {
-  settings: AudioSettings;
-  setSettings: (next: AudioSettings) => void;
-  patchSettings: (patch: Partial<AudioSettings>) => void;
-  playSfx: (id: SfxId) => void;
-  setAmbience: (id: AmbienceId | null) => void;
-  unlockAudio: () => void;
-}
-
-const noop = () => {};
-
-export const AudioContext = createContext<AudioApi>({
-  settings: DEFAULT_AUDIO_SETTINGS,
-  setSettings: noop,
-  patchSettings: noop,
-  playSfx: noop,
-  setAmbience: noop,
-  unlockAudio: noop,
-});
+import { AudioContext, type AudioApi } from '@/audio/audioContext';
 
 export const AudioProvider = ({ children }: PropsWithChildren) => {
   const [settings, setSettingsState] = useState<AudioSettings>(() => loadAudioSettings());

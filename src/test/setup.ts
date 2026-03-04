@@ -57,24 +57,20 @@ if (!globalThis.IntersectionObserver) {
 }
 
 if (!HTMLElement.prototype.scrollIntoView) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   HTMLElement.prototype.scrollIntoView = function scrollIntoView() {};
 }
 
 if (!HTMLElement.prototype.setPointerCapture) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   HTMLElement.prototype.setPointerCapture = function setPointerCapture() {};
 }
 
 if (!HTMLElement.prototype.hasPointerCapture) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   HTMLElement.prototype.hasPointerCapture = function hasPointerCapture() {
     return false;
   };
 }
 
 if (!HTMLElement.prototype.releasePointerCapture) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   HTMLElement.prototype.releasePointerCapture = function releasePointerCapture() {};
 }
 
