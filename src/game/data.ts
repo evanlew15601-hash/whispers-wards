@@ -1,5 +1,9 @@
 import { Faction, DialogueNode, GameEvent } from './types';
-import { GREENMARCH_SUMMIT_CONCLUDED_SECRET } from './progress';
+import {
+  ALDRIC_THESSALY_MEETING_CONFIRMED_SECRET,
+  GREENMARCH_SUMMIT_CONCLUDED_SECRET,
+  THESSALY_ALDRIC_MEETING_ARRANGED_SECRET,
+} from './progress';
 
 export const initialFactions: Faction[] = [
   {
@@ -409,6 +413,17 @@ export const dialogueTree: Record<string, DialogueNode> = {
     text: 'Vane waits beside the war table, fingers drumming a steady cadence against the hilt of his sword.\n\n"Well, envoy? Are the druids willing to stop bleeding my border patrols? Or do I send steel into the trees?"',
     choices: [
       {
+        id: 'aldric-private-meeting',
+        text: '"Thessaly will meet you in private. One room, one hour, no banners."',
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET, ALDRIC_THESSALY_MEETING_CONFIRMED_SECRET],
+        requiresAllSecrets: [THESSALY_ALDRIC_MEETING_ARRANGED_SECRET],
+        effects: [
+          { factionId: 'iron-pact', reputationChange: 3 },
+          { factionId: 'verdant-court', reputationChange: 3 },
+        ],
+        nextNodeId: 'aldric-meeting-confirmed',
+      },
+      {
         id: 'aldric-council',
         text: '"There\'s a third path: shared stewardship of the Pass. No banners. No monopolies."',
         effects: [
@@ -447,6 +462,21 @@ export const dialogueTree: Record<string, DialogueNode> = {
         text: 'Step back and pursue other leads first.',
         effects: [],
         nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'aldric-meeting-confirmed': {
+    id: 'aldric-meeting-confirmed',
+    speaker: 'Commander Aldric Vane',
+    speakerFaction: 'iron-pact',
+    text: 'For a moment the cadence stops.\n\nVane exhales through his nose. "Private," he repeats. "No banners." His eyes flick to the corridor, as if expecting a trap to step out of the stone.\n\n"Fine," he says at last. "One hour. Witnesses of our choosing. And if she tries to bind me with druid blood, you\'ll be the one cutting the cord."',
+    choices: [
+      {
+        id: 'aldric-meeting-confirmed-back',
+        text: 'Send the confirmation to Thessaly and return to the hall.',
+        effects: [],
+        nextNodeId: 'concord-hub',
+        revealsInfo: ALDRIC_THESSALY_MEETING_CONFIRMED_SECRET,
       },
     ],
   },
@@ -658,13 +688,59 @@ export const dialogueTree: Record<string, DialogueNode> = {
         effects: [
           { factionId: 'verdant-court', reputationChange: 3 },
         ],
-        nextNodeId: 'concord-hub',
+        nextNodeId: 'thessaly-meeting-terms',
+      },
+      {
+        id: 'followup-present-proof',
+        text: 'Present what you\'ve found and ask Thessaly to meet Aldric in private.',
+        hideWhenLockedBySecrets: true,
+        hideWhenHasAnySecrets: [GREENMARCH_SUMMIT_CONCLUDED_SECRET, THESSALY_ALDRIC_MEETING_ARRANGED_SECRET],
+        requiresAnySecrets: [
+          'The Ember Throne forged maps to manipulate the border dispute.',
+          'Renzo\'s ledger pages show coded payments tied to the border killings.',
+          'Renzo sold you a curated ledger copy; it still suggests payments aligned with the killings.',
+          'Renzo\'s manifests list furnace salts disguised as "road salt" under a Concord Hall docket number.',
+          'A Verdant ward anchor was scraped and dusted with furnace salt to make the ward slip temporarily.',
+        ],
+        effects: [
+          { factionId: 'verdant-court', reputationChange: 3 },
+        ],
+        nextNodeId: 'thessaly-meeting-arranged',
       },
       {
         id: 'followup-back',
         text: 'Return to the corridor-crossroads.',
         effects: [],
         nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'thessaly-meeting-terms': {
+    id: 'thessaly-meeting-terms',
+    speaker: 'Emissary Thessaly',
+    speakerFaction: 'verdant-court',
+    text: 'Thessaly studies you without blinking.\n\n"Proof," she says. "Not suspicion. Not Iron stories. Something that would hold up under lantern-light and witnesses."\n\nShe turns her palm up. A thin cut opens without a blade, a bead of blood bright as a berry.\n\n"Bring me that," she says. "And I\'ll meet your commander where he can\'t posture for his soldiers."',
+    choices: [
+      {
+        id: 'thessaly-meeting-terms-back',
+        text: 'Return to the hall and keep digging.',
+        effects: [],
+        nextNodeId: 'concord-hub',
+      },
+    ],
+  },
+  'thessaly-meeting-arranged': {
+    id: 'thessaly-meeting-arranged',
+    speaker: 'Emissary Thessaly',
+    speakerFaction: 'verdant-court',
+    text: 'You lay out the details—ink, dates, seals, all the small things liars forget. Thessaly\'s expression goes very still.\n\n"So it isn\'t just fear," she murmurs. "It\'s design."\n\nShe looks past you, toward the western wing. "Fine. I\'ll meet him. One room, one hour, no banners."',
+    choices: [
+      {
+        id: 'thessaly-meeting-arranged-send',
+        text: 'Send word to Aldric and return to the hall.',
+        effects: [],
+        nextNodeId: 'concord-hub',
+        revealsInfo: THESSALY_ALDRIC_MEETING_ARRANGED_SECRET,
       },
     ],
   },

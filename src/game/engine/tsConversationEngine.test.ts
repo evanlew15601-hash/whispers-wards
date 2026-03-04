@@ -362,6 +362,48 @@ describe('tsConversationEngine', () => {
     expect(afterAccord.currentDialogue?.id).toBe('ending-greenmarch-compact-accord');
   });
 
+  it('lets proof unlock a character-to-character meeting followup (Thessaly → Aldric)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const withProof = {
+      ...initial,
+      currentDialogue: dialogueTree['thessaly-followup'],
+      rngSeed: 123456789,
+      knownSecrets: ['The Ember Throne forged maps to manipulate the border dispute.'],
+    };
+
+    const present = withProof.currentDialogue!.choices.find(c => c.id === 'followup-present-proof');
+    if (!present) throw new Error('Expected followup-present-proof choice');
+
+    const afterPresent = tsConversationEngine.applyChoice(withProof, present);
+    expect(afterPresent.currentDialogue?.id).toBe('thessaly-meeting-arranged');
+
+    const send = afterPresent.currentDialogue!.choices.find(c => c.id === 'thessaly-meeting-arranged-send');
+    if (!send) throw new Error('Expected thessaly-meeting-arranged-send choice');
+
+    const afterSend = tsConversationEngine.applyChoice(afterPresent, send);
+    expect(afterSend.currentDialogue?.id).toBe('concord-hub');
+    expect(afterSend.knownSecrets).toContain('Thessaly agreed to meet Aldric in private before the summit.');
+
+    const atAldric = {
+      ...afterSend,
+      currentDialogue: dialogueTree['aldric-followup'],
+    };
+
+    const tellAldric = atAldric.currentDialogue!.choices.find(c => c.id === 'aldric-private-meeting');
+    if (!tellAldric) throw new Error('Expected aldric-private-meeting choice');
+
+    const afterTell = tsConversationEngine.applyChoice(atAldric, tellAldric);
+    expect(afterTell.currentDialogue?.id).toBe('aldric-meeting-confirmed');
+
+    const confirm = afterTell.currentDialogue!.choices.find(c => c.id === 'aldric-meeting-confirmed-back');
+    if (!confirm) throw new Error('Expected aldric-meeting-confirmed-back choice');
+
+    const afterConfirm = tsConversationEngine.applyChoice(afterTell, confirm);
+    expect(afterConfirm.currentDialogue?.id).toBe('concord-hub');
+    expect(afterConfirm.knownSecrets).toContain('Aldric agreed to the private meeting with Thessaly.');
+  });
+
   it('suppresses reputation effects when repeating rep-affecting choices in legacy saves', () => {
     const initial = tsConversationEngine.startNewGame();
 
