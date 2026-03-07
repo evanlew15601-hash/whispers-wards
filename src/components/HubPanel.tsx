@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import type { DialogueChoice, DialogueNode, Faction } from '@/game/types';
-import { isChoiceLocked, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
+import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
 import Tip from '@/ui/tips/Tip';
 import {
   AlertDialog,
@@ -73,6 +73,10 @@ const HubPanel = ({
 
       const secretsLocked = isChoiceLockedBySecrets(choice, knownSecrets);
       if (choice.hideWhenLockedBySecrets && secretsLocked) return false;
+
+      if (isChoiceLockedByExclusiveGroup(choice, selectedChoiceIds)) {
+        return false;
+      }
 
       const repReq = choice.requiredReputation ?? null;
       const repLocked = Boolean(

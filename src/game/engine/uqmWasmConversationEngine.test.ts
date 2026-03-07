@@ -81,6 +81,50 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextWasm2.rngSeed).toBe(nextTs2.rngSeed);
   });
 
+  it('can transition out of the game scene when a choice sets nextScene', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const initial = tsConversationEngine.startNewGame();
+
+    const choice = {
+      id: 'qa-exit-title-wasm',
+      text: 'Exit to title',
+      effects: [],
+      nextNodeId: null,
+      nextScene: 'title' as const,
+    };
+
+    const next = wasmEngine.applyChoice(initial, choice);
+
+    expect(next.currentScene).toBe('title');
+    expect(next.currentDialogue).toBeNull();
+  });
+
+  it('does not apply nextScene when the choice is locked (WASM engine path)', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+    const seeded = {
+      ...start,
+      currentDialogue: dialogueTree['summit-floor'],
+      rngSeed: 123456789,
+      knownSecrets: [],
+    };
+
+    const lockedChoice = seeded.currentDialogue!.choices.find(c => c.id === 'summit-iron');
+    if (!lockedChoice) throw new Error('Expected summit-iron choice');
+
+    expect(isChoiceLocked(lockedChoice, seeded.factions, seeded.knownSecrets, seeded.selectedChoiceIds)).toBe(true);
+
+    const forcedExit = { ...lockedChoice, nextScene: 'title' as const };
+
+    const next = wasmEngine.applyChoice(seeded, forcedExit);
+
+    expect(next).toBe(seeded);
+    expect(next.currentScene).toBe('game');
+    expect(next.currentDialogue?.id).toBe('summit-floor');
+  });
+
   it('matches tsConversationEngine lock bypass when knownSecrets includes override', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 
