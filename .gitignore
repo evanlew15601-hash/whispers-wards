@@ -17,6 +17,7 @@ public/wasm/*.wasm
 
 # Generated Ink story JSON (built via scripts/build-ink-story.mjs)
 src/game/story/story.json
+src/game/story/story.meta.json
 
 # Downloaded upstream UQM snapshot (installed by scripts/fetch-uqm-upstream.mjs)
 third_party/uqm/upstream/

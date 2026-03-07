@@ -47,12 +47,16 @@ if (typeof compiled !== 'string') {
 
 const storyVersion = crypto.createHash('sha256').update(compiled).digest('hex').slice(0, 16);
 
-const parsed = JSON.parse(compiled) as Record<string, unknown>;
-parsed.ccStoryId = 'main';
-parsed.ccStoryVersion = storyVersion;
-
+const parsed = JSON.parse(compiled) as unknown;
 const pretty = JSON.stringify(parsed, null, 2);
 
 await fsp.writeFile(outJsonPath, `${pretty}\n`, 'utf8');
+
+const metaPath = path.join(storyDir, 'story.meta.json');
+await fsp.writeFile(
+  metaPath,
+  `${JSON.stringify({ storyId: 'main', storyVersion }, null, 2)}\n`,
+  'utf8',
+);
 
 console.log(`[ink] Compiled ${path.relative(repoRoot, inkEntryPath)} -> ${path.relative(repoRoot, outJsonPath)}`);
