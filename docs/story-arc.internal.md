@@ -2,16 +2,16 @@
 
 This is a working narrative map so new content stays coherent with existing scenes (`opening`, `thessaly-intro`, `concord-hub`, the Greenmarch summit endings).
 
-It is written to be *useful for writing* without hard-revealing culprits, twist payloads, or late-game truths.
+It’s written to be *useful for writing* without hard-revealing culprits, twist payloads, or late-game truths.
 
 ## Core promise
-A diplomacy game where legitimacy is *manufactured* through oaths, precedent, and public memory—and where the player’s job is to make a settlement that can survive the next scandal.
+A diplomacy game where legitimacy is *manufactured* through oaths, precedent, and public memory—and where the player’s job is to broker a settlement that can survive the next scandal.
 
 ## Player role
 You are the Envoy of Concord. Your leverage is:
-- reputation with factions
-- obligations you can credibly offer
-- information you can prove (not merely suspect)
+- Reputation with factions.
+- Obligations you can credibly offer.
+- Information you can prove (not merely suspect).
 
 ## Act structure
 
@@ -24,7 +24,7 @@ You are the Envoy of Concord. Your leverage is:
 **Gate:** the player earns the right to call a summit.
 
 ### Act II — The dispute becomes a pattern
-**Intent:** reveal that the current crisis is an example of a broader disease.
+**Intent:** reveal that the current crisis is an instance of a broader disease.
 
 - The player discovers that “border incidents” recur across different edges of the realm.
 - Each faction has a different story about why, and each story is self-serving but not wholly false.
@@ -49,15 +49,15 @@ You are the Envoy of Concord. Your leverage is:
 ## The unique twist (genre-consistent)
 The twist is structural: legitimacy itself is the power.
 
-In this realm, the strongest "magic" is consensus that can be enforced.
+In this realm, the strongest "magic" is enforceable consensus.
 
 The player’s final power is to set incentives so the next would-be villain can’t profit.
 
 ## Codex guidance (player-facing)
 Codex entries should:
-- explain *how people use a term at court* (not a wiki dump)
-- stay spoiler-safe
-- grow by adding context, not by revealing secrets
+- Explain *how people use a term at court* (not a wiki dump).
+- Stay spoiler-safe.
+- Grow by adding context, not by revealing secrets.
 
 ## Audio guidance (tone)
 - Title: regal, warm, patient.

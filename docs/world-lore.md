@@ -3,13 +3,13 @@
 ## The realm at a glance
 This realm runs on *recognition*.
 
-That means your title only matters if other powerful people act like it matters:
-- the clerks record it
-- the guards open the gate for you
-- the merchants accept your seal and extend credit
-- the courts treat your orders as enforceable
+Your title only matters if other powerful people act like it matters:
+- Clerks record it.
+- Guards open the gate for you.
+- Merchants accept your seal and extend credit.
+- Courts treat your orders as enforceable.
 
-Bloodlines still exist, but they are not enough on their own. A duke without recognition is a person with a fancy name and no access.
+Bloodlines still exist, but they aren’t enough on their own. A duke without recognition is a person with a fancy name and no access.
 
 War isn’t constant here; it’s always one bad negotiation away because food and trade move through a few chokepoints. When talks fail, someone closes a road, a town goes hungry, and the next move is usually soldiers.
 
@@ -18,14 +18,14 @@ The Concord is the set of rules people agree to follow because it keeps the real
 
 It works like this:
 - **Titles are social contracts.** A title becomes “real” when it is witnessed, recorded, and treated as binding by the groups that matter.
-- **Oaths create obligations.** When an oath is witnessed at Concord Hall (or by recognized witnesses), breaking it carries costs that others will actually enforce.
+- **Oaths create obligations.** When an oath is witnessed at Concord Hall (or by recognized witnesses), breaking it carries costs that others will enforce.
 - **Precedent matters.** If the last three disputes were settled a certain way, claiming an exception has a political price.
 
 A simple example:
 - If you are named Warden of a pass, but the Hall refuses to record it and merchants refuse to honor your tolls, you cannot fund guards.
 - If your rivals can persuade enough witnesses that your appointment was improper, they can “unmake” your authority without ever drawing a sword.
 
-For an envoy, the Concord is protection and constraint. You can call people to the table, but you are expected to keep the process intact.
+For an envoy, the Concord is both protection and constraint. You can call people to the table, but you’re expected to keep the process intact.
 
 ## Geography that creates politics
 **Greenmarch Pass** is the route that keeps multiple regions fed in winter.
@@ -34,7 +34,7 @@ For an envoy, the Concord is protection and constraint. You can call people to t
 - Occupy it under one banner, and another faction loses its safest trade route.
 - Leave it “neutral,” and everyone argues about who gets to police it, collect tolls, and enforce rules.
 
-Because of that, Greenmarch becomes a legitimacy fight: whoever controls the pass can claim they are the one keeping the realm stable.
+Because of that, Greenmarch becomes a legitimacy fight: whoever controls the pass can claim they’re the one keeping the realm stable.
 
 ## The three powers
 ### The Iron Pact
@@ -42,7 +42,7 @@ Fortress cities that prize order, predictable rules, and disciplined force.
 
 - What they want: a pass they can patrol and a border they can defend.
 - What they fear: uncertainty—raids, shortages, and rivals taking advantage.
-- How they bargain: terms they can enforce with clear consequences.
+- How they bargain: terms they can enforce, with clear consequences.
 
 ### The Verdant Court
 Forest-governors who treat the land as something you can damage permanently.
@@ -56,7 +56,7 @@ A merchant empire that turns disputes into tariffs, contracts, and debts.
 
 - What they want: routes open, tolls predictable, and paperwork that gives them leverage.
 - What they fear: a world where profit cannot buy safety or access.
-- How they bargain: offer a solution that makes everyone dependent on their ledgers.
+- How they bargain: offer solutions that make everyone dependent on their ledgers.
 
 ## Magic: common, defensive, and political
 Magic here is mostly about controlling what can happen in a place.

@@ -1,11 +1,11 @@
-This folder is for ambience loops (music beds) used by the game.
+This folder contains ambience loops (music beds) used by the game.
 
 Expected filenames:
 
 - `title_regal.ogg` and/or `title_regal.mp3`
 - `game_intrigue.ogg` and/or `game_intrigue.mp3`
 
-If these files are absent, the game will fall back to procedural ambience.
+If these files are absent, the game falls back to procedural ambience.
 
 Recommended defaults (downloaded by `bun run fetch:ambience -- --force`):
 
