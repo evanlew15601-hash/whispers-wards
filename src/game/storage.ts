@@ -151,6 +151,13 @@ export const persistedStateV2Schema = z
     rngSeed: z.number().optional(),
     world: worldStateSchema.optional(),
     pendingEncounter: secondaryEncounterSchema.nullable().optional(),
+    ink: z
+      .object({
+        storyId: z.literal('main'),
+        stateJson: z.string(),
+      })
+      .nullable()
+      .optional(),
     currentScene: z.enum(['title', 'load', 'create', 'game']).optional(),
     currentDialogueId: z.string().nullable(),
   })
@@ -524,6 +531,7 @@ export const saveGameToSlot = (slotId: number, state: GameState): boolean => {
       rngSeed: state.rngSeed,
       world: state.world,
       pendingEncounter: state.pendingEncounter,
+      ink: state.ink ?? null,
       currentScene: state.currentScene,
       currentDialogueId: state.currentDialogue?.id ?? null,
     },
@@ -607,6 +615,7 @@ export const saveSummitGateCheckpoint = (state: GameState): boolean => {
       rngSeed: state.rngSeed,
       world: state.world,
       pendingEncounter: state.pendingEncounter,
+      ink: state.ink ?? null,
       currentScene: state.currentScene,
       currentDialogueId: state.currentDialogue?.id ?? null,
     },

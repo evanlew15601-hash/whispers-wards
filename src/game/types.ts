@@ -156,6 +156,9 @@ export interface GameState {
   /** Choice ids previously selected, used to prevent re-applying non-repeatable reputation effects. */
   selectedChoiceIds: string[];
 
+  /** Optional: inkjs story state when an Ink-authored conversation is active. */
+  ink?: { storyId: 'main'; stateJson: string } | null;
+
   /**
    * Increments for every player interaction (dialogue choices, end-turn, management actions).
    * Useful for deterministic ordering and debugging.

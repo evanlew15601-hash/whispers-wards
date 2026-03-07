@@ -15,6 +15,9 @@ dist-ssr
 # Generated WASM (built via scripts/build-uqm-minimal-wasm.mjs)
 public/wasm/*.wasm
 
+# Generated Ink story JSON (built via scripts/build-ink-story.mjs)
+src/game/story/story.json
+
 # Downloaded upstream UQM snapshot (installed by scripts/fetch-uqm-upstream.mjs)
 third_party/uqm/upstream/
 

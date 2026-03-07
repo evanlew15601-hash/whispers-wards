@@ -15,9 +15,8 @@ import {
   loadSummitGateCheckpoint,
   saveSummitGateCheckpoint,
 } from './storage';
-import { tsConversationEngine } from './engine/tsConversationEngine';
-import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
-import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
+import { inkConversationEngine } from './engine/inkConversationEngine';
+import { createInkStory, buildDialogueNodeFromInk, syncGameStateToInkVariables } from './engine/inkStory';
 import { buildEncounterDialogueNode } from './encounters';
 import { applyManagementAction } from './management/applyManagementAction';
 import { enterPendingEncounter as enterPendingEncounterTransition, returnToHub as returnToHubTransition } from './hubActions';
@@ -61,9 +60,9 @@ const inferSelectedChoiceIdsFromLog = (selectedChoiceIds: string[], log: string[
 const HUB_NODE_IDS = new Set(Object.values(CHAPTERS).map(ch => ch.hubNodeId));
 
 export function useGameState() {
-  const engineRef = useRef(tsConversationEngine);
+  const engineRef = useRef(inkConversationEngine);
 
-  const [engineLabel, setEngineLabel] = useState<'TS' | 'UQM WASM'>('TS');
+  const [engineLabel] = useState<'INK'>('INK');
 
   const [state, setState] = useState<GameState>(() => engineRef.current.createInitialState());
   const [saveSlots, setSaveSlots] = useState<SaveSlotInfo[]>(() => listSaveSlots());
@@ -94,24 +93,6 @@ export function useGameState() {
     }
     lastEncounterToastIdRef.current = pendingId;
   }, [state.pendingEncounter?.id, state.pendingEncounter?.title, state.currentScene]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void loadUqmWasmRuntime()
-      .then(uqm => {
-        if (cancelled) return;
-        engineRef.current = createUqmWasmConversationEngine(uqm);
-        setEngineLabel('UQM WASM');
-      })
-      .catch(() => {
-        // Ignore; we simply stay on the TS engine.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const refreshSlots = useCallback(() => {
     setSaveSlots(listSaveSlots());
@@ -208,6 +189,16 @@ export function useGameState() {
           ? (loadedAny.currentDialogue as { id?: string }).id ?? null
           : null;
 
+    const inkCandidate =
+      loadedAny.ink && typeof loadedAny.ink === 'object'
+        ? (loadedAny.ink as { storyId?: unknown; stateJson?: unknown })
+        : null;
+
+    const loadedInk =
+      inkCandidate && inkCandidate.storyId === 'main' && typeof inkCandidate.stateJson === 'string'
+        ? ({ storyId: 'main', stateJson: inkCandidate.stateJson } as NonNullable<GameState['ink']>)
+        : null;
+
     const hydratedLog = loadedAny.log ?? base.log;
 
     const selectedChoiceIdsFromSave = Array.isArray(loadedAny.selectedChoiceIds)
@@ -259,6 +250,7 @@ export function useGameState() {
             }
           : base.world,
       pendingEncounter,
+      ink: loadedInk,
       currentDialogue: loadedDialogueId
         ? loadedDialogueId.startsWith('encounter:') && pendingEncounter
           ? buildEncounterDialogueNode(pendingEncounter)
@@ -267,6 +259,21 @@ export function useGameState() {
       // Always resume gameplay after loading a save.
       currentScene: 'game',
     };
+
+    if (loadedInk && loadedDialogueId && loadedDialogueId.startsWith('ink:')) {
+      const story = createInkStory(loadedInk.storyId, loadedInk.stateJson);
+      syncGameStateToInkVariables(story, hydrated);
+      hydrated = {
+        ...hydrated,
+        currentDialogue: buildDialogueNodeFromInk(story),
+      };
+    } else if (loadedDialogueId && loadedDialogueId.startsWith('ink:')) {
+      hydrated = {
+        ...hydrated,
+        ink: null,
+        currentDialogue: dialogueTree['opening'] ?? null,
+      };
+    }
 
     if (hydrated.currentDialogue && HUB_NODE_IDS.has(hydrated.currentDialogue.id)) {
       const hubId = getChapter(hydrated.chapterId).hubNodeId;
