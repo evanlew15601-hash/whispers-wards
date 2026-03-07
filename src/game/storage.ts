@@ -154,6 +154,7 @@ export const persistedStateV2Schema = z
     ink: z
       .object({
         storyId: z.literal('main'),
+        storyVersion: z.string().optional(),
         stateJson: z.string(),
       })
       .nullable()

@@ -16,7 +16,7 @@ import {
   saveSummitGateCheckpoint,
 } from './storage';
 import { inkConversationEngine } from './engine/inkConversationEngine';
-import { createInkStory, buildDialogueNodeFromInk, syncGameStateToInkVariables } from './engine/inkStory';
+import { createInkStory, buildDialogueNodeFromInk, getInkStoryVersion, syncGameStateToInkVariables } from './engine/inkStory';
 import { buildEncounterDialogueNode } from './encounters';
 import { applyManagementAction } from './management/applyManagementAction';
 import { enterPendingEncounter as enterPendingEncounterTransition, returnToHub as returnToHubTransition } from './hubActions';
@@ -191,12 +191,19 @@ export function useGameState() {
 
     const inkCandidate =
       loadedAny.ink && typeof loadedAny.ink === 'object'
-        ? (loadedAny.ink as { storyId?: unknown; stateJson?: unknown })
+        ? (loadedAny.ink as { storyId?: unknown; storyVersion?: unknown; stateJson?: unknown })
         : null;
 
     const loadedInk =
-      inkCandidate && inkCandidate.storyId === 'main' && typeof inkCandidate.stateJson === 'string'
-        ? ({ storyId: 'main', stateJson: inkCandidate.stateJson } as NonNullable<GameState['ink']>)
+      inkCandidate &&
+      inkCandidate.storyId === 'main' &&
+      typeof inkCandidate.stateJson === 'string' &&
+      (typeof inkCandidate.storyVersion === 'undefined' || typeof inkCandidate.storyVersion === 'string')
+        ? ({
+            storyId: 'main',
+            storyVersion: typeof inkCandidate.storyVersion === 'string' ? inkCandidate.storyVersion : undefined,
+            stateJson: inkCandidate.stateJson,
+          } as NonNullable<GameState['ink']>)
         : null;
 
     const hydratedLog = loadedAny.log ?? base.log;
@@ -261,12 +268,31 @@ export function useGameState() {
     };
 
     if (loadedInk && loadedDialogueId && loadedDialogueId.startsWith('ink:')) {
-      const story = createInkStory(loadedInk.storyId, loadedInk.stateJson);
-      syncGameStateToInkVariables(story, hydrated);
-      hydrated = {
-        ...hydrated,
-        currentDialogue: buildDialogueNodeFromInk(story),
-      };
+      const currentStoryVersion = getInkStoryVersion(loadedInk.storyId);
+      const saveVersion = loadedInk.storyVersion ?? null;
+
+      if (saveVersion && currentStoryVersion && saveVersion !== currentStoryVersion) {
+        hydrated = {
+          ...hydrated,
+          ink: null,
+          currentDialogue: dialogueTree['opening'] ?? null,
+        };
+      } else {
+        try {
+          const story = createInkStory(loadedInk.storyId, loadedInk.stateJson);
+          syncGameStateToInkVariables(story, hydrated);
+          hydrated = {
+            ...hydrated,
+            currentDialogue: buildDialogueNodeFromInk(story),
+          };
+        } catch {
+          hydrated = {
+            ...hydrated,
+            ink: null,
+            currentDialogue: dialogueTree['opening'] ?? null,
+          };
+        }
+      }
     } else if (loadedDialogueId && loadedDialogueId.startsWith('ink:')) {
       hydrated = {
         ...hydrated,

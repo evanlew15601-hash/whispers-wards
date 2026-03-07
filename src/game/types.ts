@@ -161,7 +161,7 @@ export interface GameState {
    *
    * When present, `stateJson` is `story.state.ToJson()`.
    */
-  ink?: { storyId: 'main'; stateJson: string } | null;
+  ink?: { storyId: 'main'; storyVersion?: string; stateJson: string } | null;
 
   /**
    * Increments for every player interaction (dialogue choices, end-turn, management actions).

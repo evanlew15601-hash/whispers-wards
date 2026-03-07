@@ -2,7 +2,13 @@ import type { ConversationEngine } from './conversationEngine';
 import type { DialogueChoice, GameState } from '../types';
 
 import { tsConversationEngine, TS_OPENING_LOG_LINE } from './tsConversationEngine';
-import { createInkStory, syncGameStateToInkVariables, buildDialogueNodeFromInk, getInkChoiceLockedFlags } from './inkStory';
+import {
+  createInkStory,
+  getInkStoryVersion,
+  syncGameStateToInkVariables,
+  buildDialogueNodeFromInk,
+  getInkChoiceLockedFlags,
+} from './inkStory';
 
 const INK_STORY_ID = 'main' as const;
 
@@ -39,6 +45,7 @@ export const inkConversationEngine: ConversationEngine = {
       log: [TS_OPENING_LOG_LINE],
       ink: {
         storyId: INK_STORY_ID,
+        storyVersion: getInkStoryVersion(INK_STORY_ID) ?? undefined,
         stateJson: started.story.state.ToJson(),
       },
     };
@@ -87,6 +94,7 @@ export const inkConversationEngine: ConversationEngine = {
       currentDialogue: node,
       ink: {
         storyId: ink.storyId,
+        storyVersion: ink.storyVersion ?? getInkStoryVersion(ink.storyId) ?? undefined,
         stateJson: story.state.ToJson(),
       },
     };

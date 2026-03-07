@@ -10,6 +10,7 @@ describe('inkConversationEngine', () => {
     expect(initial.currentScene).toBe('game');
     expect(initial.currentDialogue?.id).toBe('ink:opening');
     expect(initial.ink?.storyId).toBe('main');
+    expect(typeof initial.ink?.storyVersion).toBe('string');
 
     const diplomatic = initial.currentDialogue!.choices.find(c => c.id === 'diplomatic');
     if (!diplomatic) throw new Error('Expected diplomatic choice');

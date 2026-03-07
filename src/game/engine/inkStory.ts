@@ -8,6 +8,12 @@ import storyContent from '../story/story.json';
 
 export type InkStoryId = 'main';
 
+export const getInkStoryVersion = (storyId: InkStoryId): string | null => {
+  if (storyId !== 'main') return null;
+  const maybe = (storyContent as unknown as Record<string, unknown>).ccStoryVersion;
+  return typeof maybe === 'string' ? maybe : null;
+};
+
 export const createInkStory = (storyId: InkStoryId, stateJson?: string | null) => {
   if (storyId !== 'main') throw new Error(`Unknown Ink storyId: ${storyId}`);
 

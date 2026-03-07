@@ -8,6 +8,8 @@
     "fetch:uqm-upstream": "node scripts/ensure-uqm-upstream.mjs",
     "fetch:ambience": "node scripts/fetch-ambience-assets.mjs",
     "build:uqm-wasm": "node scripts/build-uqm-minimal-wasm.mjs",
+    "story:build": "node scripts/build-ink-story.mjs",
+    "story:validate": "vitest run src/game/story/inkStory.integrity.test.ts",
     "predev": "node scripts/build-uqm-minimal-wasm-soft.mjs && node scripts/build-ink-story.mjs",
     "prebuild": "node scripts/build-uqm-minimal-wasm-soft.mjs && node scripts/build-ink-story.mjs",
     "prebuild:dev": "node scripts/build-uqm-minimal-wasm-soft.mjs && node scripts/build-ink-story.mjs",
