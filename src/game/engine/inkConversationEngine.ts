@@ -87,6 +87,9 @@ export const inkConversationEngine: ConversationEngine = {
     // Stay in Ink: use TS engine for state transitions (effects/logs/events/etc.), then overwrite dialogue.
     const advanced = tsConversationEngine.applyChoice(prev, { ...choice, nextNodeId: null });
 
+    // Ensure Ink conditionals that depend on game state (eg reputation mirrors) see the updated values.
+    syncGameStateToInkVariables(story, advanced);
+
     const node = buildDialogueNodeFromInk(story);
 
     return {
