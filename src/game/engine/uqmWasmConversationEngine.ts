@@ -374,8 +374,18 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
     startNewGame: tsConversationEngine.startNewGame,
     applyChoice(prev, choice) {
       const next = applyChoiceUsingWasm(prev, choice, uqm, graph);
-      const resolved = next ?? tsConversationEngine.applyChoice(prev, choice);
-      const transitioned = evaluateChapterTransition(resolved);
+
+      // If WASM can't (or shouldn't) handle this choice, fall back entirely to the TS engine.
+      // TS already applies chapter + scene transitions with the correct lock semantics.
+      if (next === null) {
+        return tsConversationEngine.applyChoice(prev, choice);
+      }
+
+      // If the choice is locked, the WASM helper returns `prev`.
+      // In that case, do not allow `nextScene` to transition the app.
+      if (next === prev) return prev;
+
+      const transitioned = evaluateChapterTransition(next);
       return applyChoiceSceneTransition(transitioned, choice);
     },
     endTurn(prev) {
