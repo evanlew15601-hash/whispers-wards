@@ -299,7 +299,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'concord-hub-2': {
     id: 'concord-hub-2',
     speaker: 'Narrator',
-    text: 'CHAPTER II — Patterns of Dispute\n\nGreenmarch was written into record, but it did not end the realm\'s appetite for leverage.\n\nNew petitions stack beside the summit minutes: routes disrupted, charters challenged, small quarrels with the shape of future wars.\n\nIf you need the shortest line through the aftermath, start with the minutes—and then speak to the clerks who already know which ink will become blood.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
+    text: 'CHAPTER II — Patterns of Dispute\n\nGreenmarch was written into the record, but it did not end the realm\'s appetite for leverage.\n\nNew petitions stack beside the summit minutes: routes disrupted, charters challenged, small quarrels with the shape of future wars.\n\nIf you need the shortest line through the aftermath, start with the minutes—and then speak to the clerks who already know which ink will become blood.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
     choices: [
       {
         id: 'hub2-continue',
@@ -536,7 +536,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-audit': {
     id: 'act2-audit',
     speaker: 'Narrator',
-    text: 'Seals are broken. Locks are re-set. The Hall clerks move through Ember offices with gloves and witnesses, copying ledgers before any hand can "misplace" them.\n\nSomeone will call this justice. Someone will call it theft. Either way, it teaches the realm that the Hall can take what it needs in daylight.',
+    text: 'Seals are broken. Locks are reset. The Hall clerks move through Ember offices with gloves and witnesses, copying ledgers before any hand can "misplace" them.\n\nSomeone will call this justice. Someone will call it theft. Either way, it teaches the realm that the Hall can take what it needs in daylight.',
     choices: [
       {
         id: 'act2-audit-iron',
@@ -2018,3 +2018,4 @@ export const initialEvents: GameEvent[] = [
     triggerCondition: { factionId: 'verdant-court', reputationThreshold: 20, direction: 'above' },
   },
 ];
+
