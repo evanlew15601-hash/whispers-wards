@@ -7,19 +7,20 @@
   "scripts": {
     "fetch:uqm-upstream": "node scripts/ensure-uqm-upstream.mjs",
     "fetch:ambience": "node scripts/fetch-ambience-assets.mjs",
-    "build:uqm-wasm": "node scripts/build-uqm-minimal-wasm.mjs",
     "build:ink": "node scripts/build-ink-story.mjs",
+    "build:uqm-wasm": "node scripts/build-uqm-minimal-wasm.mjs",
     "predev": "node scripts/build-ink-story.mjs && node scripts/build-uqm-minimal-wasm-soft.mjs",
     "prebuild": "node scripts/build-ink-story.mjs && node scripts/build-uqm-minimal-wasm-soft.mjs",
+    "prebuild:dev": "node scripts/build-ink-story.mjs && node scripts/build-uqm-minimal-wasm-soft.mjs",
     "pretest": "node scripts/build-ink-story.mjs && node scripts/build-uqm-minimal-wasm.mjs",
+    "prelint": "node scripts/build-ink-story.mjs",
+    "pretest:watch": "node scripts/build-ink-story.mjs",
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
-    "prelint": "node scripts/build-ink-story.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "pretest:watch": "node scripts/build-ink-story.mjs && node scripts/build-uqm-minimal-wasm.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {

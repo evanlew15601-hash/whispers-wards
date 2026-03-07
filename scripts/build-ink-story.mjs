@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Compiler, PosixFileHandler } from 'inkjs';
+import { Compiler } from 'inkjs/full';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,11 +17,7 @@ await fs.mkdir(storyDir, { recursive: true });
 
 const source = (await fs.readFile(inkEntryPath, 'utf8')).replace(/^\uFEFF/, '');
 
-const storyDirForInk = `${storyDir.split(path.sep).join('/')}/`;
-
-const compiler = new Compiler(source, {
-  fileHandler: new PosixFileHandler(storyDirForInk),
-});
+const compiler = new Compiler(source);
 const story = compiler.Compile();
 
 const compiled = story.ToJson();
