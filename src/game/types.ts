@@ -156,7 +156,11 @@ export interface GameState {
   /** Choice ids previously selected, used to prevent re-applying non-repeatable reputation effects. */
   selectedChoiceIds: string[];
 
-  /** Optional: persisted Ink runtime state when the current dialogue node is Ink-driven. */
+  /**
+   * Optional: Ink story runtime save data.
+   *
+   * When present, `stateJson` is `story.state.ToJson()`.
+   */
   ink?: { storyId: 'main'; stateJson: string } | null;
 
   /**
