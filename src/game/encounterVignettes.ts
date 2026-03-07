@@ -36,7 +36,7 @@ const vignettesByKind: Record<SecondaryEncounterKind, EncounterVignette[]> = {
     {
       speaker: 'Hall Herald',
       preface: 'A herald arrives with a sealed writ and the smell of harbor smoke.',
-      prompt: '“Merchants beg for a verdict they can repeat at the gates.”',
+      prompt: '“Merchants beg for a verdict they can repeat at the gates. What is yours?”',
       choiceTexts: [
         'Issue an order to lift the embargo at once.',
         'Draft a middle path: reopen trade with inspections and limits.',

@@ -31,7 +31,7 @@ export const codexEntries: CodexEntry[] = [
     summary: 'A legitimacy system built from witnessed oaths, precedent, and public memory.',
     paragraphs: [
       'The Concord is the shared system for deciding who has authority: recorded titles, witnessed oaths, and precedent that courts agree to follow.',
-      'A bloodline can put someone in a chair. Recognition is what makes other people obey: guards, clerks, judges, and merchants treating a title as binding.',
+      'A bloodline can put someone in a chair; recognition is what makes other people obey: guards, clerks, judges, and merchants treating a title as binding.',
       'Because of that, politics is often a fight over legitimacy: who gets to tax, who gets to patrol, and whose claims will be treated as lawful.',
     ],
   },

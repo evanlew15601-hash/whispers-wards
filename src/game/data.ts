@@ -40,11 +40,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'opening',
     speaker: 'Commander Aldric Vane',
     speakerFaction: 'iron-pact',
-    text: 'Dusk darkens the stained glass as you step into Concord Hall. Commander Aldric Vane of the Iron Pact looks you over like a quartermaster—quick, unsentimental.\n\n"So. The envoy." His gaze flicks up and down. "I\'d pictured someone taller. No matter. Seventeen bodies this moon on the Greenmarch. We don\'t get another month of speeches. We get an answer. Treaty… or war. Which did you ride in on?"',
+    text: 'Dusk deepens behind the stained glass as you step into Concord Hall. Commander Aldric Vane of the Iron Pact looks you over like a quartermaster—quick, unsentimental.\n\n"So. The envoy." His gaze flicks up and down. "I\'d pictured someone taller. No matter. Seventeen bodies this moon on the Greenmarch. We don\'t get another month of speeches. We get an answer. Treaty… or war. Which did you ride in on?"',
     choices: [
       {
         id: 'diplomatic',
-        text: '"Words first, Commander. Let me hear the Court before we bare steel."',
+        text: '"Words first, Commander. Let me hear the Court before we draw steel."',
         effects: [
           { factionId: 'iron-pact', reputationChange: -5 },
           { factionId: 'verdant-court', reputationChange: 10 },
@@ -101,7 +101,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'aldric-pragmatic',
     speaker: 'Commander Aldric Vane',
     speakerFaction: 'iron-pact',
-    text: 'A thin smile cracks Vane\'s weathered face. "Now that is a useful question. We need the Greenmarch Pass. It controls trade from the southern valleys. The Verdant Court claims it as sacred ground—ancient wards, sleeping spirits, the usual druid mysticism."\n\nHe drops a leather map case on the table. "The Ember Throne has offered to mediate. For a price, naturally. Everything with them is a transaction. But their maps show the old boundaries clearly. The pass was ours before the Court\'s wards existed."',
+    text: 'A thin smile cracks Vane\'s weathered face. "Now that is a useful question. We need the Greenmarch Pass. It controls trade from the southern valleys. The Verdant Court claims it as sacred ground—ancient wards, sleeping spirits, the usual druid mysticism."\n\nHe drops a leather map case on the table. "The Ember Throne has offered to mediate. For a price, naturally. Everything with them is a transaction. But their maps show the old boundaries clearly. The Pass was ours before the Court\'s wards existed."',
     choices: [
       {
         id: 'examine-maps',
@@ -180,11 +180,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'map-revelation': {
     id: 'map-revelation',
     speaker: 'Narrator',
-    text: 'You unroll the Ember Throne\'s maps across the war table. The cartography is exquisite—too exquisite. The ink on the border markings is subtly different from the rest. Newer. Someone has redrawn the boundaries.\n\nThe original lines, faintly visible beneath, tell a different story: the Greenmarch Pass was neutral ground. Neither the Iron Pact nor the Verdant Court held it. It was shared.\n\nThis changes everything.',
+    text: 'You unroll the Ember Throne\'s maps across the war table. The cartography is exquisite—too exquisite. The ink on the border markings is subtly different from the rest. Newer. Someone has redrawn the boundaries.\n\nThe original lines, faintly visible beneath, tell a different story: the Greenmarch Pass was neutral ground. Neither the Iron Pact nor the Verdant Court held it. It was shared.\n\nThat changes everything.',
     choices: [
       {
         id: 'reveal-forgery',
-        text: '"Commander, these maps have been altered. The pass was shared territory."',
+        text: '"Commander, these maps have been altered. The Pass was shared territory."',
         exclusiveGroup: 'map-forgery-disclosure',
         effects: [
           { factionId: 'iron-pact', reputationChange: 5 },
@@ -261,7 +261,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'concord-hub': {
     id: 'concord-hub',
     speaker: 'Narrator',
-    text: 'Concord Hall was built for discretion. Velvet muffles footsteps. Stone carries voices farther than it should. Every corridor has someone listening.\n\nThe delegations keep to their corners, watching one another, waiting for you to blink first.\n\nIf you want peace, you\'ll have to earn it: with proof, with favors, or by giving someone a way to back down without humiliation.',
+    text: 'Concord Hall was built for discretion. Velvet muffles footsteps. Stone carries voices farther than it should. Every corridor has someone listening.\n\nThe delegations keep to their corners, watching one another, waiting for you to blink first.\n\nIf you want peace, you\'ll have to earn it—with proof, with favors, or by giving someone a way to back down without humiliation.',
     choices: [
       {
         id: 'hub-aldric',
@@ -299,7 +299,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'concord-hub-2': {
     id: 'concord-hub-2',
     speaker: 'Narrator',
-    text: 'CHAPTER II — Patterns of Dispute\n\nGreenmarch was written into record, but it did not end the realm\'s appetite for leverage.\n\nNew petitions stack beside the summit minutes: routes disrupted, charters challenged, small quarrels with the shape of future wars.\n\nIf you need the shortest line through the aftermath, start with the minutes—and then speak to the clerks who already know which ink will become blood.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
+    text: 'CHAPTER II — Patterns of Dispute\n\nGreenmarch was written into the record, but it did not end the realm\'s appetite for leverage.\n\nNew petitions stack beside the summit minutes: routes disrupted, charters challenged, small quarrels with the shape of future wars.\n\nIf you need the shortest line through the aftermath, start with the minutes—and then speak to the clerks who already know which ink will become blood.\n\nThe Hall looks to you anyway. Not because you can end conflict, but because you can decide which conflicts become law.',
     choices: [
       {
         id: 'hub2-continue',
@@ -536,7 +536,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-audit': {
     id: 'act2-audit',
     speaker: 'Narrator',
-    text: 'Seals are broken. Locks are re-set. The Hall clerks move through Ember offices with gloves and witnesses, copying ledgers before any hand can "misplace" them.\n\nSomeone will call this justice. Someone will call it theft. Either way, it teaches the realm that the Hall can take what it needs in daylight.',
+    text: 'Seals are broken. Locks are reset. The Hall clerks move through Ember offices with gloves and witnesses, copying ledgers before any hand can "misplace" them.\n\nSomeone will call this justice. Someone will call it theft. Either way, it teaches the realm that the Hall can take what it needs in daylight.',
     choices: [
       {
         id: 'act2-audit-iron',
@@ -565,7 +565,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-archives': {
     id: 'act2-archives',
     speaker: 'Archivist Sera Quill',
-    text: 'Archivist Sera Quill meets you with a stack of docket indexes and a look of quiet triumph.\n\n"Greenmarch was not the only hinge-ground," she says. "We keep records of other settlements that were supposed to prevent wars, and instead taught people how to start them."\n\nShe opens an index to a page dense with repeats: the same families, the same toll roads, the same phrases used as excuses. Patterns, waiting to be named.',
+    text: 'Archivist Sera Quill meets you with a stack of docket indexes and a look of quiet triumph.\n\n"Greenmarch was not the only hinge-ground," she says. "We keep records of other settlements that were supposed to prevent wars, and instead taught people how to start them."\n\nShe opens an index to a page dense with repetition: the same families, the same toll roads, the same phrases used as excuses. Patterns, waiting for a name.',
     choices: [
       {
         id: 'act2-archives-index',
@@ -585,7 +585,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-briefing': {
     id: 'act2-briefing',
     speaker: 'Narrator',
-    text: 'Sealed packets stack on your desk by the hour. A trade route threatened by bandits. A border charter contested by two claimants. A delegation requesting a "quiet summit" before tempers boil over.\n\nGreenmarch was only the first hinge. The realm has more.',
+    text: 'Sealed packets stack on your desk by the hour. A trade route threatened by bandits. A border charter contested by two claimants. A delegation requesting a "quiet summit" before tempers boil over.\n\nGreenmarch was only the first hinge. The realm has others.',
     choices: [
       {
         id: 'act2-briefing-back',
@@ -787,7 +787,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'aldric-burns-details',
     speaker: 'Commander Aldric Vane',
     speakerFaction: 'iron-pact',
-    text: 'Vane opens a cloth-wrapped bundle on the table: a splinter of blackened wood, edges bubbled like wax.\n\n"From a watchtower. The men were found with their throats intact—no vines, no thorns, no choking pollen. Just heat. And this." He taps the char. "Smells like sulfur. And someone paid for it."\n\n"If you find a ledger, a name, a single merchant seal tied to those patrol routes... I\'ll have proof enough."',
+    text: 'Vane opens a cloth-wrapped bundle on the table: a splinter of blackened wood, edges bubbled like wax.\n\n"From a watchtower. The men were found with their throats intact—no vines, no thorns, no choking pollen. Just heat. And this." He taps the char. "Smells like sulfur. Someone paid for it."\n\n"If you find a ledger, a name, a single merchant seal tied to those patrol routes... I\'ll have proof enough."',
     choices: [
       {
         id: 'burns-renzo',
@@ -818,7 +818,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'iron-dispatch-audit',
     speaker: 'Quartermaster Ilya Rook',
     speakerFaction: 'iron-pact',
-    text: 'Vane waves you through a side door into a cramped records room. A quartermaster waits with a stack of forms and a face that says she has stopped being surprised.\n\n"This is the patrol order," Rook says, tapping the reroute slip. "Iron seal. Correct phrasing. The problem is the docket number."\n\nShe slides another sheet across. "That number belongs to an Ember filing with the Hall clerks. Grain storage. East wing. Last week. Someone reused it so a clerk would wave the order through without reading."\n\nRook meets your eyes. "Either Ember\'s paperwork was copied, or someone wants you to think it was."',
+    text: 'Vane waves you through a side door into a cramped records room. A quartermaster waits with a stack of forms and a face that says she has stopped being surprised.\n\n"This is the patrol order," Rook says, tapping the reroute slip. "Iron seal. Correct phrasing. The problem is the docket number."\n\nShe slides another sheet across. "That number belongs to an Ember filing with the Hall clerks. Grain storage. East wing. Last week. Someone reused it so a clerk would wave it through without reading."\n\nRook meets your eyes. "Either Ember\'s paperwork was copied, or someone wants you to think it was."',
     choices: [
       {
         id: 'dispatch-archives',
@@ -890,7 +890,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'thessaly-strategic',
     speaker: 'Emissary Thessaly',
     speakerFaction: 'verdant-court',
-    text: 'A smile ghosts across Thessaly\'s mouth.\n\n"He warned you about me." She tilts her head. "Good. It means he\'s afraid of the same thing I am: an enemy neither of us can name. The sort that buys wars and sells peace."\n\n"If you want to play at shadows, envoy, I can teach you. But every lesson costs."',
+    text: 'A smile ghosts across Thessaly\'s mouth.\n\n"He warned you about me." She tilts her head. "Good. It means he\'s afraid of the same thing I am: an enemy neither of us can name. The sort that buys wars and sells peace."\n\n"If you want to play in shadows, envoy, I can teach you. But every lesson costs."',
     choices: [
       {
         id: 'strategic-trade',
@@ -1284,7 +1284,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'renzo-deflect',
     speaker: 'Trade Consul Renzo',
     speakerFaction: 'ember-throne',
-    text: 'Renzo laughs quietly.\n\n"If I could kill seventeen people by arriving at a city three days early, I\'d charge more for my carriage." He spreads his hands. "I\'m guilty only of being where coin is moving."\n\n"But I\'m happy to ease your suspicions—provided you\'re willing to treat this like business."',
+    text: 'Renzo laughs quietly.\n\n"If I could kill seventeen people by arriving three days early, I\'d charge more for my carriage." He spreads his hands. "I\'m guilty only of being where coin is moving."\n\n"But I\'m happy to ease your suspicions—provided you\'re willing to treat this like business."',
     choices: [
       {
         id: 'deflect-press',
@@ -1314,7 +1314,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'renzo-ledger-request',
     speaker: 'Trade Consul Renzo',
     speakerFaction: 'ember-throne',
-    text: 'Renzo\'s smile tightens. Still a smile—just smaller.\n\n"Ledgers are private," he says. "But perhaps we can compromise." He gestures, and a guard places a thick book on the table. The ink is fresh. Some pages are newer than others.\n\n"You may read," Renzo says. "Not copy. Not take. Trust is a currency too."',
+    text: 'Renzo\'s smile tightens. Still a smile—just smaller.\n\n"Ledgers are private," he says. "But perhaps we can compromise." He gestures, and a guard places a thick book on the table. The ink is fresh; some pages are newer than others.\n\n"You may read," Renzo says. "Not copy. Not take. Trust is a currency too."',
     choices: [
       {
         id: 'ledger-steal',
@@ -1681,7 +1681,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-floor': {
     id: 'summit-floor',
     speaker: 'Narrator',
-    text: 'At your request, the three emissaries gather in the central chamber beneath the stained glass. Aldric stands rigid, a hand never far from his sword. Thessaly sits still, watching every face. Renzo smiles as if the outcome is already a number on a page.\n\nAll three look to you. In this moment, your words become policy. Your silence becomes a sentence.',
+    text: 'At your request, the three emissaries gather in the central chamber beneath the stained glass. Aldric stands rigid, a hand never far from his sword. Thessaly sits still, watching every face. Renzo smiles as if the outcome is already a number on a page.\n\nAll three look to you. Here, your words become policy. Your silence becomes a sentence.',
     choices: [
       {
         id: 'summit-compact',
@@ -2018,3 +2018,4 @@ export const initialEvents: GameEvent[] = [
     triggerCondition: { factionId: 'verdant-court', reputationThreshold: 20, direction: 'above' },
   },
 ];
+
