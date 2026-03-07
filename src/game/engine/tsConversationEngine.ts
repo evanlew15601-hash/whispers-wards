@@ -100,6 +100,19 @@ const choiceToEffects = (prev: GameState, choice: DialogueChoice): GameEffect[] 
   return effects;
 };
 
+const applyChoiceSceneTransition = (state: GameState, choice: DialogueChoice): GameState => {
+  const nextScene = choice.nextScene ?? null;
+  if (!nextScene) return state;
+
+  if (state.currentScene === nextScene) return state;
+
+  return {
+    ...state,
+    currentScene: nextScene,
+    currentDialogue: nextScene === 'game' ? state.currentDialogue : null,
+  };
+};
+
 const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
   const alreadyDecided = isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log);
 
@@ -144,7 +157,8 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       world: resolved.world,
     };
 
-    return evaluateChapterTransition(out);
+    const transitioned = evaluateChapterTransition(out);
+    return applyChoiceSceneTransition(transitioned, choice);
   }
 
   const chapter = getChapter(withEffects.chapterId);
@@ -168,7 +182,8 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
     ],
   };
 
-  return evaluateChapterTransition(out);
+  const transitioned = evaluateChapterTransition(out);
+  return applyChoiceSceneTransition(transitioned, choice);
 };
 
 const endTurn = (prev: GameState): GameState => {

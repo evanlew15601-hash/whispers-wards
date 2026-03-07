@@ -91,7 +91,7 @@ const choiceIdToExclusiveGroup = (() => {
   return out;
 })();
 
-const isChoiceLockedByExclusiveGroup = (
+export const isChoiceLockedByExclusiveGroup = (
   choice: Pick<DialogueChoice, 'id' | 'exclusiveGroup'>,
   selectedChoiceIds: string[],
 ): boolean => {

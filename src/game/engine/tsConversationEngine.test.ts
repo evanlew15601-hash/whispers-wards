@@ -68,6 +68,41 @@ describe('tsConversationEngine', () => {
     expect(next.currentDialogue?.id).toBe('concord-hub');
   });
 
+  it('can transition out of the game scene when a choice sets nextScene', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const choice = {
+      id: 'qa-exit-title',
+      text: 'Exit to title',
+      effects: [],
+      nextNodeId: null,
+      nextScene: 'title' as const,
+    };
+
+    const next = tsConversationEngine.applyChoice(initial, choice);
+
+    expect(next.currentScene).toBe('title');
+    expect(next.currentDialogue).toBeNull();
+  });
+
+  it('exits to title from the Act II end-of-demo node', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const atDemoEnd = {
+      ...initial,
+      chapterId: 'chapter-2',
+      currentDialogue: dialogueTree['act2-demo-end'],
+    };
+
+    const exit = atDemoEnd.currentDialogue!.choices.find(c => c.id === 'act2-demo-end-exit-title');
+    if (!exit) throw new Error('Expected act2-demo-end-exit-title choice');
+
+    const next = tsConversationEngine.applyChoice(atDemoEnd, exit);
+
+    expect(next.currentScene).toBe('title');
+    expect(next.currentDialogue).toBeNull();
+  });
+
   it('applyChoice triggers threshold events and logs secrets; world sim output is logged on endTurn', () => {
     const initial = tsConversationEngine.startNewGame();
 

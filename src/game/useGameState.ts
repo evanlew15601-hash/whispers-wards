@@ -73,6 +73,7 @@ export function useGameState() {
   const lastEncounterToastIdRef = useRef<string | null>(null);
   const didInitEncounterToastRef = useRef(false);
   const lastSummitGateCheckpointStepRef = useRef<number | null>(null);
+  const lastSceneRef = useRef(state.currentScene);
 
   useEffect(() => {
     if (!didInitEncounterToastRef.current) {
@@ -116,6 +117,19 @@ export function useGameState() {
     setSaveSlots(listSaveSlots());
     setSummitGateCheckpoint(getSummitGateCheckpointInfo());
   }, []);
+
+  useEffect(() => {
+    const prevScene = lastSceneRef.current;
+    const nextScene = state.currentScene;
+
+    if (prevScene === nextScene) return;
+
+    if (nextScene === 'title' || nextScene === 'load') {
+      refreshSlots();
+    }
+
+    lastSceneRef.current = nextScene;
+  }, [refreshSlots, state.currentScene]);
 
   useEffect(() => {
     if (state.currentScene !== 'game') return;

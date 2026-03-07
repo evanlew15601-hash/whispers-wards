@@ -18,6 +18,13 @@ export interface DialogueChoice {
   nextNodeId: string | null; // null = end scene (defaults to returning to the chapter hub)
 
   /**
+   * Optional: transition the overall app scene after applying this choice.
+   *
+   * Used for things like "End of demo" exits.
+   */
+  nextScene?: GameState['currentScene'];
+
+  /**
    * Marks a mutually-exclusive decision group.
    *
    * If the player has previously selected a different choice in the same group,

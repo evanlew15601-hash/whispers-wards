@@ -29,6 +29,10 @@ describe('dialogueTree integrity', () => {
           expect(dialogueTree[choice.nextNodeId]).toBeTruthy();
         }
 
+        if (choice.nextScene) {
+          expect(['title', 'load', 'create', 'game']).toContain(choice.nextScene);
+        }
+
         if (choice.requiredReputation) {
           expect(factionIds.has(choice.requiredReputation.factionId)).toBe(true);
           expect(typeof choice.requiredReputation.min).toBe('number');

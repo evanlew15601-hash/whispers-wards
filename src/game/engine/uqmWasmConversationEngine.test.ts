@@ -81,6 +81,25 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextWasm2.rngSeed).toBe(nextTs2.rngSeed);
   });
 
+  it('can transition out of the game scene when a choice sets nextScene', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const initial = tsConversationEngine.startNewGame();
+
+    const choice = {
+      id: 'qa-exit-title-wasm',
+      text: 'Exit to title',
+      effects: [],
+      nextNodeId: null,
+      nextScene: 'title' as const,
+    };
+
+    const next = wasmEngine.applyChoice(initial, choice);
+
+    expect(next.currentScene).toBe('title');
+    expect(next.currentDialogue).toBeNull();
+  });
+
   it('matches tsConversationEngine lock bypass when knownSecrets includes override', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 

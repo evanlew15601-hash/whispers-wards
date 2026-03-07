@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentType, CSSProperties } from 'react';
 import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } from '@/game/engine/uqmTextWrap';
-import { isChoiceLocked, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
+import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
 import { useAudio } from '@/audio/useAudio';
 import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
 import CommPortrait from '@/components/CommPortrait';
@@ -143,7 +143,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         return false;
       }
 
-      // Hide choices that are only locked due to exclusiveGroup (post-decision branch swapping).
+      // Hide choices that are locked due to exclusiveGroup (post-decision branch swapping),
+      // even if they also have other locks (rep/proof) that would otherwise keep them visible.
+      if (isChoiceLockedByExclusiveGroup(choice, selectedChoiceIds)) {
+        return false;
+      }
+
       const repReq = choice.requiredReputation ?? null;
       const repLocked = Boolean(
         repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min

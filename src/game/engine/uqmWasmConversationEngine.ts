@@ -356,13 +356,27 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
   const graph = compileGraph(secretBitCapacity, choiceStrideBytes);
   writeGraphToWasm(uqm, graph);
 
+  const applyChoiceSceneTransition = (state: GameState, choice: DialogueChoice): GameState => {
+    const nextScene = choice.nextScene ?? null;
+    if (!nextScene) return state;
+
+    if (state.currentScene === nextScene) return state;
+
+    return {
+      ...state,
+      currentScene: nextScene,
+      currentDialogue: nextScene === 'game' ? state.currentDialogue : null,
+    };
+  };
+
   return {
     createInitialState: tsConversationEngine.createInitialState,
     startNewGame: tsConversationEngine.startNewGame,
     applyChoice(prev, choice) {
       const next = applyChoiceUsingWasm(prev, choice, uqm, graph);
       const resolved = next ?? tsConversationEngine.applyChoice(prev, choice);
-      return evaluateChapterTransition(resolved);
+      const transitioned = evaluateChapterTransition(resolved);
+      return applyChoiceSceneTransition(transitioned, choice);
     },
     endTurn(prev) {
       return tsConversationEngine.endTurn(prev);

@@ -612,6 +612,13 @@ export const dialogueTree: Record<string, DialogueNode> = {
         effects: [],
         nextNodeId: null,
       },
+      {
+        id: 'act2-demo-end-exit-title',
+        text: 'Exit to title.',
+        effects: [],
+        nextNodeId: null,
+        nextScene: 'title',
+      },
     ],
   },
   'aldric-map-confront': {
