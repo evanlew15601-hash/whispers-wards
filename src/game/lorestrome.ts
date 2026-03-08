@@ -33,7 +33,11 @@ export function lorestromeCropForCell(cell: LorestromeCell): { cx: number; cy: n
 /**
  * Returns a stable thumbnail URL for a single portrait.
  *
- * Uses wsrv.nl to do the crop+resize so we don't have to ship 200 separate files.
+ * We previously used wsrv.nl to crop+resize the Wikimedia spritesheet, but that can
+ * intermittently return a placeholder/"?" image when the upstream blocks proxy fetches.
+ *
+ * Instead we return a tiny SVG (as a data URL) that crops the spritesheet client-side.
+ * This keeps the rest of the UI on simple <img src="..."/> tags without shipping 200 files.
  */
 export function lorestromeThumbUrl(
   cell: LorestromeCell,
@@ -42,9 +46,16 @@ export function lorestromeThumbUrl(
     format?: 'jpg' | 'png' | 'webp';
   } = {},
 ): string {
-  const { size = 192, format = 'webp' } = opts;
-  const { cx, cy, cw, ch } = lorestromeCropForCell(cell);
-  const url = encodeURIComponent(LORESTROME_SHEET_URL);
+  const { size = 192 } = opts;
+  const { cx, cy } = lorestromeCropForCell(cell);
 
-  return `https://wsrv.nl/?url=${url}&cx=${cx}&cy=${cy}&cw=${cw}&ch=${ch}&w=${size}&h=${size}&fit=cover&output=${format}`;
+  const sheetW = LORESTROME_COLS * LORESTROME_CELL_SIZE;
+  const sheetH = LORESTROME_ROWS * LORESTROME_CELL_SIZE;
+
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${LORESTROME_CELL_SIZE} ${LORESTROME_CELL_SIZE}">` +
+    `<image href="${LORESTROME_SHEET_URL}" x="-${cx}" y="-${cy}" width="${sheetW}" height="${sheetH}" preserveAspectRatio="none"/>` +
+    `</svg>`;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
