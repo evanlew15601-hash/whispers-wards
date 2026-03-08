@@ -48,7 +48,7 @@ function readPortraitLabSelections(): PortraitLabSelections {
 }
 
 function lorestromePortraitUrlFromIndex(index: number): string {
-  return lorestromeThumbUrl(lorestromeIndexToCell(index), { size: 640, format: 'webp' });
+  return lorestromeThumbUrl(lorestromeIndexToCell(index), { size: 640 });
 }
 
 export function getPlayerPortraits(): PortraitAsset[] {

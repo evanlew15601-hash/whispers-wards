@@ -39,14 +39,34 @@ export function lorestromeCropForCell(cell: LorestromeCell): { cx: number; cy: n
  * In dev/test (or if you request a non-webp format), we fall back to an SVG data URL
  * that crops the Wikimedia spritesheet client-side.
  */
+let cachedWebpSupport: boolean | null = null;
+
+function supportsWebp(): boolean {
+  if (cachedWebpSupport !== null) return cachedWebpSupport;
+  if (typeof document === 'undefined') {
+    cachedWebpSupport = true;
+    return cachedWebpSupport;
+  }
+
+  try {
+    const canvas = document.createElement('canvas');
+    const ok = canvas.toDataURL('image/webp').startsWith('data:image/webp');
+    cachedWebpSupport = ok;
+    return ok;
+  } catch {
+    cachedWebpSupport = false;
+    return false;
+  }
+}
+
 export function lorestromeThumbUrl(
   cell: LorestromeCell,
   opts: {
     size?: number;
-    format?: 'jpg' | 'png' | 'webp';
+    format?: 'auto' | 'jpg' | 'png' | 'webp';
   } = {},
 ): string {
-  const { size = 192, format = 'webp' } = opts;
+  const { size = 192, format = 'auto' } = opts;
 
   const generatedSizes = [96, 140, 192, 640];
   const pickGeneratedSize = (desired: number) => {
@@ -56,11 +76,13 @@ export function lorestromeThumbUrl(
     return generatedSizes[generatedSizes.length - 1] ?? 192;
   };
 
-  if (import.meta.env.MODE === 'production' && format === 'webp') {
+  const resolvedFormat = format === 'auto' ? (supportsWebp() ? 'webp' : 'jpg') : format;
+
+  if (import.meta.env.MODE === 'production' && (resolvedFormat === 'webp' || resolvedFormat === 'jpg')) {
     const idx = lorestromeCellToIndex(cell);
     const s = pickGeneratedSize(size);
     const padded = String(idx).padStart(3, '0');
-    return `${import.meta.env.BASE_URL}portraits/lorestrome/idx-${padded}-${s}.webp`;
+    return `${import.meta.env.BASE_URL}portraits/lorestrome/idx-${padded}-${s}.${resolvedFormat}`;
   }
 
   const { cx, cy } = lorestromeCropForCell(cell);
@@ -70,8 +92,8 @@ export function lorestromeThumbUrl(
 
   const svg =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${LORESTROME_CELL_SIZE} ${LORESTROME_CELL_SIZE}">` +
-    `<image href="${LORESTROME_SHEET_URL}" x="-${cx}" y="-${cy}" width="${sheetW}" height="${sheetH}" preserveAspectRatio="none"/>` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${size}" height="${size}" viewBox="0 0 ${LORESTROME_CELL_SIZE} ${LORESTROME_CELL_SIZE}">` +
+    `<image href="${LORESTROME_SHEET_URL}" xlink:href="${LORESTROME_SHEET_URL}" x="-${cx}" y="-${cy}" width="${sheetW}" height="${sheetH}" preserveAspectRatio="none"/>` +
     `</svg>`;
 
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

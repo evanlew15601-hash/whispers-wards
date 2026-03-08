@@ -21,6 +21,7 @@ src/game/story/story.meta.json
 
 # Generated portrait thumbnails (built via scripts/build-lorestrome-thumbnails.mjs)
 public/portraits/lorestrome/*.webp
+public/portraits/lorestrome/*.jpg
 scripts/.cache/
 
 # Downloaded upstream UQM snapshot (installed by scripts/fetch-uqm-upstream.mjs)

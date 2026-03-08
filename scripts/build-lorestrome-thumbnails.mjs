@@ -17,6 +17,7 @@ const COLS = 6;
 const ROWS = 36;
 
 const SIZES = [96, 140, 192, 640];
+const FORMATS = ['webp', 'jpg'];
 
 const outDir = path.join(repoRoot, 'public', 'portraits', 'lorestrome');
 const cacheDir = path.join(repoRoot, 'scripts', '.cache');
@@ -51,7 +52,7 @@ await fsp.mkdir(cacheDir, { recursive: true });
 const existing = await fsp.readdir(outDir).catch(() => []);
 await Promise.all(
   existing
-    .filter((f) => f.startsWith('idx-') && f.endsWith('.webp'))
+    .filter((f) => f.startsWith('idx-') && (f.endsWith('.webp') || f.endsWith('.jpg')))
     .map((f) => fsp.unlink(path.join(outDir, f))),
 );
 
@@ -75,7 +76,7 @@ const sheetBuf = await fsp.readFile(sheetCachePath);
 const sheet = sharp(sheetBuf, { limitInputPixels: false });
 
 let completed = 0;
-const total = COLS * ROWS * SIZES.length;
+const total = COLS * ROWS * SIZES.length * FORMATS.length;
 
 const jobs = [];
 for (let row = 0; row < ROWS; row++) {
@@ -87,21 +88,27 @@ for (let row = 0; row < ROWS; row++) {
     const top = row * CELL_SIZE;
 
     for (const size of SIZES) {
-      const outPath = path.join(outDir, `idx-${padded}-${size}.webp`);
+      for (const fmt of FORMATS) {
+        const outPath = path.join(outDir, `idx-${padded}-${size}.${fmt}`);
 
-      jobs.push(async () => {
-        await sheet
-          .clone()
-          .extract({ left, top, width: CELL_SIZE, height: CELL_SIZE })
-          .resize(size, size)
-          .webp({ quality: 88 })
-          .toFile(outPath);
+        jobs.push(async () => {
+          const img = sheet
+            .clone()
+            .extract({ left, top, width: CELL_SIZE, height: CELL_SIZE })
+            .resize(size, size);
 
-        completed++;
-        if (completed % 60 === 0 || completed === total) {
-          console.log(`[portraits] Generated ${completed}/${total}`);
-        }
-      });
+          if (fmt === 'webp') {
+            await img.webp({ quality: 88 }).toFile(outPath);
+          } else {
+            await img.jpeg({ quality: 88, progressive: true }).toFile(outPath);
+          }
+
+          completed++;
+          if (completed % 120 === 0 || completed === total) {
+            console.log(`[portraits] Generated ${completed}/${total}`);
+          }
+        });
+      }
     }
   }
 }

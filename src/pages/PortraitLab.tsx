@@ -417,7 +417,7 @@ const PortraitLab = () => {
                     title={`idx ${f.index} (score ${score.toFixed(2)})`}
                   >
                     <img
-                      src={lorestromeThumbUrl(f.cell, { size: 140, format: 'webp' })}
+                      src={lorestromeThumbUrl(f.cell, { size: 140 })}
                       alt={`Portrait ${f.index}`}
                       className="h-28 w-full object-cover"
                       loading="lazy"
@@ -451,7 +451,7 @@ const PortraitLab = () => {
                       title={`idx ${idx} (r${cell.row} c${cell.col})`}
                     >
                       <img
-                        src={lorestromeThumbUrl(cell, { size: 96, format: 'webp' })}
+                        src={lorestromeThumbUrl(cell, { size: 96 })}
                         alt={`Portrait ${idx}`}
                         className="h-20 w-full object-cover"
                         loading="lazy"
