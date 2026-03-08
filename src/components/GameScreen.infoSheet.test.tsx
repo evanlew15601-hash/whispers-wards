@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { GameState, DialogueNode } from '@/game/types';
 import type { CheckpointInfo, SaveSlotInfo } from '@/game/storage';
 
 vi.mock('@/components/DialoguePanel', () => ({
   default: () => <div data-testid="dialogue-panel" />,
+}));
+
+vi.mock('@/components/ui/sonner', () => ({
+  toast: vi.fn(),
 }));
 
 import GameScreen from '@/components/GameScreen';
@@ -90,5 +94,61 @@ describe('GameScreen focus mode info sheet', () => {
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/leads, intel, event log/i)).toBeInTheDocument();
+  });
+
+  it('shows a new-intel badge on the Info button until the sheet is opened', async () => {
+    const view = render(
+      <GameScreen
+        state={{ ...baseState, knownSecrets: [], stepNumber: 0 }}
+        engineLabel="test"
+        choiceLockedFlags={null}
+        choiceUiHints={null}
+        makeChoice={vi.fn()}
+        endTurn={vi.fn()}
+        takeManagementAction={vi.fn()}
+        resetGame={vi.fn()}
+        saveSlots={saveSlots}
+        summitGateCheckpoint={checkpoint}
+        saveToSlot={vi.fn()}
+        loadFromSlot={vi.fn()}
+        loadCheckpoint={vi.fn()}
+        deleteSlot={vi.fn()}
+        exitToTitle={vi.fn()}
+        enterPendingEncounter={vi.fn()}
+        returnToHub={vi.fn()}
+      />,
+    );
+
+    view.rerender(
+      <GameScreen
+        state={{ ...baseState, knownSecrets: ['Thessaly is rumored to be a spy.'], stepNumber: 1 }}
+        engineLabel="test"
+        choiceLockedFlags={null}
+        choiceUiHints={null}
+        makeChoice={vi.fn()}
+        endTurn={vi.fn()}
+        takeManagementAction={vi.fn()}
+        resetGame={vi.fn()}
+        saveSlots={saveSlots}
+        summitGateCheckpoint={checkpoint}
+        saveToSlot={vi.fn()}
+        loadFromSlot={vi.fn()}
+        loadCheckpoint={vi.fn()}
+        deleteSlot={vi.fn()}
+        exitToTitle={vi.fn()}
+        enterPendingEncounter={vi.fn()}
+        returnToHub={vi.fn()}
+      />,
+    );
+
+    const infoButton = screen.getByRole('button', { name: /^info$/i });
+    expect(within(infoButton).getByText('1')).toBeInTheDocument();
+
+    fireEvent.click(infoButton);
+    await screen.findByRole('dialog');
+
+    await waitFor(() => {
+      expect(within(infoButton).queryByText('1')).not.toBeInTheDocument();
+    });
   });
 });
