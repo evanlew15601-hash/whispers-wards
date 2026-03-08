@@ -7,6 +7,8 @@ import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory
 import { useAudio } from '@/audio/useAudio';
 import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
 import CommPortrait from '@/components/CommPortrait';
+import LorestromePortraitImage from '@/components/LorestromePortraitImage';
+import { lorestromeIndexToCell } from '@/game/lorestrome';
 import { getPortraitById, getSpeakerPortrait } from '@/game/portraits';
 import Tip from '@/ui/tips/Tip';
 
@@ -535,7 +537,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
               const lines = choiceLines[choice.id] ?? [choice.text];
               const hotkey = i < 9 ? String(i + 1) : null;
-              const playerPortraitSrc = playerPortraitId ? getPortraitById(playerPortraitId)?.src ?? null : null;
+              const playerPortrait = playerPortraitId ? getPortraitById(playerPortraitId) : null;
 
               const onSelect = () => {
                 if (locked) {
@@ -584,12 +586,22 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   <div className="flex items-start gap-3">
                     {hotkey && (
                       <div className="relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm border border-border bg-card/60">
-                        {playerPortraitSrc && (
-                          <img
-                            src={playerPortraitSrc}
-                            alt={playerName ?? 'You'}
-                            className="absolute inset-0 h-full w-full object-cover opacity-80"
-                          />
+                        {playerPortrait?.src && (
+                          typeof playerPortrait.lorestromeIndex === 'number' ? (
+                            <LorestromePortraitImage
+                              cell={lorestromeIndexToCell(playerPortrait.lorestromeIndex)}
+                              size={96}
+                              alt={playerName ?? 'You'}
+                              className="absolute inset-0 h-full w-full object-cover opacity-80"
+                              objectPosition={playerPortrait.objectPosition}
+                            />
+                          ) : (
+                            <img
+                              src={playerPortrait.src}
+                              alt={playerName ?? 'You'}
+                              className="absolute inset-0 h-full w-full object-cover opacity-80"
+                            />
+                          )
                         )}
                         <div className="relative flex h-full w-full items-center justify-center bg-background/15 font-display text-[10px] tracking-wider text-muted-foreground">
                           {hotkey}

@@ -18,7 +18,7 @@ const COLS = 6;
 const ROWS = 36;
 
 const SIZES = [96, 140, 192, 640];
-const FORMATS = ['webp', 'jpg'];
+const FORMATS = ['jpg'];
 
 const outDir = path.join(repoRoot, 'public', 'portraits', 'lorestrome');
 const cacheDir = path.join(repoRoot, 'scripts', '.cache');
@@ -98,11 +98,7 @@ for (let row = 0; row < ROWS; row++) {
             .extract({ left, top, width: CELL_SIZE, height: CELL_SIZE })
             .resize(size, size);
 
-          if (fmt === 'webp') {
-            await img.webp({ quality: 88 }).toFile(outPath);
-          } else {
-            await img.jpeg({ quality: 88, progressive: true }).toFile(outPath);
-          }
+          await img.jpeg({ quality: 88, progressive: true }).toFile(outPath);
 
           completed++;
           if (completed % 120 === 0 || completed === total) {
@@ -128,7 +124,6 @@ const validate = async () => {
     { idx: 0, size: 96, fmt: 'jpg' },
     { idx: 1, size: 96, fmt: 'jpg' },
     { idx: 0, size: 140, fmt: 'jpg' },
-    { idx: 0, size: 96, fmt: 'webp' },
   ];
 
   const hashes = [];

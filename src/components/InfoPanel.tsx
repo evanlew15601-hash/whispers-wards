@@ -3,6 +3,8 @@ import { useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { DialogueNode, Faction, PlayerProfile, WorldState, SecondaryEncounter } from '@/game/types';
+import LorestromePortraitImage from '@/components/LorestromePortraitImage';
+import { lorestromeIndexToCell } from '@/game/lorestrome';
 import { getPortraitById } from '@/game/portraits';
 import { getLeadHintsForCurrentDialogue } from '@/game/leads';
 import WorldMap from '@/components/WorldMap';
@@ -62,6 +64,8 @@ const InfoPanel = (
     return `If ignored: ${parts.join(' · ')}`;
   }, [factions, pendingEncounter, world.regions, world.tradeRoutes]);
 
+  const playerPortrait = player ? getPortraitById(player.portraitId) : null;
+
   return (
     <Tabs defaultValue="chronicle" className="flex flex-col gap-4">
       {/* Turn counter */}
@@ -78,12 +82,22 @@ const InfoPanel = (
         <div className="parchment-border rounded-sm bg-card p-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 overflow-hidden rounded-sm border border-border bg-secondary/40">
-              {getPortraitById(player.portraitId)?.src ? (
-                <img
-                  src={getPortraitById(player.portraitId)!.src}
-                  alt={player.name}
-                  className="h-full w-full object-cover"
-                />
+              {playerPortrait?.src ? (
+                typeof playerPortrait.lorestromeIndex === 'number' ? (
+                  <LorestromePortraitImage
+                    cell={lorestromeIndexToCell(playerPortrait.lorestromeIndex)}
+                    size={96}
+                    alt={player.name}
+                    className="h-full w-full object-cover"
+                    objectPosition={playerPortrait.objectPosition}
+                  />
+                ) : (
+                  <img
+                    src={playerPortrait.src}
+                    alt={player.name}
+                    className="h-full w-full object-cover"
+                  />
+                )
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
                   <span className="font-display text-xs tracking-[0.2em] text-muted-foreground uppercase">

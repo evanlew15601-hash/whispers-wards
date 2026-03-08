@@ -14,6 +14,7 @@ export type PortraitAsset = {
   id: PortraitId;
   label: string;
   src: string;
+  lorestromeIndex?: number;
   /** Optional CSS styling hooks for quick, coherent variations while art is in flux. */
   objectPosition?: string;
   filterClassName?: string;
@@ -30,6 +31,21 @@ export type PortraitAsset = {
 };
 
 type PortraitLabSelections = Partial<Record<string, number>>;
+
+// Defaults chosen via the Portrait Lab (kept here so the game has a stable cast
+// even when localStorage is empty).
+export const DEFAULT_PORTRAIT_LAB_SELECTIONS: Readonly<Record<string, number>> = {
+  'envoy-default': 37,
+  'envoy-alternate': 97,
+  'envoy-shadow': 210,
+  aldric: 142,
+  thessaly: 32,
+  renzo: 73,
+  // Avoid reusing the envoy portrait; pick a distinct (female-presenting) option for Maren.
+  maren: 25,
+  sera: 24,
+  ilya: 166,
+};
 
 function readPortraitLabSelections(): PortraitLabSelections {
   if (typeof window === 'undefined') return {};
@@ -51,71 +67,53 @@ function lorestromePortraitUrlFromIndex(index: number): string {
   return lorestromeThumbUrl(lorestromeIndexToCell(index), { size: 640 });
 }
 
+function portraitIndexForKey(selections: PortraitLabSelections, key: string): number | null {
+  const stored = selections[key];
+  if (typeof stored === 'number') return stored;
+
+  const fallback = DEFAULT_PORTRAIT_LAB_SELECTIONS[key];
+  return typeof fallback === 'number' ? fallback : null;
+}
+
 export function getPlayerPortraits(): PortraitAsset[] {
   const portraitLabSelections = readPortraitLabSelections();
+
+  const envoyDefaultIdx = portraitIndexForKey(portraitLabSelections, 'envoy-default');
+  const envoyAltIdx = portraitIndexForKey(portraitLabSelections, 'envoy-alternate');
+  const envoyShadowIdx = portraitIndexForKey(portraitLabSelections, 'envoy-shadow');
+
+  const sheetCredit = {
+    sourceUrl: LORESTROME_SHEET_URL,
+    license: 'CC0 (Hyptosis / Lorestrome)',
+    author: 'Hyptosis',
+  };
 
   return [
     {
       id: 'envoy-default',
       label: 'Envoy (Default)',
-      src:
-        typeof portraitLabSelections['envoy-default'] === 'number'
-          ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-default'])
-          : heroImage,
+      src: typeof envoyDefaultIdx === 'number' ? lorestromePortraitUrlFromIndex(envoyDefaultIdx) : heroImage,
+      lorestromeIndex: typeof envoyDefaultIdx === 'number' ? envoyDefaultIdx : undefined,
       objectPosition: '50% 20%',
-      credit:
-        typeof portraitLabSelections['envoy-default'] === 'number'
-          ? {
-              sourceUrl: LORESTROME_SHEET_URL,
-              license: 'CC0 (Hyptosis / Lorestrome)',
-              author: 'Hyptosis',
-            }
-          : {
-              sourceUrl: 'local:src/assets/hero-throne.jpg',
-              license: 'placeholder',
-            },
+      credit: typeof envoyDefaultIdx === 'number' ? sheetCredit : { sourceUrl: 'local:src/assets/hero-throne.jpg', license: 'placeholder' },
     },
     {
       id: 'envoy-alternate',
       label: 'Envoy (Alternate)',
-      src:
-        typeof portraitLabSelections['envoy-alternate'] === 'number'
-          ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-alternate'])
-          : heroImage,
+      src: typeof envoyAltIdx === 'number' ? lorestromePortraitUrlFromIndex(envoyAltIdx) : heroImage,
+      lorestromeIndex: typeof envoyAltIdx === 'number' ? envoyAltIdx : undefined,
       objectPosition: '50% 35%',
       filterClassName: 'cc-portrait-alt',
-      credit:
-        typeof portraitLabSelections['envoy-alternate'] === 'number'
-          ? {
-              sourceUrl: LORESTROME_SHEET_URL,
-              license: 'CC0 (Hyptosis / Lorestrome)',
-              author: 'Hyptosis',
-            }
-          : {
-              sourceUrl: 'local:src/assets/hero-throne.jpg',
-              license: 'placeholder',
-            },
+      credit: typeof envoyAltIdx === 'number' ? sheetCredit : { sourceUrl: 'local:src/assets/hero-throne.jpg', license: 'placeholder' },
     },
     {
       id: 'envoy-shadow',
       label: 'Envoy (Shadow)',
-      src:
-        typeof portraitLabSelections['envoy-shadow'] === 'number'
-          ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-shadow'])
-          : heroImage,
+      src: typeof envoyShadowIdx === 'number' ? lorestromePortraitUrlFromIndex(envoyShadowIdx) : heroImage,
+      lorestromeIndex: typeof envoyShadowIdx === 'number' ? envoyShadowIdx : undefined,
       objectPosition: '50% 25%',
       filterClassName: 'cc-portrait-shadow',
-      credit:
-        typeof portraitLabSelections['envoy-shadow'] === 'number'
-          ? {
-              sourceUrl: LORESTROME_SHEET_URL,
-              license: 'CC0 (Hyptosis / Lorestrome)',
-              author: 'Hyptosis',
-            }
-          : {
-              sourceUrl: 'local:src/assets/hero-throne.jpg',
-              license: 'placeholder',
-            },
+      credit: typeof envoyShadowIdx === 'number' ? sheetCredit : { sourceUrl: 'local:src/assets/hero-throne.jpg', license: 'placeholder' },
     },
   ];
 }
@@ -128,6 +126,7 @@ export type SpeakerPortraitSpec =
   | {
       kind: 'image';
       src: string;
+      lorestromeIndex?: number;
       alt: string;
       objectPosition?: string;
       filterClassName?: string;
@@ -146,10 +145,11 @@ function initialsFromName(name: string): string {
   return take || '?';
 }
 
-function getNpcOverrideSrc(key: string): string | null {
-  const idx = readPortraitLabSelections()[key];
+function getNpcOverride(key: string): { src: string; idx: number } | null {
+  const selections = readPortraitLabSelections();
+  const idx = portraitIndexForKey(selections, key);
   if (typeof idx !== 'number') return null;
-  return lorestromePortraitUrlFromIndex(idx);
+  return { src: lorestromePortraitUrlFromIndex(idx), idx };
 }
 
 export function getSpeakerPortrait(speaker: string, speakerFaction?: string): SpeakerPortraitSpec {
@@ -157,9 +157,11 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
 
   // Named NPC portraits (placeholder crops/grades until bespoke art is added).
   if (normalized.includes('aldric')) {
+    const override = getNpcOverride('aldric');
     return {
       kind: 'image',
-      src: getNpcOverrideSrc('aldric') ?? heroImage,
+      src: override?.src ?? heroImage,
+      lorestromeIndex: override?.idx,
       alt: speaker,
       objectPosition: '52% 15%',
       filterClassName: 'cc-portrait-iron',
@@ -167,9 +169,11 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
   }
 
   if (normalized.includes('thessaly')) {
+    const override = getNpcOverride('thessaly');
     return {
       kind: 'image',
-      src: getNpcOverrideSrc('thessaly') ?? heroImage,
+      src: override?.src ?? heroImage,
+      lorestromeIndex: override?.idx,
       alt: speaker,
       objectPosition: '45% 30%',
       filterClassName: 'cc-portrait-verdant',
@@ -177,9 +181,11 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
   }
 
   if (normalized.includes('renzo')) {
+    const override = getNpcOverride('renzo');
     return {
       kind: 'image',
-      src: getNpcOverrideSrc('renzo') ?? heroImage,
+      src: override?.src ?? heroImage,
+      lorestromeIndex: override?.idx,
       alt: speaker,
       objectPosition: '60% 28%',
       filterClassName: 'cc-portrait-ember',
@@ -187,9 +193,11 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
   }
 
   if (normalized.includes('maren')) {
+    const override = getNpcOverride('maren');
     return {
       kind: 'image',
-      src: getNpcOverrideSrc('maren') ?? heroImage,
+      src: override?.src ?? heroImage,
+      lorestromeIndex: override?.idx,
       alt: speaker,
       objectPosition: '48% 25%',
       filterClassName: 'cc-portrait-iron',
@@ -197,9 +205,11 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
   }
 
   if (normalized.includes('sera')) {
+    const override = getNpcOverride('sera');
     return {
       kind: 'image',
-      src: getNpcOverrideSrc('sera') ?? heroImage,
+      src: override?.src ?? heroImage,
+      lorestromeIndex: override?.idx,
       alt: speaker,
       objectPosition: '52% 25%',
       filterClassName: 'cc-portrait-verdant',
@@ -207,37 +217,30 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
   }
 
   if (normalized.includes('ilya')) {
+    const override = getNpcOverride('ilya');
     return {
       kind: 'image',
-      src: getNpcOverrideSrc('ilya') ?? heroImage,
+      src: override?.src ?? heroImage,
+      lorestromeIndex: override?.idx,
       alt: speaker,
       objectPosition: '50% 22%',
       filterClassName: 'cc-portrait-ember',
     };
   }
 
-  if (speakerFaction) {
-    const auraVar =
-      speakerFaction === 'iron-pact'
-        ? '--faction-iron'
-        : speakerFaction === 'verdant-court'
-          ? '--faction-verdant'
-          : speakerFaction === 'ember-throne'
-            ? '--faction-ember'
-            : '--gold-glow';
-
-    return {
-      kind: 'sigil',
-      alt: speaker,
-      initials: initialsFromName(speaker),
-      auraVar,
-    };
-  }
+  const auraVar =
+    speakerFaction === 'iron-pact'
+      ? '--faction-iron'
+      : speakerFaction === 'verdant-court'
+        ? '--faction-verdant'
+        : speakerFaction === 'ember-throne'
+          ? '--faction-ember'
+          : '--gold-glow';
 
   return {
     kind: 'sigil',
     alt: speaker,
     initials: initialsFromName(speaker),
-    auraVar: '--gold-glow',
+    auraVar,
   };
 }

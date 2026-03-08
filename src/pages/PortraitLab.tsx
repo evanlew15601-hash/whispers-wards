@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import LorestromePortraitImage from '@/components/LorestromePortraitImage';
 import { Button } from '@/components/ui/button';
 import {
   LORESTROME_COLS,
@@ -8,7 +9,6 @@ import {
   LORESTROME_ROWS,
   LORESTROME_SHEET_URL,
   lorestromeCellToIndex,
-  lorestromeThumbUrl,
   type LorestromeCell,
 } from '@/game/lorestrome';
 
@@ -416,11 +416,11 @@ const PortraitLab = () => {
                       ${active ? 'border-primary/70' : 'border-border hover:border-primary/40'}`}
                     title={`idx ${f.index} (score ${score.toFixed(2)})`}
                   >
-                    <img
-                      src={lorestromeThumbUrl(f.cell, { size: 140 })}
+                    <LorestromePortraitImage
+                      cell={f.cell}
+                      size={140}
                       alt={`Portrait ${f.index}`}
                       className="h-28 w-full object-cover"
-                      loading="lazy"
                     />
                     <div className="p-2 text-left">
                       <div className="font-display text-[10px] tracking-[0.18em] text-muted-foreground uppercase">idx {f.index}</div>
@@ -450,11 +450,11 @@ const PortraitLab = () => {
                         ${active ? 'border-primary/70' : 'border-border hover:border-primary/40'}`}
                       title={`idx ${idx} (r${cell.row} c${cell.col})`}
                     >
-                      <img
-                        src={lorestromeThumbUrl(cell, { size: 96 })}
+                      <LorestromePortraitImage
+                        cell={cell}
+                        size={96}
                         alt={`Portrait ${idx}`}
                         className="h-20 w-full object-cover"
-                        loading="lazy"
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-background/70 px-1 py-0.5 text-[9px] text-foreground/80">
                         {idx}

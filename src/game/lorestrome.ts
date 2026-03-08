@@ -59,11 +59,11 @@ function supportsWebp(): boolean {
   }
 }
 
-export function lorestromeThumbUrl(
+export function lorestromeGeneratedThumbUrl(
   cell: LorestromeCell,
   opts: {
     size?: number;
-    format?: 'auto' | 'jpg' | 'png' | 'webp';
+    format?: 'auto' | 'jpg' | 'webp';
   } = {},
 ): string {
   const { size = 192, format = 'auto' } = opts;
@@ -87,12 +87,27 @@ export function lorestromeThumbUrl(
           : 'jpg'
       : format;
 
-  if (import.meta.env.MODE === 'production' && (resolvedFormat === 'webp' || resolvedFormat === 'jpg')) {
-    const idx = lorestromeCellToIndex(cell);
-    const s = pickGeneratedSize(size);
-    const padded = String(idx).padStart(3, '0');
-    // Cache-bust when formats/hosting change (helps iOS Safari which can aggressively cache 404s).
-    return `${import.meta.env.BASE_URL}portraits/lorestrome/idx-${padded}-${s}.${resolvedFormat}?v=2`;
+  const idx = lorestromeCellToIndex(cell);
+  const s = pickGeneratedSize(size);
+  const padded = String(idx).padStart(3, '0');
+  // Cache-bust when formats/hosting change (helps iOS Safari which can aggressively cache 404s).
+  return `${import.meta.env.BASE_URL}portraits/lorestrome/idx-${padded}-${s}.${resolvedFormat}?v=2`;
+}
+
+export function lorestromeThumbUrl(
+  cell: LorestromeCell,
+  opts: {
+    size?: number;
+    format?: 'auto' | 'jpg' | 'png' | 'webp';
+  } = {},
+): string {
+  const { size = 192, format = 'auto' } = opts;
+
+  if (import.meta.env.MODE === 'production' && (format === 'auto' || format === 'webp' || format === 'jpg')) {
+    return lorestromeGeneratedThumbUrl(cell, {
+      size,
+      format: format === 'auto' ? 'auto' : format,
+    });
   }
 
   const { cx, cy } = lorestromeCropForCell(cell);

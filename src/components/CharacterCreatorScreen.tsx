@@ -2,9 +2,11 @@ import { motion } from 'framer-motion';
 import { useMemo, useState, type CSSProperties } from 'react';
 
 import heroImage from '@/assets/hero-throne.jpg';
+import LorestromePortraitImage from '@/components/LorestromePortraitImage';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { lorestromeIndexToCell } from '@/game/lorestrome';
 import type { PlayerProfile } from '@/game/types';
 import { getPlayerPortraits, getPortraitById, isPortraitId } from '@/game/portraits';
 
@@ -83,12 +85,22 @@ const CharacterCreatorScreen = ({ initialProfile, onConfirm, onBack }: Character
 
               <div className="cc-comm-frame relative overflow-hidden rounded-sm">
                 {selectedPortrait ? (
-                  <img
-                    src={selectedPortrait.src}
-                    alt={selectedPortrait.label}
-                    className={`h-64 w-full object-cover ${selectedPortrait.filterClassName ?? ''}`}
-                    style={{ objectPosition: selectedPortrait.objectPosition }}
-                  />
+                  typeof selectedPortrait.lorestromeIndex === 'number' ? (
+                    <LorestromePortraitImage
+                      cell={lorestromeIndexToCell(selectedPortrait.lorestromeIndex)}
+                      size={640}
+                      alt={selectedPortrait.label}
+                      className={`h-64 w-full object-cover ${selectedPortrait.filterClassName ?? ''}`}
+                      objectPosition={selectedPortrait.objectPosition}
+                    />
+                  ) : (
+                    <img
+                      src={selectedPortrait.src}
+                      alt={selectedPortrait.label}
+                      className={`h-64 w-full object-cover ${selectedPortrait.filterClassName ?? ''}`}
+                      style={{ objectPosition: selectedPortrait.objectPosition }}
+                    />
+                  )
                 ) : (
                   <div className="flex h-64 w-full items-center justify-center bg-secondary/40">
                     <span className="font-display text-sm tracking-[0.25em] text-muted-foreground uppercase">No portrait</span>
@@ -155,12 +167,22 @@ const CharacterCreatorScreen = ({ initialProfile, onConfirm, onBack }: Character
                           ${active ? 'border-primary/70' : 'border-border hover:border-primary/40'}`}
                         title={p.label}
                       >
-                        <img
-                          src={p.src}
-                          alt={p.label}
-                          className={`h-16 w-full object-cover transition-transform group-hover:scale-[1.03] ${p.filterClassName ?? ''}`}
-                          style={{ objectPosition: p.objectPosition }}
-                        />
+                        {typeof p.lorestromeIndex === 'number' ? (
+                          <LorestromePortraitImage
+                            cell={lorestromeIndexToCell(p.lorestromeIndex)}
+                            size={140}
+                            alt={p.label}
+                            className={`h-16 w-full object-cover transition-transform group-hover:scale-[1.03] ${p.filterClassName ?? ''}`}
+                            objectPosition={p.objectPosition}
+                          />
+                        ) : (
+                          <img
+                            src={p.src}
+                            alt={p.label}
+                            className={`h-16 w-full object-cover transition-transform group-hover:scale-[1.03] ${p.filterClassName ?? ''}`}
+                            style={{ objectPosition: p.objectPosition }}
+                          />
+                        )}
                         {active && <span className="absolute inset-0 ring-2 ring-primary/40" />}
                       </button>
                     );

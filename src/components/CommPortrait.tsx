@@ -1,5 +1,7 @@
 import { CSSProperties } from 'react';
 
+import LorestromePortraitImage from '@/components/LorestromePortraitImage';
+import { lorestromeIndexToCell } from '@/game/lorestrome';
 import type { SpeakerPortraitSpec } from '@/game/portraits';
 
 interface CommPortraitProps {
@@ -10,12 +12,22 @@ const CommPortrait = ({ portrait }: CommPortraitProps) => {
   if (portrait.kind === 'image') {
     return (
       <div className="cc-comm-frame relative h-full w-full overflow-hidden rounded-sm">
-        <img
-          src={portrait.src}
-          alt={portrait.alt}
-          className={`h-full w-full object-cover ${portrait.filterClassName ?? ''}`}
-          style={{ objectPosition: portrait.objectPosition }}
-        />
+        {typeof portrait.lorestromeIndex === 'number' ? (
+          <LorestromePortraitImage
+            cell={lorestromeIndexToCell(portrait.lorestromeIndex)}
+            size={640}
+            alt={portrait.alt}
+            className={`h-full w-full object-cover ${portrait.filterClassName ?? ''}`}
+            objectPosition={portrait.objectPosition}
+          />
+        ) : (
+          <img
+            src={portrait.src}
+            alt={portrait.alt}
+            className={`h-full w-full object-cover ${portrait.filterClassName ?? ''}`}
+            style={{ objectPosition: portrait.objectPosition }}
+          />
+        )}
         <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
       </div>
     );
