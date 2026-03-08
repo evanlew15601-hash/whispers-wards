@@ -96,14 +96,14 @@ const InfoPanel = (
                     cell={lorestromeIndexToCell(playerPortrait.lorestromeIndex)}
                     size={96}
                     alt={player.name}
-                    className="h-full w-full object-cover"
+                    className="relative z-0 h-full w-full object-cover"
                     objectPosition={playerPortrait.objectPosition}
                   />
                 ) : (
                   <img
                     src={playerPortrait.src}
                     alt={player.name}
-                    className="h-full w-full object-cover"
+                    className="relative z-0 h-full w-full object-cover"
                   />
                 )
               ) : (
@@ -115,14 +115,14 @@ const InfoPanel = (
               )}
 
               {playerPortrait?.src && (
-                <div className="pointer-events-none absolute inset-0">
+                <div className="pointer-events-none absolute inset-0 z-10">
                   <div className="cc-comm-scanlines absolute inset-0" />
                   <div className="cc-dialogue-grain absolute inset-0" />
                   <div className="cc-portrait-vignette absolute inset-0" />
                 </div>
               )}
 
-              <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
+              <div className="cc-comm-frame-border pointer-events-none absolute inset-0 z-20" />
             </div>
 
             <div className="min-w-0">

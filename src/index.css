@@ -190,15 +190,11 @@
         transparent 1px,
         transparent 4px
       );
-    opacity: 0.18;
+    opacity: 0.2;
+    transform: translateZ(0);
   }
 
-  @supports (mix-blend-mode: overlay) {
-    .cc-dialogue-grain {
-      opacity: 0.14;
-      mix-blend-mode: overlay;
-    }
-  }
+  
 
   .cc-choice-sheen {
     background: linear-gradient(110deg, transparent 0%, hsl(var(--primary) / 0.18) 45%, transparent 75%);
@@ -276,29 +272,21 @@
         transparent 1px,
         transparent 4px
       );
-    opacity: 0.22;
+    opacity: 0.24;
+    transform: translateZ(0);
   }
 
-  @supports (mix-blend-mode: overlay) {
-    .cc-comm-scanlines {
-      opacity: 0.18;
-      mix-blend-mode: overlay;
-    }
-  }
+  
 
   .cc-portrait-tint {
     background:
       radial-gradient(220px circle at 28% 18%, hsl(var(--cc-aura, var(--gold-glow)) / 0.36), transparent 62%),
       radial-gradient(280px circle at 78% 86%, hsl(var(--cc-aura, var(--gold-glow)) / 0.18), transparent 68%);
-    opacity: 0.22;
+    opacity: 0.35;
+    transform: translateZ(0);
   }
 
-  @supports (mix-blend-mode: screen) {
-    .cc-portrait-tint {
-      opacity: 0.85;
-      mix-blend-mode: screen;
-    }
-  }
+  
 
   .cc-portrait-vignette {
     background: radial-gradient(120% 120% at 50% 45%, transparent 0%, transparent 58%, rgba(0, 0, 0, 0.85) 100%);

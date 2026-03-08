@@ -90,14 +90,14 @@ const CharacterCreatorScreen = ({ initialProfile, onConfirm, onBack }: Character
                       cell={lorestromeIndexToCell(selectedPortrait.lorestromeIndex)}
                       size={640}
                       alt={selectedPortrait.label}
-                      className={`h-64 w-full object-cover ${selectedPortrait.filterClassName ?? ''}`}
+                      className={`relative z-0 h-64 w-full object-cover ${selectedPortrait.filterClassName ?? ''}`}
                       objectPosition={selectedPortrait.objectPosition}
                     />
                   ) : (
                     <img
                       src={selectedPortrait.src}
                       alt={selectedPortrait.label}
-                      className={`h-64 w-full object-cover ${selectedPortrait.filterClassName ?? ''}`}
+                      className={`relative z-0 h-64 w-full object-cover ${selectedPortrait.filterClassName ?? ''}`}
                       style={{ objectPosition: selectedPortrait.objectPosition }}
                     />
                   )
@@ -108,14 +108,14 @@ const CharacterCreatorScreen = ({ initialProfile, onConfirm, onBack }: Character
                 )}
 
                 {selectedPortrait && (
-                  <div className="pointer-events-none absolute inset-0">
+                  <div className="pointer-events-none absolute inset-0 z-10">
                     <div className="cc-comm-scanlines absolute inset-0" />
                     <div className="cc-dialogue-grain absolute inset-0" />
                     <div className="cc-portrait-vignette absolute inset-0" />
                   </div>
                 )}
 
-                <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
+                <div className="cc-comm-frame-border pointer-events-none absolute inset-0 z-20" />
               </div>
 
               <div className="mt-4 text-[11px] text-muted-foreground">

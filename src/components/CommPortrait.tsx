@@ -20,26 +20,26 @@ const CommPortrait = ({ portrait }: CommPortraitProps) => {
             cell={lorestromeIndexToCell(portrait.lorestromeIndex)}
             size={640}
             alt={portrait.alt}
-            className={`h-full w-full object-cover ${portrait.filterClassName ?? ''}`}
+            className={`relative z-0 h-full w-full object-cover ${portrait.filterClassName ?? ''}`}
             objectPosition={portrait.objectPosition}
           />
         ) : (
           <img
             src={portrait.src}
             alt={portrait.alt}
-            className={`h-full w-full object-cover ${portrait.filterClassName ?? ''}`}
+            className={`relative z-0 h-full w-full object-cover ${portrait.filterClassName ?? ''}`}
             style={{ objectPosition: portrait.objectPosition }}
           />
         )}
 
-        <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-none absolute inset-0 z-10">
           <div className="cc-portrait-tint absolute inset-0" />
           <div className="cc-comm-scanlines absolute inset-0" />
           <div className="cc-dialogue-grain absolute inset-0" />
           <div className="cc-portrait-vignette absolute inset-0" />
         </div>
 
-        <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
+        <div className="cc-comm-frame-border pointer-events-none absolute inset-0 z-20" />
       </div>
     );
   }
@@ -51,7 +51,7 @@ const CommPortrait = ({ portrait }: CommPortraitProps) => {
       aria-label={portrait.alt}
       role="img"
     >
-      <div className="pointer-events-none absolute inset-0">
+      <div className="pointer-events-none absolute inset-0 z-10">
         <div className="cc-portrait-tint absolute inset-0" />
         <div className="cc-comm-scanlines absolute inset-0" />
         <div className="cc-dialogue-grain absolute inset-0" />
@@ -62,7 +62,7 @@ const CommPortrait = ({ portrait }: CommPortraitProps) => {
           {portrait.initials}
         </span>
       </div>
-      <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
+      <div className="cc-comm-frame-border pointer-events-none absolute inset-0 z-20" />
     </div>
   );
 };

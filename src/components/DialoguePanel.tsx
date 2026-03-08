@@ -385,7 +385,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         transition={{ duration: 0.5 }}
       >
         {/* Speaker */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div
@@ -415,7 +415,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
           <div className="flex items-center gap-4">
             {playerPortraitAsset?.src && (
-              <div className="flex min-w-0 items-center gap-2">
+              <div className="flex items-center gap-2">
                 <div
                   className="cc-comm-frame relative h-8 w-8 overflow-hidden rounded-sm"
                   style={{ '--cc-aura': 'var(--gold-glow)' } as CSSProperties}
@@ -435,12 +435,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                       className="absolute inset-0 h-full w-full object-cover opacity-85"
                     />
                   )}
-                  <div className="pointer-events-none absolute inset-0">
+                  <div className="pointer-events-none absolute inset-0 z-10">
                     <div className="cc-comm-scanlines absolute inset-0" />
                     <div className="cc-dialogue-grain absolute inset-0" />
                     <div className="cc-portrait-vignette absolute inset-0" />
                   </div>
-                  <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
+                  <div className="cc-comm-frame-border pointer-events-none absolute inset-0 z-20" />
                 </div>
                 <span className="max-w-36 truncate text-[10px] font-display tracking-[0.2em] text-muted-foreground/70">
                   {playerName?.trim() ? playerName : 'Envoy'}
@@ -656,7 +656,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                         <div className="relative flex h-full w-full items-center justify-center bg-background/15 font-display text-[10px] tracking-wider text-muted-foreground">
                           {hotkey}
                         </div>
-                        <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
+                        <div className="cc-comm-frame-border pointer-events-none absolute inset-0 z-20" />
                       </div>
                     )}
 
