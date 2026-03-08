@@ -431,8 +431,8 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   )}
                   <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
                 </div>
-                <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
-                  Envoy
+                <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70">
+                  {playerName?.trim() ? playerName : 'Envoy'}
                 </span>
               </div>
             )}
