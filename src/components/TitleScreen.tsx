@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import heroImage from '@/assets/hero-throne.jpg';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { loadUqmWasmRuntime } from '@/game/engine/uqmWasmRuntime';
 import { Button } from '@/components/ui/button';
 import { useAmbience } from '@/audio/useAmbience';
@@ -62,6 +63,16 @@ const TitleScreen = ({ onStart, onLoad, slots = [], onContinue }: TitleScreenPro
         style={{ backgroundImage: `url(${heroImage})` }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
+
+      <div className="absolute right-4 top-4 z-20">
+        <Button
+          asChild
+          variant="outline"
+          className="h-auto rounded-sm px-4 py-2 font-display text-[10px] tracking-[0.3em] uppercase"
+        >
+          <Link to="/portrait-lab">Portrait Lab</Link>
+        </Button>
+      </div>
 
       <motion.div
         className="relative z-10 flex flex-col items-center gap-8 px-6 text-center"
