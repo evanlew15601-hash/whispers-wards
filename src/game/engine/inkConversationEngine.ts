@@ -69,23 +69,28 @@ export const inkConversationEngine: ConversationEngine = {
     });
 
     if (choiceIdx < 0) {
-      // Fallback: if ids mismatch, allow the TS engine to attempt resolution.
-      return tsConversationEngine.applyChoice({ ...prev, ink: null }, choice);
+      // Fallback: if ids mismatch, let the TS engine attempt best-effort resolution.
+      const advanced = tsConversationEngine.applyChoice(prev, choice);
+      if (advanced === prev) return prev;
+      return { ...advanced, ink: null };
     }
 
     const chosen = story.currentChoices[choiceIdx];
     const gotoTag = chosen.tags?.find(t => t.trim().startsWith('goto:')) ?? null;
     const gotoId = gotoTag ? gotoTag.trim().slice('goto:'.length).trim() : null;
 
-    story.ChooseChoiceIndex(choiceIdx);
-
     if (gotoId) {
-      const next = tsConversationEngine.applyChoice({ ...prev, ink: null }, { ...choice, nextNodeId: gotoId });
-      return next;
+      const advanced = tsConversationEngine.applyChoice(prev, { ...choice, nextNodeId: gotoId });
+      if (advanced === prev) return prev;
+      return { ...advanced, ink: null };
     }
 
-    // Stay in Ink: use TS engine for state transitions (effects/logs/events/etc.), then overwrite dialogue.
+    // Stay in Ink: apply TS state transitions (effects/logs/events/etc.) first.
     const advanced = tsConversationEngine.applyChoice(prev, { ...choice, nextNodeId: null });
+    if (advanced === prev) return prev;
+
+    // Then advance Ink.
+    story.ChooseChoiceIndex(choiceIdx);
 
     // Ensure Ink conditionals that depend on game state (eg reputation mirrors) see the updated values.
     syncGameStateToInkVariables(story, advanced);
