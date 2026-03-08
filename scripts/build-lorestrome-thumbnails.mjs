@@ -1,5 +1,6 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
@@ -116,5 +117,38 @@ for (let row = 0; row < ROWS; row++) {
 const concurrency = Number(process.env.PORTRAIT_JOBS ?? 8);
 console.log(`[portraits] Generating ${total} thumbnails (concurrency=${concurrency}) -> ${path.relative(repoRoot, outDir)}`);
 await runPool(jobs, concurrency);
+
+const fingerprint = async (p) => {
+  const buf = await fsp.readFile(p);
+  return crypto.createHash('sha1').update(buf).digest('hex');
+};
+
+const validate = async () => {
+  const samples = [
+    { idx: 0, size: 96, fmt: 'jpg' },
+    { idx: 1, size: 96, fmt: 'jpg' },
+    { idx: 0, size: 140, fmt: 'jpg' },
+    { idx: 0, size: 96, fmt: 'webp' },
+  ];
+
+  const hashes = [];
+  for (const s of samples) {
+    const padded = String(s.idx).padStart(3, '0');
+    const p = path.join(outDir, `idx-${padded}-${s.size}.${s.fmt}`);
+    const meta = await sharp(p).metadata();
+    if (meta.width !== s.size || meta.height !== s.size) {
+      throw new Error(`[portraits] Unexpected dimensions for ${path.basename(p)}: ${meta.width}x${meta.height}`);
+    }
+    hashes.push({ key: `${s.idx}-${s.size}.${s.fmt}`, hash: await fingerprint(p) });
+  }
+
+  const idx0 = hashes.find((h) => h.key === '0-96.jpg')?.hash;
+  const idx1 = hashes.find((h) => h.key === '1-96.jpg')?.hash;
+  if (idx0 && idx1 && idx0 === idx1) {
+    throw new Error('[portraits] Validation failed: idx-000-96.jpg and idx-001-96.jpg are identical (cropping likely broken)');
+  }
+};
+
+await validate();
 
 console.log('[portraits] Done');

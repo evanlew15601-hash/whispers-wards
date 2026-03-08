@@ -76,13 +76,23 @@ export function lorestromeThumbUrl(
     return generatedSizes[generatedSizes.length - 1] ?? 192;
   };
 
-  const resolvedFormat = format === 'auto' ? (supportsWebp() ? 'webp' : 'jpg') : format;
+  // In practice, relying on WebP in the wild causes broken-image icons on some
+  // iOS/Safari versions. Default to JPG for production builds.
+  const resolvedFormat =
+    format === 'auto'
+      ? import.meta.env.MODE === 'production'
+        ? 'jpg'
+        : supportsWebp()
+          ? 'webp'
+          : 'jpg'
+      : format;
 
   if (import.meta.env.MODE === 'production' && (resolvedFormat === 'webp' || resolvedFormat === 'jpg')) {
     const idx = lorestromeCellToIndex(cell);
     const s = pickGeneratedSize(size);
     const padded = String(idx).padStart(3, '0');
-    return `${import.meta.env.BASE_URL}portraits/lorestrome/idx-${padded}-${s}.${resolvedFormat}`;
+    // Cache-bust when formats/hosting change (helps iOS Safari which can aggressively cache 404s).
+    return `${import.meta.env.BASE_URL}portraits/lorestrome/idx-${padded}-${s}.${resolvedFormat}?v=2`;
   }
 
   const { cx, cy } = lorestromeCropForCell(cell);
