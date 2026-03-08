@@ -128,6 +128,7 @@ export type SpeakerPortraitSpec =
       src: string;
       lorestromeIndex?: number;
       alt: string;
+      auraVar: string;
       objectPosition?: string;
       filterClassName?: string;
     }
@@ -155,7 +156,8 @@ function getNpcOverride(key: string): { src: string; idx: number } | null {
   if (key === 'maren') {
     const envoyIdx = portraitIndexForKey(selections, 'envoy-default');
     if (typeof envoyIdx === 'number' && idx === envoyIdx) {
-      idx = DEFAULT_PORTRAIT_LAB_SELECTIONS.maren ?? idx;
+      const fallback = DEFAULT_PORTRAIT_LAB_SELECTIONS.maren ?? idx;
+      idx = fallback === envoyIdx ? 25 : fallback;
     }
   }
 
@@ -165,6 +167,15 @@ function getNpcOverride(key: string): { src: string; idx: number } | null {
 export function getSpeakerPortrait(speaker: string, speakerFaction?: string): SpeakerPortraitSpec {
   const normalized = speaker.toLowerCase();
 
+  const auraVar =
+    speakerFaction === 'iron-pact'
+      ? '--faction-iron'
+      : speakerFaction === 'verdant-court'
+        ? '--faction-verdant'
+        : speakerFaction === 'ember-throne'
+          ? '--faction-ember'
+          : '--gold-glow';
+
   // Named NPC portraits (placeholder crops/grades until bespoke art is added).
   if (normalized.includes('aldric')) {
     const override = getNpcOverride('aldric');
@@ -173,6 +184,7 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
       src: override?.src ?? heroImage,
       lorestromeIndex: override?.idx,
       alt: speaker,
+      auraVar: speakerFaction ? auraVar : '--faction-iron',
       objectPosition: '52% 15%',
       filterClassName: 'cc-portrait-iron',
     };
@@ -185,6 +197,7 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
       src: override?.src ?? heroImage,
       lorestromeIndex: override?.idx,
       alt: speaker,
+      auraVar: speakerFaction ? auraVar : '--faction-verdant',
       objectPosition: '45% 30%',
       filterClassName: 'cc-portrait-verdant',
     };
@@ -197,6 +210,7 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
       src: override?.src ?? heroImage,
       lorestromeIndex: override?.idx,
       alt: speaker,
+      auraVar: speakerFaction ? auraVar : '--faction-ember',
       objectPosition: '60% 28%',
       filterClassName: 'cc-portrait-ember',
     };
@@ -209,6 +223,7 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
       src: override?.src ?? heroImage,
       lorestromeIndex: override?.idx,
       alt: speaker,
+      auraVar: speakerFaction ? auraVar : '--faction-iron',
       objectPosition: '48% 25%',
       filterClassName: 'cc-portrait-iron',
     };
@@ -221,6 +236,7 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
       src: override?.src ?? heroImage,
       lorestromeIndex: override?.idx,
       alt: speaker,
+      auraVar: speakerFaction ? auraVar : '--faction-verdant',
       objectPosition: '52% 25%',
       filterClassName: 'cc-portrait-verdant',
     };
@@ -233,19 +249,11 @@ export function getSpeakerPortrait(speaker: string, speakerFaction?: string): Sp
       src: override?.src ?? heroImage,
       lorestromeIndex: override?.idx,
       alt: speaker,
+      auraVar: speakerFaction ? auraVar : '--faction-ember',
       objectPosition: '50% 22%',
       filterClassName: 'cc-portrait-ember',
     };
   }
-
-  const auraVar =
-    speakerFaction === 'iron-pact'
-      ? '--faction-iron'
-      : speakerFaction === 'verdant-court'
-        ? '--faction-verdant'
-        : speakerFaction === 'ember-throne'
-          ? '--faction-ember'
-          : '--gold-glow';
 
   return {
     kind: 'sigil',

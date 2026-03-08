@@ -11,7 +11,10 @@ interface CommPortraitProps {
 const CommPortrait = ({ portrait }: CommPortraitProps) => {
   if (portrait.kind === 'image') {
     return (
-      <div className="cc-comm-frame relative h-full w-full overflow-hidden rounded-sm">
+      <div
+        className="cc-comm-frame relative h-full w-full overflow-hidden rounded-sm"
+        style={{ '--cc-aura': `var(${portrait.auraVar})` } as CSSProperties}
+      >
         {typeof portrait.lorestromeIndex === 'number' ? (
           <LorestromePortraitImage
             cell={lorestromeIndexToCell(portrait.lorestromeIndex)}
@@ -30,9 +33,10 @@ const CommPortrait = ({ portrait }: CommPortraitProps) => {
         )}
 
         <div className="pointer-events-none absolute inset-0">
+          <div className="cc-portrait-tint absolute inset-0" />
           <div className="cc-comm-scanlines absolute inset-0" />
           <div className="cc-dialogue-grain absolute inset-0" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/5 to-background/30" />
+          <div className="cc-portrait-vignette absolute inset-0" />
         </div>
 
         <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
@@ -47,8 +51,12 @@ const CommPortrait = ({ portrait }: CommPortraitProps) => {
       aria-label={portrait.alt}
       role="img"
     >
-      <div className="cc-comm-scanlines pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-background/10 to-background/25" />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="cc-portrait-tint absolute inset-0" />
+        <div className="cc-comm-scanlines absolute inset-0" />
+        <div className="cc-dialogue-grain absolute inset-0" />
+        <div className="cc-portrait-vignette absolute inset-0" />
+      </div>
       <div className="cc-comm-sigil relative flex h-24 w-24 items-center justify-center rounded-sm border border-border bg-card/50">
         <span className="font-display text-3xl tracking-[0.25em] text-primary/90">
           {portrait.initials}

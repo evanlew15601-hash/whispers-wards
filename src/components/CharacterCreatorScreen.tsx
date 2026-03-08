@@ -109,9 +109,10 @@ const CharacterCreatorScreen = ({ initialProfile, onConfirm, onBack }: Character
 
                 {selectedPortrait && (
                   <div className="pointer-events-none absolute inset-0">
+                    <div className="cc-portrait-tint absolute inset-0" />
                     <div className="cc-comm-scanlines absolute inset-0" />
                     <div className="cc-dialogue-grain absolute inset-0" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/5 to-background/30" />
+                    <div className="cc-portrait-vignette absolute inset-0" />
                   </div>
                 )}
 

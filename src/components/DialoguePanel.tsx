@@ -354,10 +354,13 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
   const dialogueParagraphs = splitWrappedLinesIntoParagraphs(dialogueLines);
 
-  const aura = node.speakerFaction ? factionAuraVars[node.speakerFaction] ?? 'var(--gold-glow)' : 'var(--gold-glow)';
+  const auraFromFaction = node.speakerFaction
+    ? factionAuraVars[node.speakerFaction] ?? 'var(--gold-glow)'
+    : null;
   const SpeakerIcon = node.speakerFaction ? factionIcons[node.speakerFaction] ?? Sparkles : Sparkles;
 
   const portrait = useMemo(() => getSpeakerPortrait(node.speaker, node.speakerFaction), [node.speaker, node.speakerFaction]);
+  const aura = auraFromFaction ?? `var(${portrait.auraVar})`;
   const playerPortraitAsset = useMemo(
     () => (playerPortraitId ? getPortraitById(playerPortraitId) : null),
     [playerPortraitId],
@@ -413,7 +416,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
           <div className="flex items-center gap-4">
             {playerPortraitAsset?.src && (
               <div className="hidden sm:flex items-center gap-2">
-                <div className="cc-comm-frame relative h-8 w-8 overflow-hidden rounded-sm">
+                <div
+                  className="cc-comm-frame relative h-8 w-8 overflow-hidden rounded-sm"
+                  style={{ '--cc-aura': aura } as CSSProperties}
+                >
                   {typeof playerPortraitAsset.lorestromeIndex === 'number' ? (
                     <LorestromePortraitImage
                       cell={lorestromeIndexToCell(playerPortraitAsset.lorestromeIndex)}
@@ -429,6 +435,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                       className="absolute inset-0 h-full w-full object-cover opacity-85"
                     />
                   )}
+                  <div className="pointer-events-none absolute inset-0">
+                    <div className="cc-portrait-tint absolute inset-0" />
+                    <div className="cc-comm-scanlines absolute inset-0" />
+                    <div className="cc-dialogue-grain absolute inset-0" />
+                    <div className="cc-portrait-vignette absolute inset-0" />
+                  </div>
                   <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
                 </div>
                 <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70">
@@ -616,7 +628,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 >
                   <div className="flex items-start gap-3">
                     {hotkey && (
-                      <div className="cc-comm-frame relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm">
+                      <div
+                        className="cc-comm-frame relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm"
+                        style={{ '--cc-aura': aura } as CSSProperties}
+                      >
                         {playerPortraitAsset?.src && (
                           typeof playerPortraitAsset.lorestromeIndex === 'number' ? (
                             <LorestromePortraitImage
@@ -634,6 +649,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                             />
                           )
                         )}
+                        <div className="pointer-events-none absolute inset-0">
+                          <div className="cc-portrait-tint absolute inset-0" />
+                          <div className="cc-comm-scanlines absolute inset-0" />
+                          <div className="cc-dialogue-grain absolute inset-0" />
+                          <div className="cc-portrait-vignette absolute inset-0" />
+                        </div>
                         <div className="relative flex h-full w-full items-center justify-center bg-background/15 font-display text-[10px] tracking-wider text-muted-foreground">
                           {hotkey}
                         </div>

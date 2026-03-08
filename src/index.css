@@ -273,6 +273,19 @@
     mix-blend-mode: overlay;
   }
 
+  .cc-portrait-tint {
+    background:
+      radial-gradient(220px circle at 28% 18%, hsl(var(--cc-aura, var(--gold-glow)) / 0.36), transparent 62%),
+      radial-gradient(280px circle at 78% 86%, hsl(var(--cc-aura, var(--gold-glow)) / 0.18), transparent 68%);
+    opacity: 0.85;
+    mix-blend-mode: screen;
+  }
+
+  .cc-portrait-vignette {
+    background: radial-gradient(120% 120% at 50% 45%, transparent 0%, transparent 58%, hsl(var(--shadow-deep) / 0.7) 100%);
+    opacity: 0.55;
+  }
+
   .cc-comm-sigil {
     box-shadow:
       inset 0 0 18px hsl(var(--shadow-deep) / 0.6),
