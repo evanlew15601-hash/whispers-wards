@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AudioProvider } from "@/audio/AudioProvider";
 import { TipsProvider } from "@/ui/tips/TipsProvider";
 import Index from "./pages/Index";
+import PortraitLab from "./pages/PortraitLab";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <BrowserRouter basename={basename}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/portrait-lab" element={<PortraitLab />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
