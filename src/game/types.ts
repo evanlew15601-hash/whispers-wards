@@ -157,6 +157,13 @@ export interface GameState {
   selectedChoiceIds: string[];
 
   /**
+   * Optional: Ink story runtime save data.
+   *
+   * When present, `stateJson` is `story.state.ToJson()`.
+   */
+  ink?: { storyId: 'main'; storyVersion?: string; stateJson: string } | null;
+
+  /**
    * Increments for every player interaction (dialogue choices, end-turn, management actions).
    * Useful for deterministic ordering and debugging.
    */
