@@ -331,11 +331,13 @@ const PortraitLab = () => {
           </div>
 
           <div className="flex gap-2">
-            <Link to="/">
-              <Button variant="outline" className="h-auto rounded-sm px-5 py-2 font-display text-xs tracking-[0.25em] uppercase">
-                Back
-              </Button>
-            </Link>
+            <Button
+              asChild
+              variant="outline"
+              className="h-auto rounded-sm px-5 py-2 font-display text-xs tracking-[0.25em] uppercase"
+            >
+              <Link to="/">Back</Link>
+            </Button>
           </div>
         </div>
 

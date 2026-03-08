@@ -47,7 +47,7 @@ if (typeof compiled !== 'string') {
 
 const storyVersion = crypto.createHash('sha256').update(compiled).digest('hex').slice(0, 16);
 
-const parsed = JSON.parse(compiled) as unknown;
+const parsed = JSON.parse(compiled);
 const pretty = JSON.stringify(parsed, null, 2);
 
 await fsp.writeFile(outJsonPath, `${pretty}\n`, 'utf8');

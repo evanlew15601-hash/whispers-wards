@@ -51,75 +51,77 @@ function lorestromePortraitUrlFromIndex(index: number): string {
   return lorestromeThumbUrl(lorestromeIndexToCell(index), { size: 640, format: 'webp' });
 }
 
-const portraitLabSelections = readPortraitLabSelections();
+export function getPlayerPortraits(): PortraitAsset[] {
+  const portraitLabSelections = readPortraitLabSelections();
 
-export const playerPortraits: PortraitAsset[] = [
-  {
-    id: 'envoy-default',
-    label: 'Envoy (Default)',
-    src:
-      typeof portraitLabSelections['envoy-default'] === 'number'
-        ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-default'])
-        : heroImage,
-    objectPosition: '50% 20%',
-    credit:
-      typeof portraitLabSelections['envoy-default'] === 'number'
-        ? {
-            sourceUrl: LORESTROME_SHEET_URL,
-            license: 'CC0 (Hyptosis / Lorestrome)',
-            author: 'Hyptosis',
-          }
-        : {
-            sourceUrl: 'local:src/assets/hero-throne.jpg',
-            license: 'placeholder',
-          },
-  },
-  {
-    id: 'envoy-alternate',
-    label: 'Envoy (Alternate)',
-    src:
-      typeof portraitLabSelections['envoy-alternate'] === 'number'
-        ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-alternate'])
-        : heroImage,
-    objectPosition: '50% 35%',
-    filterClassName: 'cc-portrait-alt',
-    credit:
-      typeof portraitLabSelections['envoy-alternate'] === 'number'
-        ? {
-            sourceUrl: LORESTROME_SHEET_URL,
-            license: 'CC0 (Hyptosis / Lorestrome)',
-            author: 'Hyptosis',
-          }
-        : {
-            sourceUrl: 'local:src/assets/hero-throne.jpg',
-            license: 'placeholder',
-          },
-  },
-  {
-    id: 'envoy-shadow',
-    label: 'Envoy (Shadow)',
-    src:
-      typeof portraitLabSelections['envoy-shadow'] === 'number'
-        ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-shadow'])
-        : heroImage,
-    objectPosition: '50% 25%',
-    filterClassName: 'cc-portrait-shadow',
-    credit:
-      typeof portraitLabSelections['envoy-shadow'] === 'number'
-        ? {
-            sourceUrl: LORESTROME_SHEET_URL,
-            license: 'CC0 (Hyptosis / Lorestrome)',
-            author: 'Hyptosis',
-          }
-        : {
-            sourceUrl: 'local:src/assets/hero-throne.jpg',
-            license: 'placeholder',
-          },
-  },
-];
+  return [
+    {
+      id: 'envoy-default',
+      label: 'Envoy (Default)',
+      src:
+        typeof portraitLabSelections['envoy-default'] === 'number'
+          ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-default'])
+          : heroImage,
+      objectPosition: '50% 20%',
+      credit:
+        typeof portraitLabSelections['envoy-default'] === 'number'
+          ? {
+              sourceUrl: LORESTROME_SHEET_URL,
+              license: 'CC0 (Hyptosis / Lorestrome)',
+              author: 'Hyptosis',
+            }
+          : {
+              sourceUrl: 'local:src/assets/hero-throne.jpg',
+              license: 'placeholder',
+            },
+    },
+    {
+      id: 'envoy-alternate',
+      label: 'Envoy (Alternate)',
+      src:
+        typeof portraitLabSelections['envoy-alternate'] === 'number'
+          ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-alternate'])
+          : heroImage,
+      objectPosition: '50% 35%',
+      filterClassName: 'cc-portrait-alt',
+      credit:
+        typeof portraitLabSelections['envoy-alternate'] === 'number'
+          ? {
+              sourceUrl: LORESTROME_SHEET_URL,
+              license: 'CC0 (Hyptosis / Lorestrome)',
+              author: 'Hyptosis',
+            }
+          : {
+              sourceUrl: 'local:src/assets/hero-throne.jpg',
+              license: 'placeholder',
+            },
+    },
+    {
+      id: 'envoy-shadow',
+      label: 'Envoy (Shadow)',
+      src:
+        typeof portraitLabSelections['envoy-shadow'] === 'number'
+          ? lorestromePortraitUrlFromIndex(portraitLabSelections['envoy-shadow'])
+          : heroImage,
+      objectPosition: '50% 25%',
+      filterClassName: 'cc-portrait-shadow',
+      credit:
+        typeof portraitLabSelections['envoy-shadow'] === 'number'
+          ? {
+              sourceUrl: LORESTROME_SHEET_URL,
+              license: 'CC0 (Hyptosis / Lorestrome)',
+              author: 'Hyptosis',
+            }
+          : {
+              sourceUrl: 'local:src/assets/hero-throne.jpg',
+              license: 'placeholder',
+            },
+    },
+  ];
+}
 
 export function getPortraitById(id: string): PortraitAsset | null {
-  return playerPortraits.find(p => p.id === id) ?? null;
+  return getPlayerPortraits().find(p => p.id === id) ?? null;
 }
 
 export type SpeakerPortraitSpec =
@@ -145,7 +147,7 @@ function initialsFromName(name: string): string {
 }
 
 function getNpcOverrideSrc(key: string): string | null {
-  const idx = portraitLabSelections[key];
+  const idx = readPortraitLabSelections()[key];
   if (typeof idx !== 'number') return null;
   return lorestromePortraitUrlFromIndex(idx);
 }
