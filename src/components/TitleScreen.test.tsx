@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import type { SaveSlotInfo } from '@/game/storage';
 
 vi.mock('@/assets/hero-throne.jpg', () => ({ default: 'hero-throne.jpg' }));
@@ -34,12 +35,14 @@ describe('TitleScreen', () => {
     ];
 
     render(
-      <TitleScreen
-        onStart={vi.fn()}
-        onLoad={vi.fn()}
-        slots={slots}
-        onContinue={onContinue}
-      />,
+      <MemoryRouter>
+        <TitleScreen
+          onStart={vi.fn()}
+          onLoad={vi.fn()}
+          slots={slots}
+          onContinue={onContinue}
+        />
+      </MemoryRouter>,
     );
 
     // Wait for the async conversation-core probe to settle so we don't get act() warnings.
@@ -61,12 +64,14 @@ describe('TitleScreen', () => {
     ];
 
     render(
-      <TitleScreen
-        onStart={vi.fn()}
-        onLoad={vi.fn()}
-        slots={slots}
-        onContinue={onContinue}
-      />,
+      <MemoryRouter>
+        <TitleScreen
+          onStart={vi.fn()}
+          onLoad={vi.fn()}
+          slots={slots}
+          onContinue={onContinue}
+        />
+      </MemoryRouter>,
     );
 
     await screen.findByText(/conversation core \(basic\)/i);
