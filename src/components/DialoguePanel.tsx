@@ -418,7 +418,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
               <div className="hidden sm:flex items-center gap-2">
                 <div
                   className="cc-comm-frame relative h-8 w-8 overflow-hidden rounded-sm"
-                  style={{ '--cc-aura': aura } as CSSProperties}
+                  style={{ '--cc-aura': 'var(--gold-glow)' } as CSSProperties}
                 >
                   {typeof playerPortraitAsset.lorestromeIndex === 'number' ? (
                     <LorestromePortraitImage
@@ -436,7 +436,6 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                     />
                   )}
                   <div className="pointer-events-none absolute inset-0">
-                    <div className="cc-portrait-tint absolute inset-0" />
                     <div className="cc-comm-scanlines absolute inset-0" />
                     <div className="cc-dialogue-grain absolute inset-0" />
                     <div className="cc-portrait-vignette absolute inset-0" />
@@ -630,7 +629,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                     {hotkey && (
                       <div
                         className="cc-comm-frame relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm"
-                        style={{ '--cc-aura': aura } as CSSProperties}
+                        style={{ '--cc-aura': 'var(--gold-glow)' } as CSSProperties}
                       >
                         {playerPortraitAsset?.src && (
                           typeof playerPortraitAsset.lorestromeIndex === 'number' ? (
@@ -650,7 +649,6 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                           )
                         )}
                         <div className="pointer-events-none absolute inset-0">
-                          <div className="cc-portrait-tint absolute inset-0" />
                           <div className="cc-comm-scanlines absolute inset-0" />
                           <div className="cc-dialogue-grain absolute inset-0" />
                           <div className="cc-portrait-vignette absolute inset-0" />

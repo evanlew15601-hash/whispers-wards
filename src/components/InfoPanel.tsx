@@ -116,7 +116,6 @@ const InfoPanel = (
 
               {playerPortrait?.src && (
                 <div className="pointer-events-none absolute inset-0">
-                  <div className="cc-portrait-tint absolute inset-0" />
                   <div className="cc-comm-scanlines absolute inset-0" />
                   <div className="cc-dialogue-grain absolute inset-0" />
                   <div className="cc-portrait-vignette absolute inset-0" />
