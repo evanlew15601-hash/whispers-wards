@@ -42,17 +42,29 @@ const TitleScreen = ({ onStart, onLoad, slots = [], onContinue }: TitleScreenPro
   useEffect(() => {
     let cancelled = false;
 
+    // Avoid looking "stuck" if the WASM runtime is slow/blocked; the game can fall back to TS.
+    const basicFallbackTimer = window.setTimeout(() => {
+      if (!cancelled) setUqmStatus('Conversation core (basic)');
+    }, 4000);
+
     void (async () => {
       try {
         await loadUqmWasmRuntime();
-        if (!cancelled) setUqmStatus('Conversation core ready');
+        if (!cancelled) {
+          window.clearTimeout(basicFallbackTimer);
+          setUqmStatus('Conversation core ready');
+        }
       } catch {
-        if (!cancelled) setUqmStatus('Conversation core (basic)');
+        if (!cancelled) {
+          window.clearTimeout(basicFallbackTimer);
+          setUqmStatus('Conversation core (basic)');
+        }
       }
     })();
 
     return () => {
       cancelled = true;
+      window.clearTimeout(basicFallbackTimer);
     };
   }, []);
 
