@@ -585,7 +585,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 >
                   <div className="flex items-start gap-3">
                     {hotkey && (
-                      <div className="relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm border border-border bg-card/60">
+                      <div className="cc-comm-frame relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm">
                         {playerPortrait?.src && (
                           typeof playerPortrait.lorestromeIndex === 'number' ? (
                             <LorestromePortraitImage
@@ -606,6 +606,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                         <div className="relative flex h-full w-full items-center justify-center bg-background/15 font-display text-[10px] tracking-wider text-muted-foreground">
                           {hotkey}
                         </div>
+                        <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
                       </div>
                     )}
 

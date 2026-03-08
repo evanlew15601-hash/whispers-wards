@@ -81,7 +81,7 @@ const InfoPanel = (
       {player && (
         <div className="parchment-border rounded-sm bg-card p-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 overflow-hidden rounded-sm border border-border bg-secondary/40">
+            <div className="cc-comm-frame relative h-10 w-10 overflow-hidden rounded-sm">
               {playerPortrait?.src ? (
                 typeof playerPortrait.lorestromeIndex === 'number' ? (
                   <LorestromePortraitImage
@@ -105,6 +105,7 @@ const InfoPanel = (
                   </span>
                 </div>
               )}
+              <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
             </div>
 
             <div className="min-w-0">

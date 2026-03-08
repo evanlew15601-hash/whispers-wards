@@ -36,37 +36,18 @@ export function lorestromeCropForCell(cell: LorestromeCell): { cx: number; cy: n
  * The production build generates cropped thumbnails into public/portraits/lorestrome
  * (so GitHub Pages can serve them reliably without third-party proxies).
  *
- * In dev/test (or if you request a non-webp format), we fall back to an SVG data URL
+ * In dev/test (or if the generated thumbnail fails to load), we fall back to an SVG data URL
  * that crops the Wikimedia spritesheet client-side.
  */
-let cachedWebpSupport: boolean | null = null;
-
-function supportsWebp(): boolean {
-  if (cachedWebpSupport !== null) return cachedWebpSupport;
-  if (typeof document === 'undefined') {
-    cachedWebpSupport = true;
-    return cachedWebpSupport;
-  }
-
-  try {
-    const canvas = document.createElement('canvas');
-    const ok = canvas.toDataURL('image/webp').startsWith('data:image/webp');
-    cachedWebpSupport = ok;
-    return ok;
-  } catch {
-    cachedWebpSupport = false;
-    return false;
-  }
-}
+// We ship generated JPG thumbnails for maximum compatibility (including iOS Safari).
 
 export function lorestromeGeneratedThumbUrl(
   cell: LorestromeCell,
   opts: {
     size?: number;
-    format?: 'auto' | 'jpg' | 'webp';
   } = {},
 ): string {
-  const { size = 192, format = 'auto' } = opts;
+  const { size = 192 } = opts;
 
   const generatedSizes = [96, 140, 192, 640];
   const pickGeneratedSize = (desired: number) => {
@@ -76,16 +57,7 @@ export function lorestromeGeneratedThumbUrl(
     return generatedSizes[generatedSizes.length - 1] ?? 192;
   };
 
-  // In practice, relying on WebP in the wild causes broken-image icons on some
-  // iOS/Safari versions. Default to JPG for production builds.
-  const resolvedFormat =
-    format === 'auto'
-      ? import.meta.env.MODE === 'production'
-        ? 'jpg'
-        : supportsWebp()
-          ? 'webp'
-          : 'jpg'
-      : format;
+  const resolvedFormat = 'jpg';
 
   const idx = lorestromeCellToIndex(cell);
   const s = pickGeneratedSize(size);
@@ -104,10 +76,7 @@ export function lorestromeThumbUrl(
   const { size = 192, format = 'auto' } = opts;
 
   if (import.meta.env.MODE === 'production' && (format === 'auto' || format === 'webp' || format === 'jpg')) {
-    return lorestromeGeneratedThumbUrl(cell, {
-      size,
-      format: format === 'auto' ? 'auto' : format,
-    });
+    return lorestromeGeneratedThumbUrl(cell, { size });
   }
 
   const { cx, cy } = lorestromeCropForCell(cell);
