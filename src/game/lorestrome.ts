@@ -33,7 +33,11 @@ export function lorestromeCropForCell(cell: LorestromeCell): { cx: number; cy: n
 /**
  * Returns a stable thumbnail URL for a single portrait.
  *
- * Uses wsrv.nl to do the crop+resize so we don't have to ship 200 separate files.
+ * The production build generates cropped thumbnails into public/portraits/lorestrome
+ * (so GitHub Pages can serve them reliably without third-party proxies).
+ *
+ * In dev/test (or if you request a non-webp format), we fall back to an SVG data URL
+ * that crops the Wikimedia spritesheet client-side.
  */
 export function lorestromeThumbUrl(
   cell: LorestromeCell,
@@ -43,8 +47,32 @@ export function lorestromeThumbUrl(
   } = {},
 ): string {
   const { size = 192, format = 'webp' } = opts;
-  const { cx, cy, cw, ch } = lorestromeCropForCell(cell);
-  const url = encodeURIComponent(LORESTROME_SHEET_URL);
 
-  return `https://wsrv.nl/?url=${url}&cx=${cx}&cy=${cy}&cw=${cw}&ch=${ch}&w=${size}&h=${size}&fit=cover&output=${format}`;
+  const generatedSizes = [96, 140, 192, 640];
+  const pickGeneratedSize = (desired: number) => {
+    for (const s of generatedSizes) {
+      if (s >= desired) return s;
+    }
+    return generatedSizes[generatedSizes.length - 1] ?? 192;
+  };
+
+  if (import.meta.env.MODE === 'production' && format === 'webp') {
+    const idx = lorestromeCellToIndex(cell);
+    const s = pickGeneratedSize(size);
+    const padded = String(idx).padStart(3, '0');
+    return `${import.meta.env.BASE_URL}portraits/lorestrome/idx-${padded}-${s}.webp`;
+  }
+
+  const { cx, cy } = lorestromeCropForCell(cell);
+
+  const sheetW = LORESTROME_COLS * LORESTROME_CELL_SIZE;
+  const sheetH = LORESTROME_ROWS * LORESTROME_CELL_SIZE;
+
+  const svg =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${LORESTROME_CELL_SIZE} ${LORESTROME_CELL_SIZE}">` +
+    `<image href="${LORESTROME_SHEET_URL}" x="-${cx}" y="-${cy}" width="${sheetW}" height="${sheetH}" preserveAspectRatio="none"/>` +
+    `</svg>`;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
