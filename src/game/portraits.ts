@@ -41,8 +41,8 @@ export const DEFAULT_PORTRAIT_LAB_SELECTIONS: Readonly<Record<string, number>> =
   aldric: 142,
   thessaly: 32,
   renzo: 73,
-  // Avoid reusing the envoy portrait; pick a distinct (female-presenting) option for Maren.
-  maren: 25,
+  // Avoid reusing the envoy portrait; pick a distinct option for Maren.
+  maren: 16,
   sera: 24,
   ilya: 166,
 };

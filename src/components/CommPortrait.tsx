@@ -28,6 +28,13 @@ const CommPortrait = ({ portrait }: CommPortraitProps) => {
             style={{ objectPosition: portrait.objectPosition }}
           />
         )}
+
+        <div className="pointer-events-none absolute inset-0">
+          <div className="cc-comm-scanlines absolute inset-0" />
+          <div className="cc-dialogue-grain absolute inset-0" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/5 to-background/30" />
+        </div>
+
         <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
       </div>
     );
