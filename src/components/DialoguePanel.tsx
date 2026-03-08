@@ -358,6 +358,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
   const SpeakerIcon = node.speakerFaction ? factionIcons[node.speakerFaction] ?? Sparkles : Sparkles;
 
   const portrait = useMemo(() => getSpeakerPortrait(node.speaker, node.speakerFaction), [node.speaker, node.speakerFaction]);
+  const playerPortraitAsset = useMemo(
+    () => (playerPortraitId ? getPortraitById(playerPortraitId) : null),
+    [playerPortraitId],
+  );
 
   const isEncounterNode = node.id.startsWith('encounter:');
 
@@ -406,12 +410,40 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
             </div>
           </div>
 
-          {node.speakerFaction && (
-            <div className="hidden sm:flex items-center gap-2 text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/50" />
-              <span>{node.speakerFaction.replace('-', ' ')}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            {playerPortraitAsset?.src && (
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="cc-comm-frame relative h-8 w-8 overflow-hidden rounded-sm">
+                  {typeof playerPortraitAsset.lorestromeIndex === 'number' ? (
+                    <LorestromePortraitImage
+                      cell={lorestromeIndexToCell(playerPortraitAsset.lorestromeIndex)}
+                      size={96}
+                      alt={playerName ?? 'Envoy'}
+                      className="absolute inset-0 h-full w-full object-cover opacity-85"
+                      objectPosition={playerPortraitAsset.objectPosition}
+                    />
+                  ) : (
+                    <img
+                      src={playerPortraitAsset.src}
+                      alt={playerName ?? 'Envoy'}
+                      className="absolute inset-0 h-full w-full object-cover opacity-85"
+                    />
+                  )}
+                  <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
+                </div>
+                <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
+                  Envoy
+                </span>
+              </div>
+            )}
+
+            {node.speakerFaction && (
+              <div className="hidden sm:flex items-center gap-2 text-[10px] font-display tracking-[0.2em] text-muted-foreground/70 uppercase">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/50" />
+                <span>{node.speakerFaction.replace('-', ' ')}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
@@ -537,7 +569,6 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
               const lines = choiceLines[choice.id] ?? [choice.text];
               const hotkey = i < 9 ? String(i + 1) : null;
-              const playerPortrait = playerPortraitId ? getPortraitById(playerPortraitId) : null;
 
               const onSelect = () => {
                 if (locked) {
@@ -586,18 +617,18 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   <div className="flex items-start gap-3">
                     {hotkey && (
                       <div className="cc-comm-frame relative mt-0.5 h-6 w-6 shrink-0 overflow-hidden rounded-sm">
-                        {playerPortrait?.src && (
-                          typeof playerPortrait.lorestromeIndex === 'number' ? (
+                        {playerPortraitAsset?.src && (
+                          typeof playerPortraitAsset.lorestromeIndex === 'number' ? (
                             <LorestromePortraitImage
-                              cell={lorestromeIndexToCell(playerPortrait.lorestromeIndex)}
+                              cell={lorestromeIndexToCell(playerPortraitAsset.lorestromeIndex)}
                               size={96}
                               alt={playerName ?? 'You'}
                               className="absolute inset-0 h-full w-full object-cover opacity-80"
-                              objectPosition={playerPortrait.objectPosition}
+                              objectPosition={playerPortraitAsset.objectPosition}
                             />
                           ) : (
                             <img
-                              src={playerPortrait.src}
+                              src={playerPortraitAsset.src}
                               alt={playerName ?? 'You'}
                               className="absolute inset-0 h-full w-full object-cover opacity-80"
                             />
