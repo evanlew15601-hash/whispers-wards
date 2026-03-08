@@ -30,6 +30,11 @@ const InfoPanel = (
 
   const pendingUrgent = encounterTurnsLeft !== null && encounterTurnsLeft <= 1;
 
+  const visibleSecrets = useMemo(
+    () => knownSecrets.filter(s => !s.startsWith('meta:')),
+    [knownSecrets],
+  );
+
   const crisisExpiryPreview = useMemo(() => {
     if (!pendingEncounter) return null;
 
@@ -171,7 +176,7 @@ const InfoPanel = (
         )}
 
         {/* Intelligence */}
-        {knownSecrets.length > 0 && (
+        {visibleSecrets.length > 0 && (
           <Collapsible defaultOpen={false}>
             <div className="parchment-border rounded-sm bg-card p-4">
               <CollapsibleTrigger asChild>
@@ -182,7 +187,7 @@ const InfoPanel = (
                 >
                   <h3 className="flex items-center gap-2 font-display text-xs tracking-[0.2em] text-accent uppercase">
                     <Eye className="h-4 w-4" aria-hidden="true" />
-                    Intelligence ({knownSecrets.length})
+                    Intelligence ({visibleSecrets.length})
                   </h3>
                   <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                 </button>
@@ -190,7 +195,7 @@ const InfoPanel = (
 
               <CollapsibleContent>
                 <div className="mt-3 flex flex-col gap-2">
-                  {knownSecrets.map((secret, i) => (
+                  {visibleSecrets.map((secret, i) => (
                     <motion.p
                       key={i}
                       className="font-body text-xs italic text-card-foreground/80"

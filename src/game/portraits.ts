@@ -147,8 +147,18 @@ function initialsFromName(name: string): string {
 
 function getNpcOverride(key: string): { src: string; idx: number } | null {
   const selections = readPortraitLabSelections();
-  const idx = portraitIndexForKey(selections, key);
+
+  let idx = portraitIndexForKey(selections, key);
   if (typeof idx !== 'number') return null;
+
+  // Prevent accidental reuse of the player's default portrait for Maren.
+  if (key === 'maren') {
+    const envoyIdx = portraitIndexForKey(selections, 'envoy-default');
+    if (typeof envoyIdx === 'number' && idx === envoyIdx) {
+      idx = DEFAULT_PORTRAIT_LAB_SELECTIONS.maren ?? idx;
+    }
+  }
+
   return { src: lorestromePortraitUrlFromIndex(idx), idx };
 }
 

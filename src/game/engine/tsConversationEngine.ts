@@ -124,7 +124,9 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   const effectiveChoice = alreadyDecided ? suppressReputationEffects(choice) : choice;
 
-  const secretLearned = Boolean(choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo));
+  const learnedSecret = choice.revealsInfo ?? null;
+  const secretLearned = Boolean(learnedSecret && !prev.knownSecrets.includes(learnedSecret));
+  const shouldLogSecret = Boolean(secretLearned && learnedSecret && !learnedSecret.startsWith('meta:'));
 
   const withEffects = applyEffects(prev, choiceToEffects(prev, effectiveChoice));
 
@@ -151,7 +153,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
         ...prev.log,
         `> ${choice.text}`,
         ...triggeredEvents.map(e => `[EVT] ${e.title} — ${e.description}`),
-        ...(secretLearned ? [`[INTEL] Secret learned: ${choice.revealsInfo}`] : []),
+        ...(shouldLogSecret ? [`[INTEL] Secret learned: ${choice.revealsInfo}`] : []),
         ...resolved.logEntries,
       ],
       world: resolved.world,
@@ -178,7 +180,7 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
       ...prev.log,
       `> ${choice.text}`,
       ...triggeredEvents.map(e => `[EVT] ${e.title} — ${e.description}`),
-      ...(secretLearned ? [`[INTEL] Secret learned: ${choice.revealsInfo}`] : []),
+      ...(shouldLogSecret ? [`[INTEL] Secret learned: ${choice.revealsInfo}`] : []),
     ],
   };
 

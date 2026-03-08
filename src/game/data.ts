@@ -166,6 +166,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
           { factionId: 'iron-pact', reputationChange: -5 },
         ],
         nextNodeId: 'thessaly-honest',
+        revealsInfo: META_MET_THESSALY_SECRET,
       },
       {
         id: 'strategic',
@@ -174,6 +175,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
           { factionId: 'verdant-court', reputationChange: 5 },
         ],
         nextNodeId: 'thessaly-strategic',
+        revealsInfo: META_MET_THESSALY_SECRET,
       },
     ],
   },
@@ -272,6 +274,15 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'hub-thessaly',
         text: 'Find Thessaly in the eastern wing and read what she\'s not saying.',
+        hideWhenHasAnySecrets: [META_MET_THESSALY_SECRET],
+        effects: [],
+        nextNodeId: 'thessaly-intro',
+      },
+      {
+        id: 'hub-thessaly-followup',
+        text: 'Seek Thessaly again and compare notes.',
+        hideWhenLockedBySecrets: true,
+        requiresAnySecrets: [META_MET_THESSALY_SECRET],
         effects: [],
         nextNodeId: 'thessaly-followup',
       },
@@ -922,11 +933,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
     id: 'thessaly-followup',
     speaker: 'Emissary Thessaly',
     speakerFaction: 'verdant-court',
-    text: 'Thessaly is exactly where you left her.\n\n"Back again," she says. "Either you\'ve found a truth, or you\'ve found a lie worth chasing."',
+    text: 'Thessaly sits cross-legged on the cold stone, as if the Hall itself were part of her garden. Vines idle along the walls like patient handwriting.\n\n"Envoy," she says, eyes half-lidded. "What have you found? Truth… or a lie worth chasing?"',
     choices: [
       {
         id: 'followup-pass',
-        text: 'Ask again about the Pass and the wards beneath it.',
+        text: 'Ask about the Pass and the wards beneath it.',
         effects: [
           { factionId: 'verdant-court', reputationChange: 3 },
         ],
