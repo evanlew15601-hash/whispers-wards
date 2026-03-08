@@ -19,6 +19,10 @@ public/wasm/*.wasm
 src/game/story/story.json
 src/game/story/story.meta.json
 
+# Generated portrait thumbnails (built via scripts/build-lorestrome-thumbnails.mjs)
+public/portraits/lorestrome/*.webp
+scripts/.cache/
+
 # Downloaded upstream UQM snapshot (installed by scripts/fetch-uqm-upstream.mjs)
 third_party/uqm/upstream/
 

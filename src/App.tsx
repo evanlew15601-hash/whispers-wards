@@ -20,7 +20,7 @@ const basename = baseUrl.startsWith('/') ? baseUrl.replace(/\/$/, '') : '';
 
 // GitHub Pages doesn't serve SPA routes (e.g. /portrait-lab) on refresh without extra
 // 404.html rewrite plumbing, so HashRouter is the simplest robust option for prod.
-const useHashRouting = import.meta.env.PROD;
+const useHashRouting = import.meta.env.MODE === 'production';
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
