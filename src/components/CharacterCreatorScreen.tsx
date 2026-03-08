@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { PlayerProfile } from '@/game/types';
-import { getPortraitById, isPortraitId, playerPortraits } from '@/game/portraits';
+import { getPlayerPortraits, getPortraitById, isPortraitId } from '@/game/portraits';
 
 interface CharacterCreatorScreenProps {
   initialProfile: PlayerProfile;
@@ -15,9 +15,11 @@ interface CharacterCreatorScreenProps {
 }
 
 const CharacterCreatorScreen = ({ initialProfile, onConfirm, onBack }: CharacterCreatorScreenProps) => {
+  const availablePortraits = useMemo(() => getPlayerPortraits(), []);
+
   const initialPortraitId = isPortraitId(initialProfile.portraitId)
     ? initialProfile.portraitId
-    : playerPortraits[0]?.id ?? 'envoy-default';
+    : availablePortraits[0]?.id ?? 'envoy-default';
 
   const [name, setName] = useState(initialProfile.name);
   const [pronouns, setPronouns] = useState<PlayerProfile['pronouns']>(initialProfile.pronouns);
@@ -137,12 +139,12 @@ const CharacterCreatorScreen = ({ initialProfile, onConfirm, onBack }: Character
                     Select portrait
                   </Label>
                   <div className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/60 uppercase">
-                    {playerPortraits.length} available
+                    {availablePortraits.length} available
                   </div>
                 </div>
 
                 <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4">
-                  {playerPortraits.map(p => {
+                  {availablePortraits.map(p => {
                     const active = p.id === portraitId;
                     return (
                       <button
