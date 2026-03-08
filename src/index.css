@@ -178,20 +178,26 @@
     background-image:
       repeating-linear-gradient(
         0deg,
-        hsl(var(--shadow-deep) / 0.12) 0px,
-        hsl(var(--shadow-deep) / 0.12) 1px,
+        rgba(0, 0, 0, 0.12) 0px,
+        rgba(0, 0, 0, 0.12) 1px,
         transparent 1px,
         transparent 3px
       ),
       repeating-linear-gradient(
         90deg,
-        hsl(var(--shadow-deep) / 0.08) 0px,
-        hsl(var(--shadow-deep) / 0.08) 1px,
+        rgba(0, 0, 0, 0.08) 0px,
+        rgba(0, 0, 0, 0.08) 1px,
         transparent 1px,
         transparent 4px
       );
-    opacity: 0.14;
-    mix-blend-mode: overlay;
+    opacity: 0.18;
+  }
+
+  @supports (mix-blend-mode: overlay) {
+    .cc-dialogue-grain {
+      opacity: 0.14;
+      mix-blend-mode: overlay;
+    }
   }
 
   .cc-choice-sheen {
@@ -205,6 +211,7 @@
 
   .cc-comm-frame {
     position: relative;
+    isolation: isolate;
     border: 1px solid hsl(var(--primary) / 0.32);
     box-shadow:
       inset 0 0 26px hsl(var(--shadow-deep) / 0.62),
@@ -264,25 +271,37 @@
     background-image:
       repeating-linear-gradient(
         0deg,
-        hsl(var(--shadow-deep) / 0.22) 0px,
-        hsl(var(--shadow-deep) / 0.22) 1px,
+        rgba(0, 0, 0, 0.22) 0px,
+        rgba(0, 0, 0, 0.22) 1px,
         transparent 1px,
         transparent 4px
       );
-    opacity: 0.18;
-    mix-blend-mode: overlay;
+    opacity: 0.22;
+  }
+
+  @supports (mix-blend-mode: overlay) {
+    .cc-comm-scanlines {
+      opacity: 0.18;
+      mix-blend-mode: overlay;
+    }
   }
 
   .cc-portrait-tint {
     background:
       radial-gradient(220px circle at 28% 18%, hsl(var(--cc-aura, var(--gold-glow)) / 0.36), transparent 62%),
       radial-gradient(280px circle at 78% 86%, hsl(var(--cc-aura, var(--gold-glow)) / 0.18), transparent 68%);
-    opacity: 0.85;
-    mix-blend-mode: screen;
+    opacity: 0.22;
+  }
+
+  @supports (mix-blend-mode: screen) {
+    .cc-portrait-tint {
+      opacity: 0.85;
+      mix-blend-mode: screen;
+    }
   }
 
   .cc-portrait-vignette {
-    background: radial-gradient(120% 120% at 50% 45%, transparent 0%, transparent 58%, hsl(var(--shadow-deep) / 0.7) 100%);
+    background: radial-gradient(120% 120% at 50% 45%, transparent 0%, transparent 58%, rgba(0, 0, 0, 0.85) 100%);
     opacity: 0.55;
   }
 

@@ -385,7 +385,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         transition={{ duration: 0.5 }}
       >
         {/* Speaker */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div
@@ -415,7 +415,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
           <div className="flex items-center gap-4">
             {playerPortraitAsset?.src && (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <div
                   className="cc-comm-frame relative h-8 w-8 overflow-hidden rounded-sm"
                   style={{ '--cc-aura': 'var(--gold-glow)' } as CSSProperties}
@@ -442,7 +442,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   </div>
                   <div className="cc-comm-frame-border pointer-events-none absolute inset-0" />
                 </div>
-                <span className="text-[10px] font-display tracking-[0.2em] text-muted-foreground/70">
+                <span className="max-w-36 truncate text-[10px] font-display tracking-[0.2em] text-muted-foreground/70">
                   {playerName?.trim() ? playerName : 'Envoy'}
                 </span>
               </div>
