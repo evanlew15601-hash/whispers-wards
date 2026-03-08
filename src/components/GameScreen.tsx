@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAmbience } from '@/audio/useAmbience';
 import { GameState, DialogueChoice } from '@/game/types';
 import { SaveSlotInfo, CheckpointInfo } from '@/game/storage';
@@ -12,6 +12,7 @@ import GameMenu from '@/components/GameMenu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { toast } from '@/components/ui/sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,12 +96,47 @@ const GameScreen = ({
   const [menuTab, setMenuTab] = useState<GameMenuTab>('save');
   const [infoOpen, setInfoOpen] = useState(false);
 
+  const [unseenIntelCount, setUnseenIntelCount] = useState(0);
+  const prevKnownSecretsRef = useRef(state.knownSecrets);
+  const prevStepNumberRef = useRef(state.stepNumber);
+
   const chapter = getChapter(state.chapterId);
   const currentDialogueId = state.currentDialogue?.id ?? null;
 
   const isEncounter = Boolean(currentDialogueId && currentDialogueId.startsWith('encounter:'));
   const isInHub = currentDialogueId === chapter.hubNodeId;
   const focusMode = !conversationEnded && !isInHub;
+
+  useEffect(() => {
+    if (!focusMode) {
+      setUnseenIntelCount(0);
+    }
+  }, [focusMode]);
+
+  useEffect(() => {
+    if (infoOpen) setUnseenIntelCount(0);
+  }, [infoOpen]);
+
+  useEffect(() => {
+    const prevKnown = prevKnownSecretsRef.current;
+    const prevStep = prevStepNumberRef.current;
+
+    const newlyLearned = state.knownSecrets.filter(s => !prevKnown.includes(s));
+    const stepAdvanced = state.stepNumber > prevStep;
+
+    if (focusMode && stepAdvanced && newlyLearned.length) {
+      if (!infoOpen) {
+        setUnseenIntelCount(prev => prev + newlyLearned.length);
+      }
+
+      const first = newlyLearned[0];
+      const title = newlyLearned.length > 1 ? `New intel (+${newlyLearned.length})` : 'New intel acquired';
+      toast(title, { description: first });
+    }
+
+    prevKnownSecretsRef.current = state.knownSecrets;
+    prevStepNumberRef.current = state.stepNumber;
+  }, [focusMode, infoOpen, state.knownSecrets, state.stepNumber]);
 
   const canAddressEncounter = Boolean(state.pendingEncounter && isInHub);
 
@@ -250,9 +286,17 @@ const GameScreen = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
+                  className="relative h-8 rounded-sm border-primary/20 px-3 font-display text-[11px] tracking-[0.22em] uppercase"
                 >
                   Info
+                  {unseenIntelCount > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-display text-[9px] tracking-[0.12em] text-accent-foreground"
+                    >
+                      {unseenIntelCount}
+                    </span>
+                  )}
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-full sm:max-w-md">

@@ -264,22 +264,37 @@ const InfoPanel = (
 
             <CollapsibleContent>
               <div className="mt-3 flex max-h-48 flex-col gap-1.5 overflow-y-auto">
-                {log.map((entry, i) => (
-                  <p
-                    key={i}
-                    className={`font-body text-xs ${
-                      entry.startsWith('>')
-                        ? 'text-primary/80 italic'
-                        : entry.startsWith('[EVT]')
-                        ? 'text-accent font-semibold'
-                        : entry.startsWith('[INTEL]')
-                        ? 'text-accent/80'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {entry}
-                  </p>
-                ))}
+                {log.map((entry, i) => {
+                  const intelPrefix = '[INTEL] Secret learned: ';
+                  const isIntelLearned = entry.startsWith(intelPrefix);
+                  const intelBody = isIntelLearned ? entry.slice(intelPrefix.length) : null;
+
+                  return (
+                    <p
+                      key={i}
+                      className={`font-body text-xs ${
+                        entry.startsWith('>')
+                          ? 'text-primary/80 italic'
+                          : entry.startsWith('[EVT]')
+                          ? 'text-accent font-semibold'
+                          : entry.startsWith('[INTEL]')
+                          ? 'text-accent font-semibold'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {isIntelLearned ? (
+                        <span className="inline-flex items-start gap-1.5">
+                          <Eye className="mt-0.5 h-3 w-3" aria-hidden="true" />
+                          <span>
+                            Intel: <span className="text-card-foreground">{intelBody}</span>
+                          </span>
+                        </span>
+                      ) : (
+                        entry
+                      )}
+                    </p>
+                  );
+                })}
               </div>
             </CollapsibleContent>
           </div>
