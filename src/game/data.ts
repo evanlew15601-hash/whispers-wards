@@ -2051,11 +2051,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-breakdown': {
     id: 'summit-aftermath-breakdown',
     speaker: 'Narrator',
-    text: 'The chamber empties wrong—too fast, too quiet. The stained glass keeps the last light pinned to the table like a knife, and in it you can still see how close you came to turning threats into clauses.\n\nAldric is already gone, boots striking a marching rhythm through the corridors. He doesn\'t need a treaty now. He has permission, and permission moves faster than ink.\n\nThessaly leaves no footprints. The vines she brought to the debate withdraw from the stone like breath held on purpose. You suspect she is not retreating; she is redeploying.\n\nRenzo lingers long enough to murmur something to a clerk—one of the Hall\'s own—then vanishes into a side passage with the calm of a man who just watched the price of everything rise.\n\nOutside the summit doors, Concord Hall pretends nothing happened. Petitioners still queue. Scribes still sharpen quills. The building is built to swallow panic and sell composure.\n\nBut the realm will feel the tremor. Every petty grievance now has an excuse to become a border incident. Every ambitious house now has proof the Hall can be forced into the open.\n\nBy the time you reach your desk, a fresh stack is waiting—sealed packets stamped from three provinces you\'ve never heard named in the same sentence. Someone is testing how much authority you spent today. Someone else is learning how to counterfeit it tomorrow.',
+    text: 'The chamber empties wrong—too fast, too quiet. Stained glass pins the last light to the table, and the minutes look harmless in it.\n\nAldric is already gone. You hear his boots in the corridor, measured like a drill call. No treaty means no leash. It means he can act first and argue later.\n\nThessaly leaves without a word. The vines she brought to the debate pull back from the stone as if they were never there. In the doorway she pauses just long enough to drop a green seed on the threshold—an answer and a warning.\n\nRenzo lingers to speak with a clerk in low tones. When you glance back, they\'re both gone.\n\nConcord Hall resumes its routine with practiced cruelty: petitioners queue, quills scratch, couriers run. The building was designed to keep panic off the record.\n\nAt your desk, three packets wait. Ashroad reports caravans stopped and searched by \"volunteers.\" Rootway reports tariffs doubled overnight, signed by an Ember hand. Passcourier reports two riders missing between mile-stones that used to be safe.\n\nBeneath them is a fourth sheet—no crest, no seal. Just a list of Hall office numbers, with yours at the top.',
     choices: [
       {
         id: 'summit-aftermath-breakdown-to-act2',
-        text: 'Take up the first packet. Let the next crisis show its teeth.',
+        text: 'Break the first seal.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2065,11 +2065,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-compact': {
     id: 'summit-aftermath-compact',
     speaker: 'Narrator',
-    text: 'The compact survives the chamber. That is its first miracle. The signatures sit wet on the page, and already Aldric is reading between the lines for loopholes that smell like steel. Thessaly reads for weak joints she can reinforce with living roots. Renzo reads for profit—quiet, patient, inevitable.\n\nThe Hall clerks copy the compact before midnight. It goes out under seal to border forts, grove-wards, caravan masters—anyone who might claim ignorance later.\n\nAnd still, the first test arrives before the ink dries.\n\nA courier from Greenmarch brings a splintered arrowhead wrapped in linen: Iron make, Verdant fletching. An attack on a toll station that shouldn\'t exist yet. A \"mistake\" made by someone who benefits from mistakes.\n\nMaren Vale places the arrowhead on your desk like evidence and like a warning. \"They\'ll call it a misunderstanding,\" she says. \"They always do. But misunderstandings are how wars practice.\"\n\nThe compact bought you a narrow bridge. Now everyone will walk across it with a torch, just to see what catches.\n\nYou look down the corridor toward the archive doors and the petition stacks beyond. The realm has already noticed what you did: you made three hungry powers share a table.\n\nTomorrow, smaller powers will demand the same miracle—except they won\'t ask politely, and they\'ll bring their own knives.',
+    text: 'The compact is signed, and for a heartbeat the chamber has nothing left to throw. The signatures sit wet on the page while Aldric scans for marching room, Thessaly scans for weak joints, and Renzo scans for who will be paid to \"administer\" it.\n\nThe clerks copy it before midnight. Copies go under seal to border forts, grove-wards, and caravan guilds—so nobody can claim they didn\'t know the rules.\n\nThe first test arrives before the ink hardens.\n\nA courier from Greenmarch brings a splintered arrowhead wrapped in linen: Iron make, Verdant fletching. It struck a toll station that isn\'t supposed to exist yet. Someone built it early. Someone wanted a fight before the council could meet.\n\nMaren Vale sets the arrowhead on your desk. \"They\'ll call it a misunderstanding,\" she says. \"They always do. It\'s how they check whether the Hall will flinch.\"\n\nOn the back of the courier\'s report is a detail the messenger \"forgot\" to mention: the arrow was fired from inside the station.',
     choices: [
       {
         id: 'summit-aftermath-compact-to-act2',
-        text: 'Call for the clerks. If peace is a bridge, you need to learn where it cracks first.',
+        text: 'Summon the clerks. Start the violations ledger.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2079,11 +2079,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-compact-accord': {
     id: 'summit-aftermath-compact-accord',
     speaker: 'Narrator',
-    text: 'The old accord does what old ink is supposed to do: it drags the present into the same light as the past. You made them read it aloud. You made them hear themselves inside it. You made a border dispute into precedent.\n\nThe clerks love you for it. Clerks love anything that can be cited. By dawn, copies of the renewed pact are stacked in three different offices, and each stack has a different set of hands hovering over it—hands that want to use it, twist it, weaponize it.\n\nThat\'s the second miracle: the pact doesn\'t just bind Greenmarch. It teaches the realm a new way to fight.\n\nA messenger arrives from the coast with salt in his hair and fear under his tongue. \"They\'re quoting Greenmarch,\" he says. \"A dock dispute. Two charter houses. One of them claims the Hall owes them arbitration now—because you proved the Hall can be forced to choose.\"\n\nIn the corridor outside your office, you hear someone laughing too softly to be honest. You don\'t see Renzo, but you know that laugh.\n\nYou bought peace at Greenmarch with the oldest weapon in the building: a line in a book.\n\nNow everyone is rushing to find which books can be turned into blades—and which blades can be turned into law.',
+    text: 'The old accord does what old ink is meant to do: it pins everyone to a promise they can\'t pretend they never made. You made them read it aloud. You made them hear the warning in it.\n\nBy dawn, copies of the renewed pact sit in three offices, each stack guarded by a different set of hands. Every clerk sees the same opportunity: cite it, stretch it, turn it into a weapon that still looks like procedure.\n\nA messenger arrives from the coast with salt in his hair. \"They\'re quoting Greenmarch,\" he says. \"Dock dispute. Two charter houses. One of them is demanding arbitration as if it were owed.\"\n\nWhen the messenger leaves, the Archivist appears with the lending ledger. One line is fresh—today\'s date, the shelf mark of the Greenmarch accord, and your name in a careful imitation of your hand.\n\nSomeone has started using your precedent. Someone has also started forging your signature.',
     choices: [
       {
         id: 'summit-aftermath-compact-accord-to-act2',
-        text: 'Open the docket indexes. If precedent is a weapon, you need to know who is reaching for it.',
+        text: 'Go to the archives. Find who signed your name.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2093,11 +2093,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-iron-march': {
     id: 'summit-aftermath-iron-march',
     speaker: 'Narrator',
-    text: 'The Hall still smells like incense when the first Iron dispatch arrives—short, brutal, written as if words are a tool that should be kept sharp and used quickly.\n\n\"Advance elements through Greenmarch. Resistance expected. Supplies requisitioned under Concord authority.\"\n\nThey invoke your decision like a blessing. Your name sits in the margin as justification, not as burden.\n\nBy the time you reach the outer courtyard, a line of hired wagons is already being loaded: grain, bolts, lamp oil, bandages. Ember agents oversee the counting with bright, untroubled eyes. War makes ledgers honest. It also makes them hungry.\n\nThessaly\'s reply arrives on living parchment—leaf-veins stitched into paper. It isn\'t a threat. It\'s worse: a list of places where the forest can choke a road without anyone seeing a blade.\n\nThe realm will call this escalation. The Hall will call it consequence. The dead will call it nothing at all.\n\nAnd still petitions arrive. They come faster now, stamped urgent, because every province understands the lesson: if Greenmarch can become a march, then any dispute can become a campaign.\n\nA clerk sets a new packet on your desk. The seal is unfamiliar. The wax is black. The note inside is a single line: \"If you want iron to keep marching, choose where it marches next.\"\n\nSomeone is already trying to steer the war you lit—and they\'re doing it through you.',
+    text: 'The Hall still smells of incense when the first Iron dispatch arrives—short, brutal, written like a tool.\n\n"Advance elements through Greenmarch. Resistance expected. Supplies requisitioned under Concord authority."\n\nThey invoke your decision like a warrant. Your name isn\'t in the text. It\'s on the stamp.\n\nIn the outer courtyard, hired wagons are being loaded: grain, bolts, lamp oil, bandages. An Iron quartermaster holds out requisition forms already marked with your office seal—blank where your signature should be.\n\nEmber agents oversee the counting with bright, untroubled eyes.\n\nThessaly\'s reply arrives on living parchment—leaf-veins stitched into paper. Not a threat. A list of choke points and root-collapses, the places the forest can close without a battle.\n\nThen the black-wax packet arrives. No crest. One sentence: "If you want Iron to keep marching, choose where it marches next."\n\nSomeone is trying to make you the steering wheel.',
     choices: [
       {
         id: 'summit-aftermath-iron-march-to-act2',
-        text: 'Summon Maren Vale. If the realm is learning to weaponize the Hall, you need to learn faster.',
+        text: 'Summon Maren Vale. Put the requisitions on the table.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2107,11 +2107,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-verdant-seal': {
     id: 'summit-aftermath-verdant-seal',
     speaker: 'Narrator',
-    text: 'The border deaths stop. That is the first thing people will praise, and the first thing they will forget to measure.\n\nBecause the Pass doesn\'t just close. It disappears.\n\nCaravans that have used Greenmarch for generations find themselves walking in circles through mist that tastes faintly of iron and old sap. Scouts return with maps that don\'t agree with their own memories. A regiment sent to \"show resolve\" comes back two days later with half its supplies missing and every man refusing to say what they saw in the trees.\n\nAldric sends no complaint to Thessaly. He sends one to you. It is written with a soldier\'s restraint—the kind that means violence is already being planned somewhere else.\n\nEmber\'s response is quicker and uglier: tariffs spike overnight on the routes that bypass the Pass. Smugglers begin to offer \"Verdant-proof\" guides, and the guides are always bought with Ember coin.\n\nIn the Hall, the clerks start seeing the same phrase on petitions from distant regions: \"Greenmarch precedent.\"\n\nThey aren\'t asking whether the Pass should be open. They\'re asking whether the Hall will let a single power close a road and call it peace.\n\nThessaly visits your office once, briefly, as if testing whether stone can be trusted. \"The door is locked,\" she says. \"Now see how many hands reach for the key.\"\n\nYour desk fills with packets. Trade routes. Charter disputes. Quiet summits requested before tempers boil.\n\nGreenmarch is sealed. The realm is not. And everyone can feel where the pressure is building next.',
+    text: 'The border deaths stop. People will praise that. They won\'t mention what it cost.\n\nBecause the Pass doesn\'t just close. It disappears.\n\nCaravans that have used Greenmarch for generations walk in circles through mist that tastes of iron and sap. Scouts return with maps that don\'t agree. A regiment sent to "show resolve" comes back two days later with half its supplies missing and every man refusing to say what he saw between the trees.\n\nAldric doesn\'t send a complaint to Thessaly. He sends one to you—polite, clipped, and addressed like an order disguised as respect.\n\nEmber responds by moving the fight sideways: tariffs spike on the bypass routes overnight. Smugglers start selling "Verdant-proof" guides, and the guides take Ember coin.\n\nBefore noon, an Iron captain waits outside your office with a rolled warrant and a calm smile. "We need authority to cut a new road," he says. "Around the problem."\n\nThe Hall is about to be asked a simple question: how many trees can you authorize to fall before it\'s a war?',
     choices: [
       {
         id: 'summit-aftermath-verdant-seal-to-act2',
-        text: 'Open the petitions. If the Pass is a locked door, you need to watch who starts building ladders.',
+        text: 'See the captain. Read the warrant.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2121,11 +2121,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-ember-web': {
     id: 'summit-aftermath-ember-web',
     speaker: 'Narrator',
-    text: 'The Pass stays open. That is what the common folk will hear. That is what Renzo will sell.\n\nThey won\'t hear the second part: it stays open because Ember now holds the keys, and the keys are numbered.\n\nAuditors arrive in Greenmarch within days—soft hands, hard eyes, escorted by mercenaries with clean armor and no banners. They post tariffs like proclamations. They post fines like laws. The road becomes a ledger entry, and every traveler becomes a line item.\n\nAldric hates it openly. He calls it a leash, and he\'s right. But the leash is silk, and silk is harder to cut without looking like the savage.\n\nThessaly hates it privately. The wards hold, for now, but she can feel the way accountants measure sacred ground: not as a seal, but as a resource.\n\nThe Hall receives its first complaint from a provincial magistrate who has never set foot near Greenmarch. \"If Ember can audit a Pass,\" the letter reads, \"they can audit anything. Does Concord intend to let merchants define neutrality everywhere?\"\n\nRenzo sends you a gift: a new docket index, beautifully organized, with the names of three disputes already circled. \"To save you time,\" his note says. \"You will be very busy.\"\n\nBusy is one word.\n\nAnother is trapped.\n\nYou watch the petition stacks grow and realize the Hall\'s next battles won\'t be fought at a summit. They\'ll be fought in margins, in filings, in who gets to call a theft \"procedure\" and a bribe \"fee.\"\n\nAnd if you want to cut the web later, you\'ll need to know where Renzo tied the first knot.',
+    text: 'The Pass stays open. That\'s what the city will hear.\n\nThey won\'t hear the second part: it stays open because Ember now issues the receipts.\n\nAuditors arrive in Greenmarch within days—soft hands, hard eyes—escorted by mercenaries with clean armor and no banners. Tariffs go up like proclamations. Fines arrive like laws. Every crossing becomes a line item.\n\nAldric hates it openly. He calls it a leash, and he\'s right. But it\'s a silk leash, and cutting silk makes you look like the brute.\n\nThessaly says little. She watches the fee schedules the way a druid watches blight spread: slow, methodical, hard to uproot.\n\nThe first complaint to the Hall isn\'t from Greenmarch. It\'s from a magistrate three provinces away. "If Ember can audit a Pass," the letter asks, "what stops them auditing my roads next?"\n\nThat afternoon, Renzo sends you a docket index, beautifully organized. Three disputes are circled. A fourth circle is drawn later, in a different ink.\n\nSomeone else already has access to your desk.',
     choices: [
       {
         id: 'summit-aftermath-ember-web-to-act2',
-        text: 'Turn to the first circled name. If you\'re going to be busy, be busy on purpose.',
+        text: 'Start with the fourth circle.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2135,11 +2135,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-embers-fall-ledger': {
     id: 'summit-aftermath-embers-fall-ledger',
     speaker: 'Narrator',
-    text: 'Ember leaves the Hall with their smiles cracked and their escorts suddenly nervous. The ledger trail sits in the record like a lit fuse.\n\nThe clerks move fast. Seals are assigned. Witnesses are named. Every Ember office in the city becomes a room full of gloves and ink—because once the Hall admits it can take, everyone wants to see whether it will take from them too.\n\nAldric wants to call it justice. He also wants to call it weakness, because justice without steel can be undone. You can see him measuring how far he can push before the Hall flinches.\n\nThessaly doesn\'t celebrate. She watches the corridors the way a druid watches a treeline before an ambush. \"Coin doesn\'t die,\" she says quietly. \"It migrates.\"\n\nThat night, a fire breaks out in an archive annex. Small. Contained. Almost polite. The kind of fire meant to destroy one particular shelf.\n\nMaren Vale brings you the ash in a dish and doesn\'t bother with ceremony. \"Someone is erasing their footprints,\" she says. \"And they\'re doing it inside our walls.\"\n\nThe summit stopped Greenmarch from becoming a war between Iron and Verdant.\n\nNow it risks becoming a war between the Hall and the people who thought the Hall was only a stage.\n\nYour desk fills with new packets—trade routes suddenly \"interrupted,\" border charters suddenly \"disputed,\" quiet meetings suddenly \"requested\"—as if the realm has decided to see what the Hall will do when the enemy is paperwork with a knife hidden in it.',
+    text: 'Ember leaves the Hall with their smiles cracked and their escorts suddenly careful. The ledger trail sits in the minutes like a fuse.\n\nThe clerks move fast: seals assigned, witnesses named, inventories demanded. Every Ember office in the city becomes a room full of gloves and ink—because once the Hall takes from Ember, everyone wonders if it will take from them.\n\nAldric wants to call it justice. He also wants soldiers at every door that matters. You can see him measuring where the Hall ends and force begins.\n\nThessaly doesn\'t celebrate. She watches the corridor traffic. "Coin doesn\'t vanish," she says. "It finds a new pocket."\n\nThat night an archive annex burns—small, contained, almost courteous. The fire eats one shelf and leaves the rest.\n\nMaren Vale brings you a dish of ash and the shelf list the annex kept. The burned section wasn\'t history. It was appointments: names of clerks authorized to apply Hall seals.\n\nSomeone isn\'t destroying proof. They\'re clearing the way.',
     choices: [
       {
         id: 'summit-aftermath-embers-fall-ledger-to-act2',
-        text: 'Order the next packet opened in front of witnesses. Let whoever is watching know you\'re watching back.',
+        text: 'Lock down the seal registry. Open the next packet in public.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2149,11 +2149,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-embers-fall-manifest': {
     id: 'summit-aftermath-embers-fall-manifest',
     speaker: 'Narrator',
-    text: 'The docket number becomes a weapon the moment you speak it aloud. The manifests don\'t just implicate Ember—they implicate the Hall\'s own machinery: stamped approvals, waved-through shipments, blind clerks doing what the system trained them to do.\n\nAfter the summit, every office in Concord suddenly cares about \"procedure.\" People who never learned a scribe\'s name start asking who signed which page, who initialed which margin, who looked away for a heartbeat too long.\n\nRenzo\'s delegation is expelled, but the docket trail doesn\'t end with him. It threads into places you\'ve walked past a hundred times. It threads into the comfort of thinking the Hall is neutral simply because it is old.\n\nAldric sends a runner with a question written like an accusation: \"How many more docket numbers are on my patrol orders?\"\n\nThessaly sends nothing. Instead, a vine grows overnight along the corridor outside your office—thin, harmless-looking, placed like a listening device.\n\nAnd then the first provincial petition arrives citing Greenmarch as precedent for an audit of their rivals. \"If Concord can inspect Ember,\" the letter says, \"Concord can inspect them.\"\n\nThey are not asking you to judge a war. They are asking you to bless a purge.\n\nYou understand, then, what you set loose: not justice, not even truth—an appetite.\n\nThe next act won\'t be fought over who owns a Pass. It will be fought over who gets to call an inspection mercy instead of conquest.',
+    text: 'The docket number becomes a weapon the moment you speak it aloud. The manifests don\'t just implicate Ember—they implicate the Hall\'s machinery: stamped approvals, waved-through shipments, clerks doing what the system trained them to do.\n\nAfter the summit, every office in Concord discovers a passion for "procedure." People who never learned a scribe\'s name start asking who signed which page, who initialed which margin, who looked away for a heartbeat.\n\nRenzo\'s delegation is expelled, but the docket trail doesn\'t end with him. It threads into corridors you\'ve walked past a hundred times.\n\nBy evening, two petitions hit your desk within minutes of each other. Both demand audits of their rivals. Both attach copies of the Greenmarch minutes. Each has different passages underlined.\n\nThey aren\'t asking you to judge a war. They\'re asking you to loan out the Hall\'s knife and call it oversight.',
     choices: [
       {
         id: 'summit-aftermath-embers-fall-manifest-to-act2',
-        text: 'Turn to the first petition that quotes Greenmarch. Find out who taught them that language.',
+        text: 'Pull the underlined passages. Find who wrote them.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2163,11 +2163,11 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-embers-fall-maps': {
     id: 'summit-aftermath-embers-fall-maps',
     speaker: 'Narrator',
-    text: 'You broke Ember with paper. Not ledgers. Not confessions. Cartography—clean lines on clean parchment, and the proof that someone redrew the world to make blood spill where it would be profitable.\n\nRenzo leaves the Hall smiling anyway. It\'s a smaller smile, sharpened at the edges. The kind of smile that promises he\'ll find another mapmaker. Another border. Another place where people are desperate enough to believe ink over memory.\n\nThe inquiry begins at once. Survey seals are checked against older seals. Border stones are inspected. Clerks argue over whether a line was moved by a thumb\'s width or a nation\'s.\n\nAldric wants to send riders to every cartographer\'s guild in the realm and ask who they\'ve been paid by. Thessaly wants to burn the guilds down and let the forest erase the roads.\n\nYou want one thing you don\'t have yet: the hand behind the pen.\n\nThat night, a junior scribe is found in the archive corridor with ink on his fingers and fear in his eyes. He\'s alive. He\'s also been paid.\n\n\"I only copied what they gave me,\" he keeps saying. \"I only copied.\"\n\nThe Hall has always feared swords.\n\nBut it has never been ready for the idea that someone can buy its handwriting.\n\nWhen you return to your desk, the petitions are already waiting—each one a small, tidy map of a future conflict, drawn by someone who wants you to pick a direction and call it destiny.',
+    text: 'You broke Ember with paper. Not ledgers. Not confessions. Cartography—proof that someone redrew the world so blood would spill where it paid.\n\nRenzo leaves the Hall smiling anyway, smaller and sharper. He\'ll find another mapmaker. Another border.\n\nThe inquiry begins at once. Survey seals checked against older seals. Border stones inspected. Clerks arguing whether a line moved a thumb\'s width or a nation\'s.\n\nAldric wants riders at every cartographers\' guild. Thessaly wants the guilds burned and the roads forgotten.\n\nThat night, a junior scribe is found in the archive corridor with ink on his fingers and fear in his eyes. Alive. Paid.\n\n"I only copied what they gave me," he says. "I only copied."\n\nIn his pocket is the receipt—Ember coin, and a Hall office code written in the clerk\'s own shorthand.\n\nThe forgery wasn\'t smuggled in from outside. It walked through a familiar door.',
     choices: [
       {
         id: 'summit-aftermath-embers-fall-maps-to-act2',
-        text: 'Open the docket indexes. If someone can buy handwriting, you need to learn every hand in the Hall.',
+        text: 'Trace the office code.',
         effects: [],
         nextNodeId: null,
         revealsInfo: GREENMARCH_SUMMIT_CONCLUDED_SECRET,
@@ -2177,7 +2177,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-router': {
     id: 'act2-demo-outro-router',
     speaker: 'Narrator',
-    text: 'You gather the day\'s packets, but you don\'t close them yet. Not really. Not after Greenmarch.\n\nThe Hall is quieter now, the way a room goes quiet after someone finally says what everyone was thinking.\n\nWhatever you set in motion will keep moving when you stop reading. The only question is whether you\'ll still be the one holding the pen when it reaches the next page.',
+    text: 'You stack the packets and tie the ribbon. The workday ends on the schedule the Hall pretends it controls.\n\nIn the corridor outside, clerks keep copying the Greenmarch minutes. Couriers keep running. Somebody is already using your decision as an excuse, or as a threat.\n\nIf you stop here, the realm doesn\'t.',
     choices: [
       {
         id: 'act2-demo-outro-route-breakdown',
@@ -2256,7 +2256,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-breakdown': {
     id: 'act2-demo-outro-breakdown',
     speaker: 'Narrator',
-    text: 'You sign your name under a summary that feels too neat to be true. \"No treaty. Elevated tensions. Likely mobilization.\"\n\nOutside your office, the Hall keeps walking as if walking can prevent disaster.\n\nYou know better now.\n\nThe next time the bells ring, they won\'t be calling for debate. They\'ll be calling for judgment—fast, public, irreversible.\n\nAnd someone will already have their hand on the rope.',
+    text: 'You sign the summary and hate how clean it looks. "No treaty. Elevated tensions. Likely mobilization."\n\nIn the Hall\'s main stairwell, the bell rope hangs within reach. It was meant to call for debate. It can also call for emergency session—fast votes, hard decisions.\n\nSomeone will pull it soon. The rope doesn\'t care who is standing underneath.',
     choices: [
       {
         id: 'act2-demo-outro-breakdown-to-end',
@@ -2269,7 +2269,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-compact': {
     id: 'act2-demo-outro-compact',
     speaker: 'Narrator',
-    text: 'You file a report that begins with the word \"peace\" and immediately spends the rest of the page explaining why peace is fragile.\n\nIt reads like a bridge inspection. Weak points circled. Loads estimated. Fire risks noted.\n\nBecause you can already feel it: every power in the realm will try to cross what you built—some to trade, some to raid, some just to prove it can burn.\n\nGreenmarch was a settlement.\n\nNow it\'s a template.',
+    text: 'You file the report under "Greenmarch Compact" and add a second page: violations to watch for.\n\nAt the top you write three words: TOLL STATION CONSTRUCTION.\n\nMaren Vale\'s arrowhead sits beside the inkpot while you draft the summons for the first joint council meeting. Dawn. Neutral chamber. Three seats reserved.\n\nThe fourth seat—the one for the Hall—has no name on it yet. That makes it the most dangerous chair in the room.',
     choices: [
       {
         id: 'act2-demo-outro-compact-to-end',
@@ -2282,7 +2282,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-compact-accord': {
     id: 'act2-demo-outro-compact-accord',
     speaker: 'Narrator',
-    text: 'You file the report under \"Precedent,\" and the word feels heavier than \"war.\"\n\nBecause precedent doesn\'t stop at Greenmarch. It travels. It teaches people how to argue, how to threaten, how to wrap hunger in legality.\n\nBy tomorrow, half the realm will be quoting the clauses you forced into daylight.\n\nBy next week, someone will be forging them.\n\nAnd by then, the question won\'t be whether the Hall can bind hungry powers.\n\nIt will be whether the Hall can survive being useful.',
+    text: 'You file the report under "Precedent" and attach the Archivist\'s slip to the back.\n\nShelf mark: Greenmarch accord.\nBorrowed: today.\nSigned out: in your handwriting.\n\nEither you\'re about to be accused of tampering with the record, or someone is about to argue with a forged version of your own authority.\n\nBoth start the same way: with a clerk who knows where you keep your seal.',
     choices: [
       {
         id: 'act2-demo-outro-compact-accord-to-end',
@@ -2295,7 +2295,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-iron-march': {
     id: 'act2-demo-outro-iron-march',
     speaker: 'Narrator',
-    text: 'You write \"authorized\" and try not to imagine the word stamped onto a requisition order, a casualty list, a widow\'s appeal.\n\nThe Hall will pretend it can steer the march with ink.\n\nBut you\'ve already seen the truth: once banners move, everyone starts writing their own justifications.\n\nGreenmarch won\'t be the last place to learn that lesson.\n\nIt will only be the first place that learned it because of you.',
+    text: 'You write "authorized" and the page turns into logistics.\n\nQuartermasters love authority. They love it most when it\'s unsigned.\n\nOn your blotter sits the requisition stack: grain, bandages, lamp oil—already stamped. All it needs is a signature that looks enough like yours.\n\nBy the time you set the pen down, the march has a schedule.',
     choices: [
       {
         id: 'act2-demo-outro-iron-march-to-end',
@@ -2308,7 +2308,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-verdant-seal': {
     id: 'act2-demo-outro-verdant-seal',
     speaker: 'Narrator',
-    text: 'You write \"sealed\" and the word feels like a promise and a provocation.\n\nA locked door creates a quiet hallway.\n\nIt also creates a crowd.\n\nTomorrow, the petitions won\'t be about Greenmarch. They\'ll be about every other road, every other border, every other place someone wants to close and call it safety.\n\nThe realm will ask you, again and again, where the Hall draws the line.\n\nAnd the people who hate your answer will start looking for a way around it.',
+    text: 'You write "sealed" and immediately receive three complaints: one from caravan guilds, one from Iron, one from Ember.\n\nThe Ember letter includes a map of bypass routes with neat annotations and a price list for "guides." Ember doesn\'t fight the forest. It prices it.\n\nIn the margin, a clerk has written: "Urgent: warrant request to clear new road."\n\nThe Pass vanished. The pressure didn\'t. It just moved to your door.',
     choices: [
       {
         id: 'act2-demo-outro-verdant-seal-to-end',
@@ -2321,7 +2321,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-ember-web': {
     id: 'act2-demo-outro-ember-web',
     speaker: 'Narrator',
-    text: 'You file a report that says \"neutral arbitration\" and know that the phrase will be repeated until it sounds inevitable.\n\nThat\'s how Ember wins: by making their grip feel like order.\n\nIf you\'re going to pry their fingers loose later, it won\'t be at a summit.\n\nIt will be in the dull places—forms, fees, audits, small injustices filed so neatly no one notices they\'re bleeding.\n\nGreenmarch is open.\n\nSo is the trap.',
+    text: 'You file the report under "Arbitration" and the word tastes like a contract you didn\'t read closely enough.\n\nAttached is Ember\'s fee schedule—stamped with a seal that looks uncomfortably similar to the Hall\'s.\n\nIf you let that stamp stand, merchants will carry it everywhere. If you challenge it, they\'ll ask why the Hall signed the first one.\n\nRenzo\'s handwriting sits at the bottom: "Next docket?"',
     choices: [
       {
         id: 'act2-demo-outro-ember-web-to-end',
@@ -2334,7 +2334,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-embers-fall-ledger': {
     id: 'act2-demo-outro-embers-fall-ledger',
     speaker: 'Narrator',
-    text: 'You file the report and realize you\'ve declared open season on secrets.\n\nIf Ember can be dragged into daylight with a ledger trail, every rival will start hunting for ledgers. Every clerk will start looking at their own margins and wondering who\'s been paid to write there.\n\nThe Hall likes sunlight.\n\nBut sunlight casts shadows.\n\nAnd in those shadows, someone is already deciding what to burn next.',
+    text: 'You file the report with the ash dish still on your desk.\n\nEmber is out. The Hall is exposed. Every clerk in the building suddenly has something to lose.\n\nSomeone tried to burn the seal registry. Someone else will try a quieter method: a transfer request, a sick note, a missing page.\n\nYou close the file and know where the next fight will be: the rooms with no witnesses.',
     choices: [
       {
         id: 'act2-demo-outro-embers-fall-ledger-to-end',
@@ -2347,7 +2347,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-embers-fall-manifest': {
     id: 'act2-demo-outro-embers-fall-manifest',
     speaker: 'Narrator',
-    text: 'You file the report under \"docket fraud\" and hate how small the phrase looks on paper.\n\nBecause you know what it really means: someone can smuggle violence through the Hall\'s own processes and call it paperwork.\n\nIf the enemy can counterfeit procedure, then every future crisis will arrive wearing legitimacy like a mask.\n\nYou\'ll have to learn to see the seams.',
+    text: 'You file the report under "docket fraud" and add a note in the margin: CHECK WHO STAMPED IT.\n\nThe manifests proved a simple thing: violence can ride through the Hall on a form.\n\nTomorrow\'s petitions will arrive dressed the same way—proper language, clean margins, a knife in the attachment.',
     choices: [
       {
         id: 'act2-demo-outro-embers-fall-manifest-to-end',
@@ -2360,7 +2360,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-embers-fall-maps': {
     id: 'act2-demo-outro-embers-fall-maps',
     speaker: 'Narrator',
-    text: 'You file the report under \"forgery\" and wonder how many borders in the realm have been redrawn by hands that never bled for them.\n\nIf someone can sell a false world convincingly enough, they can sell any future war as a necessity.\n\nTomorrow\'s petitions will arrive already annotated—already framed—already steering you toward the outcome someone paid for.\n\nAnd you\'ll have to decide whether to follow the map.\n\nOr whether to burn it.',
+    text: 'You file the report under "forgery" and keep the receipt you took from the junior scribe.\n\nNot for the coin. For the office code.\n\nIf the Hall\'s own shorthand can be bought, the next forgery won\'t come with Ember seals and flashy ink. It will come in the margin, in a familiar hand, on a form everyone trusts.\n\nYou set the report aside and start a new list: office codes and who has access to them.',
     choices: [
       {
         id: 'act2-demo-outro-embers-fall-maps-to-end',
