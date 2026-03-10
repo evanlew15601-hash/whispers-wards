@@ -2051,7 +2051,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-breakdown': {
     id: 'summit-aftermath-breakdown',
     speaker: 'Narrator',
-    text: 'The chamber empties wrong—too fast, too quiet. Stained glass pins the last light to the table, and the minutes look harmless in it.\n\nAldric is already gone. You hear his boots in the corridor, measured like a drill call. No treaty means no leash. It means he can act first and argue later.\n\nThessaly leaves without a word. The vines she brought to the debate pull back from the stone as if they were never there. In the doorway she pauses just long enough to drop a green seed on the threshold—an answer and a warning.\n\nRenzo lingers to speak with a clerk in low tones. When you glance back, they\'re both gone.\n\nConcord Hall resumes its routine with practiced cruelty: petitioners queue, quills scratch, couriers run. The building was designed to keep panic off the record.\n\nAt your desk, three packets wait. Ashroad reports caravans stopped and searched by \"volunteers.\" Rootway reports tariffs doubled overnight, signed by an Ember hand. Passcourier reports two riders missing between mile-stones that used to be safe.\n\nBeneath them is a fourth sheet—no crest, no seal. Just a list of Hall office numbers, with yours at the top.',
+    text: 'The chamber empties wrong—too fast, too quiet. Stained glass pins the last light to the table, and the minutes look harmless in it.\n\nAldric is already gone. His boots in the corridor keep time like a drill call. No treaty means no leash. It means he can act first and bring the paper later.\n\nThessaly leaves without a word. The vines she brought to the debate pull back from the stone as if they\'d never touched it. In the doorway she drops a seed wrapped in leaf-wax on the threshold and steps over it without looking back.\n\nRenzo lingers to speak with a clerk in low tones. The clerk wears Tariff Office blue. When you look again, they\'re both gone.\n\nConcord Hall resumes its routine with practiced cruelty: petitioners queue, quills scratch, couriers run. The building knows how to keep panic out of the record.\n\nAt your desk, three packets wait. Ashroad reports a new road toll collected by men with no charter and plenty of rope. Rootway reports "interim duties" posted overnight, signed in an Ember hand you don\'t recognize. Passcourier reports two riders missing; one saddle returned, cut clean.\n\nBeneath them is a fourth sheet—no crest, no seal. Just a list of Hall office numbers. Yours is first. The next is the seal registry. The last is scratched out so hard the paper thins.',
     choices: [
       {
         id: 'summit-aftermath-breakdown-to-act2',
@@ -2065,7 +2065,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-compact': {
     id: 'summit-aftermath-compact',
     speaker: 'Narrator',
-    text: 'The compact is signed, and for a heartbeat the chamber has nothing left to throw. The signatures sit wet on the page while Aldric scans for marching room, Thessaly scans for weak joints, and Renzo scans for who will be paid to \"administer\" it.\n\nThe clerks copy it before midnight. Copies go under seal to border forts, grove-wards, and caravan guilds—so nobody can claim they didn\'t know the rules.\n\nThe first test arrives before the ink hardens.\n\nA courier from Greenmarch brings a splintered arrowhead wrapped in linen: Iron make, Verdant fletching. It struck a toll station that isn\'t supposed to exist yet. Someone built it early. Someone wanted a fight before the council could meet.\n\nMaren Vale sets the arrowhead on your desk. \"They\'ll call it a misunderstanding,\" she says. \"They always do. It\'s how they check whether the Hall will flinch.\"\n\nOn the back of the courier\'s report is a detail the messenger \"forgot\" to mention: the arrow was fired from inside the station.',
+    text: 'The compact is signed, and for a heartbeat the chamber has nothing left to throw. Aldric reads it the way a soldier reads a map: routes, gaps, time. Thessaly reads it for rot. Renzo reads it for fees.\n\nThe clerks copy it before midnight. Copies go under seal to border forts, grove-wards, and caravan guilds—so nobody can claim they didn\'t know the rules.\n\nThe first test arrives before the ink hardens.\n\nA courier from Greenmarch brings a splintered arrowhead wrapped in linen: Iron make, Verdant fletching. It struck a toll station that isn\'t supposed to exist yet. Someone built it early. Someone planned to collect coin under cover of peace.\n\nMaren Vale sets the arrowhead on your desk. "They\'ll call it a misunderstanding," she says. "They always do. Watch what they do with the apology."\n\nOn the back of the courier\'s report is a detail the messenger "forgot" to mention: the arrow was fired from inside the station.\n\nEither the compact has its first traitor, or its first scapegoat.',
     choices: [
       {
         id: 'summit-aftermath-compact-to-act2',
@@ -2079,7 +2079,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-compact-accord': {
     id: 'summit-aftermath-compact-accord',
     speaker: 'Narrator',
-    text: 'The old accord does what old ink is meant to do: it pins everyone to a promise they can\'t pretend they never made. You made them read it aloud. You made them hear the warning in it.\n\nBy dawn, copies of the renewed pact sit in three offices, each stack guarded by a different set of hands. Every clerk sees the same opportunity: cite it, stretch it, turn it into a weapon that still looks like procedure.\n\nA messenger arrives from the coast with salt in his hair. \"They\'re quoting Greenmarch,\" he says. \"Dock dispute. Two charter houses. One of them is demanding arbitration as if it were owed.\"\n\nWhen the messenger leaves, the Archivist appears with the lending ledger. One line is fresh—today\'s date, the shelf mark of the Greenmarch accord, and your name in a careful imitation of your hand.\n\nSomeone has started using your precedent. Someone has also started forging your signature.',
+    text: 'The old accord does what old ink is meant to do: it binds the present to a promise it can\'t deny. You made them read it aloud, clause by clause, until it stopped sounding like history and started sounding like orders.\n\nBy dawn, copies of the renewed pact sit in three offices. Each copy is tabbed differently. Each one has different hands resting on the cover as if it might run away.\n\nA messenger arrives from the coast with salt in his hair. "They\'re quoting Greenmarch," he says. "Dock dispute. Two charter houses. One is demanding arbitration under the renewed accord."\n\nWhen he leaves, the Archivist brings the lending ledger. The Greenmarch shelf mark is checked out—today—signed in your hand, dated in yours, written with care that isn\'t yours.\n\nThe Hall taught the realm a new language. Someone is already speaking it in your name.',
     choices: [
       {
         id: 'summit-aftermath-compact-accord-to-act2',
@@ -2093,7 +2093,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-iron-march': {
     id: 'summit-aftermath-iron-march',
     speaker: 'Narrator',
-    text: 'The Hall still smells of incense when the first Iron dispatch arrives—short, brutal, written like a tool.\n\n"Advance elements through Greenmarch. Resistance expected. Supplies requisitioned under Concord authority."\n\nThey invoke your decision like a warrant. Your name isn\'t in the text. It\'s on the stamp.\n\nIn the outer courtyard, hired wagons are being loaded: grain, bolts, lamp oil, bandages. An Iron quartermaster holds out requisition forms already marked with your office seal—blank where your signature should be.\n\nEmber agents oversee the counting with bright, untroubled eyes.\n\nThessaly\'s reply arrives on living parchment—leaf-veins stitched into paper. Not a threat. A list of choke points and root-collapses, the places the forest can close without a battle.\n\nThen the black-wax packet arrives. No crest. One sentence: "If you want Iron to keep marching, choose where it marches next."\n\nSomeone is trying to make you the steering wheel.',
+    text: 'The Hall still smells of incense when the first Iron dispatch arrives—short, brutal, written like a tool.\n\n"Advance elements through Greenmarch. Resistance expected. Supplies requisitioned under Concord authority."\n\nThey invoke your decision like a warrant. Your name isn\'t in the text. It\'s on the stamp.\n\nIn the outer courtyard, hired wagons are already being loaded: grain, bolts, lamp oil, bandages. An Iron quartermaster holds out Form 12-C for countersignature. Your office seal is pressed into the wax. The signature line is empty.\n\nEmber agents stand beside the scales, noting weights, noting names.\n\nThessaly\'s reply arrives on living parchment—leaf-veins stitched into paper. Not a threat. A list of choke points and root-collapses, the places the forest can close without a battle.\n\nThen the black-wax packet arrives. No crest. One sentence: "If you want Iron to keep marching, choose where it marches next."\n\nSomeone wants your seal more than your judgment.',
     choices: [
       {
         id: 'summit-aftermath-iron-march-to-act2',
@@ -2107,7 +2107,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-verdant-seal': {
     id: 'summit-aftermath-verdant-seal',
     speaker: 'Narrator',
-    text: 'The border deaths stop. People will praise that. They won\'t mention what it cost.\n\nBecause the Pass doesn\'t just close. It disappears.\n\nCaravans that have used Greenmarch for generations walk in circles through mist that tastes of iron and sap. Scouts return with maps that don\'t agree. A regiment sent to "show resolve" comes back two days later with half its supplies missing and every man refusing to say what he saw between the trees.\n\nAldric doesn\'t send a complaint to Thessaly. He sends one to you—polite, clipped, and addressed like an order disguised as respect.\n\nEmber responds by moving the fight sideways: tariffs spike on the bypass routes overnight. Smugglers start selling "Verdant-proof" guides, and the guides take Ember coin.\n\nBefore noon, an Iron captain waits outside your office with a rolled warrant and a calm smile. "We need authority to cut a new road," he says. "Around the problem."\n\nThe Hall is about to be asked a simple question: how many trees can you authorize to fall before it\'s a war?',
+    text: 'The border deaths stop. People will praise that. They won\'t mention what it cost.\n\nBecause the Pass doesn\'t just close. It disappears.\n\nCaravans that have used Greenmarch for generations walk in circles through mist that smells of wet iron and old sap. Scouts return with maps that don\'t agree. A regiment sent to "show resolve" comes back two days later with half its supplies missing and every man refusing to name what he saw between the trees.\n\nAldric doesn\'t send a complaint to Thessaly. He sends one to you—polite, clipped, written like an order that learned manners.\n\nEmber responds by moving the fight sideways: tariffs spike on the bypass routes overnight. Smugglers start selling "Verdant-proof" guides, and the guides take Ember coin.\n\nBefore noon, an Iron captain waits outside your office with a rolled warrant. He doesn\'t call it defiance. He calls it "clearance."\n\n"We cut a new road," he says. "Around the problem. With your authorization."\n\nSomewhere outside the city, an axe head is being sharpened to match your handwriting.',
     choices: [
       {
         id: 'summit-aftermath-verdant-seal-to-act2',
@@ -2121,7 +2121,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-ember-web': {
     id: 'summit-aftermath-ember-web',
     speaker: 'Narrator',
-    text: 'The Pass stays open. That\'s what the city will hear.\n\nThey won\'t hear the second part: it stays open because Ember now issues the receipts.\n\nAuditors arrive in Greenmarch within days—soft hands, hard eyes—escorted by mercenaries with clean armor and no banners. Tariffs go up like proclamations. Fines arrive like laws. Every crossing becomes a line item.\n\nAldric hates it openly. He calls it a leash, and he\'s right. But it\'s a silk leash, and cutting silk makes you look like the brute.\n\nThessaly says little. She watches the fee schedules the way a druid watches blight spread: slow, methodical, hard to uproot.\n\nThe first complaint to the Hall isn\'t from Greenmarch. It\'s from a magistrate three provinces away. "If Ember can audit a Pass," the letter asks, "what stops them auditing my roads next?"\n\nThat afternoon, Renzo sends you a docket index, beautifully organized. Three disputes are circled. A fourth circle is drawn later, in a different ink.\n\nSomeone else already has access to your desk.',
+    text: 'The Pass stays open. That\'s what the city will hear.\n\nIt stays open because Ember has turned it into a counter.\n\nAuditors arrive in Greenmarch within days—soft hands, hard eyes—escorted by mercenaries with clean armor and no banners. Tariffs go up like notices. Fines arrive like invoices. Every crossing gets a receipt number, and the numbers start to matter more than names.\n\nAldric calls it a leash. He\'s right. A leash made of forms is harder to cut than rope.\n\nThessaly sends no protest. She sends a single pressed leaf in a sealed envelope. The leaf is stamped with an Ember receipt mark.\n\nThe first complaint to the Hall isn\'t from Greenmarch. It\'s from a magistrate three provinces away. "If Ember can audit a Pass," the letter asks, "what stops them auditing my roads next?"\n\nThat afternoon, Renzo sends you a docket index, beautifully organized. Three disputes are circled. A fourth circle is drawn later, in a different ink.\n\nSomeone else already has access to your desk.',
     choices: [
       {
         id: 'summit-aftermath-ember-web-to-act2',
@@ -2135,7 +2135,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-embers-fall-ledger': {
     id: 'summit-aftermath-embers-fall-ledger',
     speaker: 'Narrator',
-    text: 'Ember leaves the Hall with their smiles cracked and their escorts suddenly careful. The ledger trail sits in the minutes like a fuse.\n\nThe clerks move fast: seals assigned, witnesses named, inventories demanded. Every Ember office in the city becomes a room full of gloves and ink—because once the Hall takes from Ember, everyone wonders if it will take from them.\n\nAldric wants to call it justice. He also wants soldiers at every door that matters. You can see him measuring where the Hall ends and force begins.\n\nThessaly doesn\'t celebrate. She watches the corridor traffic. "Coin doesn\'t vanish," she says. "It finds a new pocket."\n\nThat night an archive annex burns—small, contained, almost courteous. The fire eats one shelf and leaves the rest.\n\nMaren Vale brings you a dish of ash and the shelf list the annex kept. The burned section wasn\'t history. It was appointments: names of clerks authorized to apply Hall seals.\n\nSomeone isn\'t destroying proof. They\'re clearing the way.',
+    text: 'Ember leaves the Hall with their smiles cracked and their escorts suddenly careful. The ledger trail sits in the minutes like a fuse.\n\nThe clerks move fast: seals assigned, witnesses named, inventories demanded. Every Ember office in the city becomes a room full of gloves and ink—because once the Hall takes from Ember, everyone wonders if it will take from them.\n\nAldric wants soldiers at every door that matters. He calls it protection. It looks like occupation in clean boots.\n\nThessaly says nothing. A sprig of green appears on the windowsill of the seal registry by morning, placed there like a marker.\n\nThat night an archive annex burns—small, contained, almost courteous. The fire eats one shelf and leaves the rest.\n\nMaren Vale brings you a dish of ash and the shelf list the annex kept. The burned section wasn\'t history. It was appointments: names of clerks authorized to apply Hall seals.\n\nIf the next forgery arrives, it will arrive as policy.',
     choices: [
       {
         id: 'summit-aftermath-embers-fall-ledger-to-act2',
@@ -2149,7 +2149,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-embers-fall-manifest': {
     id: 'summit-aftermath-embers-fall-manifest',
     speaker: 'Narrator',
-    text: 'The docket number becomes a weapon the moment you speak it aloud. The manifests don\'t just implicate Ember—they implicate the Hall\'s machinery: stamped approvals, waved-through shipments, clerks doing what the system trained them to do.\n\nAfter the summit, every office in Concord discovers a passion for "procedure." People who never learned a scribe\'s name start asking who signed which page, who initialed which margin, who looked away for a heartbeat.\n\nRenzo\'s delegation is expelled, but the docket trail doesn\'t end with him. It threads into corridors you\'ve walked past a hundred times.\n\nBy evening, two petitions hit your desk within minutes of each other. Both demand audits of their rivals. Both attach copies of the Greenmarch minutes. Each has different passages underlined.\n\nThey aren\'t asking you to judge a war. They\'re asking you to loan out the Hall\'s knife and call it oversight.',
+    text: 'The docket number becomes a weapon the moment you speak it aloud. The manifests don\'t just implicate Ember—they implicate the Hall\'s machinery: stamped approvals, waved-through shipments, clerks doing what the system trained them to do.\n\nAfter the summit, every office in Concord discovers a passion for "procedure." People who never learned a scribe\'s name start asking who initialed which margin, who filed which attachment, who learned to look away.\n\nRenzo\'s delegation is expelled, but the docket trail doesn\'t end with him. It threads into corridors you\'ve walked past a hundred times.\n\nBy evening, two petitions hit your desk within minutes of each other. Both demand audits of their rivals. Both attach copies of the Greenmarch minutes. Each has different passages underlined.\n\nAldric calls it cleansing. Thessaly calls it hunger wearing a mask.\n\nIt\'s both.\n\nThey aren\'t asking you to judge a war. They\'re asking you to loan out the Hall\'s knife and call it oversight.',
     choices: [
       {
         id: 'summit-aftermath-embers-fall-manifest-to-act2',
@@ -2163,7 +2163,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'summit-aftermath-embers-fall-maps': {
     id: 'summit-aftermath-embers-fall-maps',
     speaker: 'Narrator',
-    text: 'You broke Ember with paper. Not ledgers. Not confessions. Cartography—proof that someone redrew the world so blood would spill where it paid.\n\nRenzo leaves the Hall smiling anyway, smaller and sharper. He\'ll find another mapmaker. Another border.\n\nThe inquiry begins at once. Survey seals checked against older seals. Border stones inspected. Clerks arguing whether a line moved a thumb\'s width or a nation\'s.\n\nAldric wants riders at every cartographers\' guild. Thessaly wants the guilds burned and the roads forgotten.\n\nThat night, a junior scribe is found in the archive corridor with ink on his fingers and fear in his eyes. Alive. Paid.\n\n"I only copied what they gave me," he says. "I only copied."\n\nIn his pocket is the receipt—Ember coin, and a Hall office code written in the clerk\'s own shorthand.\n\nThe forgery wasn\'t smuggled in from outside. It walked through a familiar door.',
+    text: 'You broke Ember with paper. Not ledgers. Not confessions. Cartography—proof that someone redrew the world so blood would spill where it paid.\n\nRenzo leaves the Hall smiling anyway, smaller and sharper. He\'ll find another mapmaker. Another border.\n\nThe inquiry begins at once. Survey seals checked against older seals. Border stones inspected. Clerks arguing whether a line moved a thumb\'s width or a nation\'s.\n\nAldric wants riders at every cartographers\' guild. Thessaly wants the guilds burned and the roads forgotten.\n\nThat night, a junior scribe is found in the archive corridor with ink on his fingers and fear in his eyes. Alive. Paid.\n\n"I only copied what they gave me," he says. "I only copied."\n\nIn his pocket is the receipt—Ember coin, and a Hall office code written in the clerk\'s own shorthand.\n\nThat code doesn\'t name a person. It names a room.\n\nThe forgery wasn\'t smuggled in from outside. It was filed.',
     choices: [
       {
         id: 'summit-aftermath-embers-fall-maps-to-act2',
@@ -2177,7 +2177,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-router': {
     id: 'act2-demo-outro-router',
     speaker: 'Narrator',
-    text: 'You stack the packets and tie the ribbon. The workday ends on the schedule the Hall pretends it controls.\n\nIn the corridor outside, clerks keep copying the Greenmarch minutes. Couriers keep running. Somebody is already using your decision as an excuse, or as a threat.\n\nIf you stop here, the realm doesn\'t.',
+    text: 'You stack the packets and tie the ribbon. The Hall likes endings. It gets them by stamping the right box.\n\nIn the corridor outside, clerks keep copying the Greenmarch minutes. Couriers keep running. Your decision is already traveling ahead of you, folded into other people\'s letters.\n\nYou can stop reading. You can\'t stop the mail.',
     choices: [
       {
         id: 'act2-demo-outro-route-breakdown',
@@ -2256,7 +2256,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-breakdown': {
     id: 'act2-demo-outro-breakdown',
     speaker: 'Narrator',
-    text: 'You sign the summary and hate how clean it looks. "No treaty. Elevated tensions. Likely mobilization."\n\nIn the Hall\'s main stairwell, the bell rope hangs within reach. It was meant to call for debate. It can also call for emergency session—fast votes, hard decisions.\n\nSomeone will pull it soon. The rope doesn\'t care who is standing underneath.',
+    text: 'You sign the summary. "No treaty. Elevated tensions. Likely mobilization."\n\nIn the Hall\'s main stairwell, the bell rope hangs within reach. It calls emergency session as easily as it calls debate.\n\nThe frayed section near the knot is new. Someone has been testing it.',
     choices: [
       {
         id: 'act2-demo-outro-breakdown-to-end',
@@ -2269,7 +2269,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-compact': {
     id: 'act2-demo-outro-compact',
     speaker: 'Narrator',
-    text: 'You file the report under "Greenmarch Compact" and add a second page: violations to watch for.\n\nAt the top you write three words: TOLL STATION CONSTRUCTION.\n\nMaren Vale\'s arrowhead sits beside the inkpot while you draft the summons for the first joint council meeting. Dawn. Neutral chamber. Three seats reserved.\n\nThe fourth seat—the one for the Hall—has no name on it yet. That makes it the most dangerous chair in the room.',
+    text: 'You file the report under "Greenmarch Compact" and add a second page: violations to watch for.\n\nAt the top you write three words: TOLL STATION CONSTRUCTION.\n\nMaren Vale\'s arrowhead sits beside the inkpot while you draft summons for the first joint council meeting. Dawn. Neutral chamber. Three seats reserved.\n\nThe fourth seat—the Hall\'s seat—has no name. Someone will try to sit in it anyway.',
     choices: [
       {
         id: 'act2-demo-outro-compact-to-end',
@@ -2282,7 +2282,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-compact-accord': {
     id: 'act2-demo-outro-compact-accord',
     speaker: 'Narrator',
-    text: 'You file the report under "Precedent" and attach the Archivist\'s slip to the back.\n\nShelf mark: Greenmarch accord.\nBorrowed: today.\nSigned out: in your handwriting.\n\nEither you\'re about to be accused of tampering with the record, or someone is about to argue with a forged version of your own authority.\n\nBoth start the same way: with a clerk who knows where you keep your seal.',
+    text: 'You file the report under "Precedent" and attach the Archivist\'s slip to the back.\n\nShelf mark: Greenmarch accord.\nBorrowed: today.\nSigned out: in your handwriting.\n\nIt isn\'t proof yet. It\'s a warning.\n\nSomeone can borrow law under your name.',
     choices: [
       {
         id: 'act2-demo-outro-compact-accord-to-end',
@@ -2295,7 +2295,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-iron-march': {
     id: 'act2-demo-outro-iron-march',
     speaker: 'Narrator',
-    text: 'You write "authorized" and the page turns into logistics.\n\nQuartermasters love authority. They love it most when it\'s unsigned.\n\nOn your blotter sits the requisition stack: grain, bandages, lamp oil—already stamped. All it needs is a signature that looks enough like yours.\n\nBy the time you set the pen down, the march has a schedule.',
+    text: 'You write "authorized" and the page turns into logistics.\n\nOn your blotter sits Form 12-C again—grain, bandages, lamp oil—already stamped. The signature line waits like an open mouth.\n\nIron doesn\'t need you to believe in the march. It needs you to be legible.',
     choices: [
       {
         id: 'act2-demo-outro-iron-march-to-end',
@@ -2308,7 +2308,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-verdant-seal': {
     id: 'act2-demo-outro-verdant-seal',
     speaker: 'Narrator',
-    text: 'You write "sealed" and immediately receive three complaints: one from caravan guilds, one from Iron, one from Ember.\n\nThe Ember letter includes a map of bypass routes with neat annotations and a price list for "guides." Ember doesn\'t fight the forest. It prices it.\n\nIn the margin, a clerk has written: "Urgent: warrant request to clear new road."\n\nThe Pass vanished. The pressure didn\'t. It just moved to your door.',
+    text: 'You write "sealed" and immediately receive three complaints: one from caravan guilds, one from Iron, one from Ember.\n\nThe Ember letter includes a map of bypass routes with neat annotations and a price list for "guides." Ember doesn\'t fight the forest. It prices it.\n\nThe Iron letter is shorter: REQUEST CLEARANCE TO CUT.\n\nIn the margin, a clerk has written: "Urgent: warrant request to clear new road."\n\nThe Pass vanished. The paperwork multiplied.',
     choices: [
       {
         id: 'act2-demo-outro-verdant-seal-to-end',
@@ -2321,7 +2321,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-ember-web': {
     id: 'act2-demo-outro-ember-web',
     speaker: 'Narrator',
-    text: 'You file the report under "Arbitration" and the word tastes like a contract you didn\'t read closely enough.\n\nAttached is Ember\'s fee schedule—stamped with a seal that looks uncomfortably similar to the Hall\'s.\n\nIf you let that stamp stand, merchants will carry it everywhere. If you challenge it, they\'ll ask why the Hall signed the first one.\n\nRenzo\'s handwriting sits at the bottom: "Next docket?"',
+    text: 'You file the report under "Arbitration."\n\nAttached is Ember\'s fee schedule, stamped with a seal close enough to the Hall\'s to pass at a glance.\n\nIn the margin, someone has penciled: "Rate applies retroactively."\n\nRenzo\'s handwriting sits at the bottom: "Next docket?"',
     choices: [
       {
         id: 'act2-demo-outro-ember-web-to-end',
@@ -2334,7 +2334,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-embers-fall-ledger': {
     id: 'act2-demo-outro-embers-fall-ledger',
     speaker: 'Narrator',
-    text: 'You file the report with the ash dish still on your desk.\n\nEmber is out. The Hall is exposed. Every clerk in the building suddenly has something to lose.\n\nSomeone tried to burn the seal registry. Someone else will try a quieter method: a transfer request, a sick note, a missing page.\n\nYou close the file and know where the next fight will be: the rooms with no witnesses.',
+    text: 'You file the report with the ash dish still on your desk.\n\nEmber is out. The Hall is exposed. Every clerk in the building suddenly has something to lose.\n\nThe seal registry gets a new lock by afternoon. The keys are numbered. The key log begins with your name.\n\nSomeone has already decided how to turn that into leverage.',
     choices: [
       {
         id: 'act2-demo-outro-embers-fall-ledger-to-end',
@@ -2347,7 +2347,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-embers-fall-manifest': {
     id: 'act2-demo-outro-embers-fall-manifest',
     speaker: 'Narrator',
-    text: 'You file the report under "docket fraud" and add a note in the margin: CHECK WHO STAMPED IT.\n\nThe manifests proved a simple thing: violence can ride through the Hall on a form.\n\nTomorrow\'s petitions will arrive dressed the same way—proper language, clean margins, a knife in the attachment.',
+    text: 'You file the report under "docket fraud" and add a note in the margin: CHECK WHO STAMPED IT.\n\nThe manifests proved a simple thing: violence can ride through the Hall on a form.\n\nTomorrow\'s petitions will arrive dressed the same way—clean margins, proper language.\n\nYou\'ll have to read them like threats.',
     choices: [
       {
         id: 'act2-demo-outro-embers-fall-manifest-to-end',
@@ -2360,7 +2360,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
   'act2-demo-outro-embers-fall-maps': {
     id: 'act2-demo-outro-embers-fall-maps',
     speaker: 'Narrator',
-    text: 'You file the report under "forgery" and keep the receipt you took from the junior scribe.\n\nNot for the coin. For the office code.\n\nIf the Hall\'s own shorthand can be bought, the next forgery won\'t come with Ember seals and flashy ink. It will come in the margin, in a familiar hand, on a form everyone trusts.\n\nYou set the report aside and start a new list: office codes and who has access to them.',
+    text: 'You file the report under "forgery" and keep the receipt you took from the junior scribe.\n\nNot for the coin. For the office code.\n\nYou start a new list: office codes and who has access to them. The list is already longer than it should be.',
     choices: [
       {
         id: 'act2-demo-outro-embers-fall-maps-to-end',
