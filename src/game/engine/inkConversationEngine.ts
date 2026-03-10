@@ -28,114 +28,118 @@ const startInkStory = (base: GameState) => {
   };
 };
 
-export const inkConversationEngine: ConversationEngine = {
-  createInitialState() {
-    return tsConversationEngine.createInitialState();
-  },
+export function createInkConversationEngine(fallbackEngine: ConversationEngine = tsConversationEngine): ConversationEngine {
+  return {
+    createInitialState() {
+      return fallbackEngine.createInitialState();
+    },
 
-  startNewGame() {
-    const base = tsConversationEngine.createInitialState();
+    startNewGame() {
+      const base = fallbackEngine.createInitialState();
 
-    const started = startInkStory(base);
+      const started = startInkStory(base);
 
-    return {
-      ...base,
-      currentScene: 'game',
-      currentDialogue: started.node,
-      log: [TS_OPENING_LOG_LINE],
-      ink: {
-        storyId: INK_STORY_ID,
-        storyVersion: getInkStoryVersion(INK_STORY_ID) ?? undefined,
-        stateJson: started.story.state.ToJson(),
-      },
-    };
-  },
+      return {
+        ...base,
+        currentScene: 'game',
+        currentDialogue: started.node,
+        log: [TS_OPENING_LOG_LINE],
+        ink: {
+          storyId: INK_STORY_ID,
+          storyVersion: getInkStoryVersion(INK_STORY_ID) ?? undefined,
+          stateJson: started.story.state.ToJson(),
+        },
+      };
+    },
 
-  applyChoice(prev: GameState, choice: DialogueChoice): GameState {
-    if (!isInkActive(prev)) {
-      return tsConversationEngine.applyChoice(prev, choice);
-    }
+    applyChoice(prev: GameState, choice: DialogueChoice): GameState {
+      if (!isInkActive(prev)) {
+        return fallbackEngine.applyChoice(prev, choice);
+      }
 
-    const ink = prev.ink;
-    if (!ink) return tsConversationEngine.applyChoice(prev, choice);
+      const ink = prev.ink;
+      if (!ink) return fallbackEngine.applyChoice(prev, choice);
 
-    const story = createInkStory(ink.storyId, ink.stateJson);
-    syncGameStateToInkVariables(story, prev);
+      const story = createInkStory(ink.storyId, ink.stateJson);
+      syncGameStateToInkVariables(story, prev);
 
-    const choiceIdx = story.currentChoices.findIndex(c => {
-      const idTag = c.tags?.find(t => t.trim().startsWith('id:')) ?? null;
-      const id = idTag ? idTag.trim().slice('id:'.length).trim() : null;
-      return id === choice.id;
-    });
+      const choiceIdx = story.currentChoices.findIndex(c => {
+        const idTag = c.tags?.find(t => t.trim().startsWith('id:')) ?? null;
+        const id = idTag ? idTag.trim().slice('id:'.length).trim() : null;
+        return id === choice.id;
+      });
 
-    if (choiceIdx < 0) {
-      // Fallback: if ids mismatch, let the TS engine attempt best-effort resolution.
-      const advanced = tsConversationEngine.applyChoice(prev, choice);
+      if (choiceIdx < 0) {
+        // Fallback: if ids mismatch, let the fallback engine attempt best-effort resolution.
+        const advanced = fallbackEngine.applyChoice(prev, choice);
+        if (advanced === prev) return prev;
+        return { ...advanced, ink: null };
+      }
+
+      const chosen = story.currentChoices[choiceIdx];
+      const gotoTag = chosen.tags?.find(t => t.trim().startsWith('goto:')) ?? null;
+      const gotoId = gotoTag ? gotoTag.trim().slice('goto:'.length).trim() : null;
+
+      if (gotoId) {
+        const advanced = fallbackEngine.applyChoice(prev, { ...choice, nextNodeId: gotoId });
+        if (advanced === prev) return prev;
+        return { ...advanced, ink: null };
+      }
+
+      // Stay in Ink: apply state transitions (effects/logs/events/etc.) first.
+      const advanced = fallbackEngine.applyChoice(prev, { ...choice, nextNodeId: null });
       if (advanced === prev) return prev;
-      return { ...advanced, ink: null };
-    }
 
-    const chosen = story.currentChoices[choiceIdx];
-    const gotoTag = chosen.tags?.find(t => t.trim().startsWith('goto:')) ?? null;
-    const gotoId = gotoTag ? gotoTag.trim().slice('goto:'.length).trim() : null;
+      // Then advance Ink.
+      story.ChooseChoiceIndex(choiceIdx);
 
-    if (gotoId) {
-      const advanced = tsConversationEngine.applyChoice(prev, { ...choice, nextNodeId: gotoId });
-      if (advanced === prev) return prev;
-      return { ...advanced, ink: null };
-    }
+      // Ensure Ink conditionals that depend on game state (eg reputation mirrors) see the updated values.
+      syncGameStateToInkVariables(story, advanced);
 
-    // Stay in Ink: apply TS state transitions (effects/logs/events/etc.) first.
-    const advanced = tsConversationEngine.applyChoice(prev, { ...choice, nextNodeId: null });
-    if (advanced === prev) return prev;
+      const node = buildDialogueNodeFromInk(story);
 
-    // Then advance Ink.
-    story.ChooseChoiceIndex(choiceIdx);
+      return {
+        ...advanced,
+        currentDialogue: node,
+        ink: {
+          storyId: ink.storyId,
+          storyVersion: ink.storyVersion ?? getInkStoryVersion(ink.storyId) ?? undefined,
+          stateJson: story.state.ToJson(),
+        },
+      };
+    },
 
-    // Ensure Ink conditionals that depend on game state (eg reputation mirrors) see the updated values.
-    syncGameStateToInkVariables(story, advanced);
+    endTurn(prev: GameState): GameState {
+      return fallbackEngine.endTurn(prev);
+    },
 
-    const node = buildDialogueNodeFromInk(story);
+    getChoiceLockedFlags(state: GameState) {
+      if (!state.currentDialogue) return null;
 
-    return {
-      ...advanced,
-      currentDialogue: node,
-      ink: {
-        storyId: ink.storyId,
-        storyVersion: ink.storyVersion ?? getInkStoryVersion(ink.storyId) ?? undefined,
-        stateJson: story.state.ToJson(),
-      },
-    };
-  },
+      if (isInkActive(state)) {
+        return getInkChoiceLockedFlags(state, state.currentDialogue);
+      }
 
-  endTurn(prev: GameState): GameState {
-    return tsConversationEngine.endTurn(prev);
-  },
+      return fallbackEngine.getChoiceLockedFlags?.(state) ?? null;
+    },
 
-  getChoiceLockedFlags(state: GameState) {
-    if (!state.currentDialogue) return null;
+    getChoiceUiHints(state: GameState) {
+      if (!state.currentDialogue) return null;
 
-    if (isInkActive(state)) {
-      return getInkChoiceLockedFlags(state, state.currentDialogue);
-    }
+      const lockedFlags = isInkActive(state)
+        ? getInkChoiceLockedFlags(state, state.currentDialogue)
+        : (fallbackEngine.getChoiceLockedFlags?.(state) ?? null);
 
-    return tsConversationEngine.getChoiceLockedFlags?.(state) ?? null;
-  },
+      if (!lockedFlags) return null;
 
-  getChoiceUiHints(state: GameState) {
-    if (!state.currentDialogue) return null;
+      return state.currentDialogue.choices.map((choice, i) => ({
+        locked: lockedFlags[i] ?? false,
+        requiredReputation: choice.requiredReputation ?? null,
+        effects: choice.effects,
+        revealsInfo: choice.revealsInfo ?? null,
+      }));
+    },
+  };
+}
 
-    const lockedFlags = isInkActive(state)
-      ? getInkChoiceLockedFlags(state, state.currentDialogue)
-      : (tsConversationEngine.getChoiceLockedFlags?.(state) ?? null);
-
-    if (!lockedFlags) return null;
-
-    return state.currentDialogue.choices.map((choice, i) => ({
-      locked: lockedFlags[i] ?? false,
-      requiredReputation: choice.requiredReputation ?? null,
-      effects: choice.effects,
-      revealsInfo: choice.revealsInfo ?? null,
-    }));
-  },
-};
+export const inkConversationEngine: ConversationEngine = createInkConversationEngine(tsConversationEngine);

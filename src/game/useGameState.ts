@@ -15,7 +15,9 @@ import {
   loadSummitGateCheckpoint,
   saveSummitGateCheckpoint,
 } from './storage';
-import { inkConversationEngine } from './engine/inkConversationEngine';
+import { createInkConversationEngine, inkConversationEngine } from './engine/inkConversationEngine';
+import { createUqmWasmConversationEngine } from './engine/uqmWasmConversationEngine';
+import { loadUqmWasmRuntime } from './engine/uqmWasmRuntime';
 import { createInkStory, buildDialogueNodeFromInk, getInkStoryVersion, syncGameStateToInkVariables } from './engine/inkStory';
 import { buildEncounterDialogueNode } from './encounters';
 import { applyManagementAction } from './management/applyManagementAction';
@@ -62,7 +64,26 @@ const HUB_NODE_IDS = new Set(Object.values(CHAPTERS).map(ch => ch.hubNodeId));
 export function useGameState() {
   const engineRef = useRef(inkConversationEngine);
 
-  const [engineLabel] = useState<'INK'>('INK');
+  const [engineLabel, setEngineLabel] = useState<string>('Ink (TS)');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadUqmWasmRuntime()
+      .then(uqm => {
+        if (cancelled) return;
+        const wasmEngine = createUqmWasmConversationEngine(uqm);
+        engineRef.current = createInkConversationEngine(wasmEngine);
+        setEngineLabel('Ink + WASM');
+      })
+      .catch(() => {
+        // Best-effort: the app will keep using the TypeScript conversation core.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const [state, setState] = useState<GameState>(() => engineRef.current.createInitialState());
   const [saveSlots, setSaveSlots] = useState<SaveSlotInfo[]>(() => listSaveSlots());
