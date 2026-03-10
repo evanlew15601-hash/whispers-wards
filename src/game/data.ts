@@ -304,6 +304,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'hub2-continue',
         text: 'Start with the summit minutes (recommended).',
+        repeatable: false,
         effects: [],
         nextNodeId: 'act2-summit-minutes',
       },
@@ -314,38 +315,37 @@ export const dialogueTree: Record<string, DialogueNode> = {
         nextNodeId: 'act2-recap',
       },
       {
-        id: 'hub2-minutes',
-        text: 'Read the summit minutes and the first reactions they sparked.',
-        effects: [],
-        nextNodeId: 'act2-summit-minutes',
-      },
-      {
         id: 'hub2-clerks',
         text: 'Meet the Hall clerks and see which disputes are ripening into crises.',
+        repeatable: false,
         effects: [],
         nextNodeId: 'act2-clerks',
       },
       {
         id: 'hub2-briefing',
         text: 'Review new petitions arriving from the realm\'s edges.',
+        repeatable: false,
         effects: [],
         nextNodeId: 'act2-briefing',
       },
       {
         id: 'hub2-aldric',
         text: 'Summon Vane. Hear how the Pact intends to interpret the record.',
+        repeatable: false,
         effects: [],
         nextNodeId: 'act2-aldric',
       },
       {
         id: 'hub2-thessaly',
         text: 'Send for Thessaly. Ask what the forest is already preparing for.',
+        repeatable: false,
         effects: [],
         nextNodeId: 'act2-thessaly',
       },
       {
         id: 'hub2-renzo',
         text: 'Summon Renzo. Merchants never stop counting.',
+        repeatable: false,
         hideWhenHasAnySecrets: [
           'You publicly accused the Ember Throne, citing ledger entries that trace coin to violence.',
           'You publicly accused the Ember Throne, citing manifests and a Hall docket trail.',
@@ -357,6 +357,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'hub2-audit',
         text: 'Oversee the audit and the orders that follow.',
+        repeatable: false,
         hideWhenLockedBySecrets: true,
         requiresAnySecrets: [
           'You publicly accused the Ember Throne, citing ledger entries that trace coin to violence.',
@@ -369,6 +370,7 @@ export const dialogueTree: Record<string, DialogueNode> = {
       {
         id: 'hub2-archives',
         text: 'Return to the archives and look for older patterns in older ink.',
+        repeatable: false,
         effects: [],
         nextNodeId: 'act2-archives',
       },

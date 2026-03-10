@@ -66,6 +66,10 @@ const HubPanel = ({
     if (knownSecrets.includes('override')) return node.choices;
 
     const candidates = node.choices.filter(choice => {
+      if (choice.repeatable === false && selectedChoiceIds.includes(choice.id)) {
+        return false;
+      }
+
       if (choice.hideWhenHasAnySecrets?.length) {
         const shouldHide = choice.hideWhenHasAnySecrets.some(s => knownSecrets.includes(s));
         if (shouldHide) return false;
