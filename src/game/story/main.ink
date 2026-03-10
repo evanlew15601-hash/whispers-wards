@@ -17,7 +17,7 @@ Dusk deepens over Concord Hall, torchlight pooling in the carved stone like molt
 A man in iron-gray livery waits at the threshold of the council chamber, posture sharp as a drawn blade.
 "Envoy," he says. "Seventeen are dead along the Greenmarch Pass. The Verdant Court blames the Iron Pact. The Ember Throne laughs behind its curtains." His gaze pins you. "Which did you ride in on?"
 
-+ ["Words first, Commander. Let me hear the Court before we draw steel."] #id:diplomatic #rep:iron-pact:-5 #rep:verdant-court:10
++ ["Words first, Commander. Let me hear the Court before we draw steel."] #id:diplomatic #rep:iron-pact:-5 #rep:verdant-court:10 #res:influence:+1 #milestone:ink:diplomatic-open
   -> aldric_diplomatic
 
 + ["Tell me what you need—without the ceremony."] #id:pragmatic #rep:iron-pact:10

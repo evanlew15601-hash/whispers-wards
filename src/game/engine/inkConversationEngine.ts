@@ -136,6 +136,7 @@ export function createInkConversationEngine(fallbackEngine: ConversationEngine =
         locked: lockedFlags[i] ?? false,
         requiredReputation: choice.requiredReputation ?? null,
         effects: choice.effects,
+        gameEffects: choice.gameEffects ?? [],
         revealsInfo: choice.revealsInfo ?? null,
       }));
     },

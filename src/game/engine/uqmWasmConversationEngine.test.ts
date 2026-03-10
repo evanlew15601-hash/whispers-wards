@@ -81,6 +81,29 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextWasm2.rngSeed).toBe(nextTs2.rngSeed);
   });
 
+  it('applies gameEffects on the WASM engine path (outside the wasm core)', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+    const seeded = { ...start, rngSeed: 123456789 };
+
+    const choice0 = seeded.currentDialogue!.choices[0];
+
+    const decorated = {
+      ...choice0,
+      gameEffects: [
+        { kind: 'resource' as const, resourceId: 'intel' as const, delta: 1 },
+        { kind: 'log' as const, message: '[QA] wasm extra' },
+      ],
+    };
+
+    const nextTs = tsConversationEngine.applyChoice(seeded, decorated);
+    const nextWasm = wasmEngine.applyChoice(seeded, decorated);
+
+    expect(nextWasm.resources).toEqual(nextTs.resources);
+    expect(nextWasm.log).toContain('[QA] wasm extra');
+  });
+
   it('can transition out of the game scene when a choice sets nextScene', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 

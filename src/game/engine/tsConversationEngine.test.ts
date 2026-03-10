@@ -146,6 +146,38 @@ describe('tsConversationEngine', () => {
     expect(next.knownSecrets).toEqual(['dup']);
   });
 
+  it('applies non-reputation gameEffects (resources, milestones, projects, world effects)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const baseTension = initial.world.tensions['iron-pact']?.['verdant-court'] ?? 0;
+
+    const choice = {
+      id: 'qa-game-effects',
+      text: 'Apply QA game effects',
+      effects: [],
+      gameEffects: [
+        { kind: 'resource' as const, resourceId: 'coin' as const, delta: 2 },
+        { kind: 'milestone:add' as const, id: 'qa-milestone' },
+        { kind: 'project:start' as const, templateId: 'scribe-audit' },
+        { kind: 'tension' as const, a: 'iron-pact', b: 'verdant-court', delta: 5 },
+        { kind: 'log' as const, message: '[QA] extra log' },
+      ],
+      nextNodeId: null,
+    };
+
+    const next = tsConversationEngine.applyChoice(initial, choice);
+
+    expect(next.resources.coin).toBe(initial.resources.coin + 2);
+    expect(next.milestones).toContain('qa-milestone');
+    expect(next.projects.some(p => p.templateId === 'scribe-audit')).toBe(true);
+
+    const nextTension = next.world.tensions['iron-pact']?.['verdant-court'] ?? 0;
+    expect(nextTension).toBe(baseTension + 5);
+
+    expect(next.log).toContain('> Apply QA game effects');
+    expect(next.log).toContain('[QA] extra log');
+  });
+
   it('allows calling the Hall summit without requiring prior leverage (demo-friendly)', () => {
     const initial = tsConversationEngine.startNewGame();
 

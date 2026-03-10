@@ -1,9 +1,11 @@
 import type { DialogueChoice, GameState } from '../types';
+import type { GameEffect } from '../effects';
 
 export type ChoiceUiHint = {
   locked: boolean;
   requiredReputation: { factionId: string; min: number } | null;
   effects: { factionId: string; reputationChange: number }[];
+  gameEffects: GameEffect[];
   revealsInfo: string | null;
 };
 

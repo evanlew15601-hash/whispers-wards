@@ -6,6 +6,7 @@ import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
 import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 import { evaluateChapterTransition, getChapter } from '../chapters';
+import { applyEffects } from '../effects';
 
 const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
@@ -195,8 +196,11 @@ function applyChoiceUsingWasm(
   if (!prev.currentDialogue) return null;
 
   // WASM engine applies reputation deltas inside the wasm core. For already-decided
-  // rep-affecting choices, fall back to the TS engine which suppresses effects.
-  if (isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log)) {
+  // choices, fall back to the TS engine which suppresses effects.
+  if (
+    isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log) ||
+    (choice.repeatable !== true && prev.selectedChoiceIds.includes(choice.id))
+  ) {
     return null;
   }
 
@@ -325,7 +329,7 @@ function applyChoiceUsingWasm(
     ...newlyLearned.map(s => `[INTEL] Secret learned: ${s}`),
   ];
 
-  return {
+  const out: GameState = {
     ...prev,
     factions: newFactions,
     currentDialogue: nextDialogue,
@@ -335,6 +339,10 @@ function applyChoiceUsingWasm(
     stepNumber: prev.stepNumber + 1,
     log: newLog,
   };
+
+  const gameEffects = (choice.gameEffects ?? []).filter(eff => eff.kind !== 'rep' && eff.kind !== 'secret:add');
+
+  return gameEffects.length ? applyEffects(out, gameEffects) : out;
 }
 
 /**
@@ -479,6 +487,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
           locked,
           requiredReputation: choice.requiredReputation ?? null,
           effects: choice.effects,
+          gameEffects: choice.gameEffects ?? [],
           revealsInfo: choice.revealsInfo ?? null,
         };
       });
