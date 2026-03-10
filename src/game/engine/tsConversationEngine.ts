@@ -5,7 +5,7 @@ import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import { getChoiceLockReasons, isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 import { applyEffects, type GameEffect } from '../effects';
 import { evaluateChapterTransition, getChapter } from '../chapters';
 import { advanceProjectsOneTurn } from '../projects';
@@ -127,9 +127,9 @@ const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
 
   // Only block genuinely unavailable choices. If the player already made this decision in
   // the past, keep it selectable and suppress one-shot effects.
-  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds) && !alreadyDecided) {
-    return prev;
-  }
+  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds, prev.resources) && !alreadyDecided) {
+      return prev;
+    }
 
   const effectiveChoice = alreadyDecided ? suppressOneShotEffects(choice) : choice;
 
@@ -306,13 +306,14 @@ export const tsConversationEngine: ConversationEngine = {
   getChoiceLockedFlags(state) {
     if (!state.currentDialogue) return null;
     return state.currentDialogue.choices.map(choice =>
-      isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds)
+      isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources)
     );
   },
   getChoiceUiHints(state) {
     if (!state.currentDialogue) return null;
     return state.currentDialogue.choices.map(choice => ({
-      locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
+      locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources),
+      lockReasons: getChoiceLockReasons(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources),
       requiredReputation: choice.requiredReputation ?? null,
       effects: choice.effects,
       gameEffects: choice.gameEffects ?? [],

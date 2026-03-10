@@ -2,6 +2,7 @@ import type { ConversationEngine } from './conversationEngine';
 import type { DialogueChoice, GameState } from '../types';
 
 import { tsConversationEngine, TS_OPENING_LOG_LINE } from './tsConversationEngine';
+import { getChoiceLockReasons } from '../choiceLocks';
 import {
   createInkStory,
   getInkStoryVersion,
@@ -134,6 +135,7 @@ export function createInkConversationEngine(fallbackEngine: ConversationEngine =
 
       return state.currentDialogue.choices.map((choice, i) => ({
         locked: lockedFlags[i] ?? false,
+        lockReasons: getChoiceLockReasons(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources),
         requiredReputation: choice.requiredReputation ?? null,
         effects: choice.effects,
         gameEffects: choice.gameEffects ?? [],

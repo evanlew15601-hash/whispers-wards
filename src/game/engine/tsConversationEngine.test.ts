@@ -178,6 +178,34 @@ describe('tsConversationEngine', () => {
     expect(next.log).toContain('[QA] extra log');
   });
 
+  it('locks choices that would spend unavailable resources (negative resource gameEffects)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const costChoice = {
+      id: 'qa-resource-cost',
+      text: 'Pay 1 coin',
+      effects: [],
+      gameEffects: [{ kind: 'resource' as const, resourceId: 'coin' as const, delta: -1 }],
+      nextNodeId: null,
+    };
+
+    const broke = {
+      ...initial,
+      resources: { ...initial.resources, coin: 0 },
+    };
+
+    expect(tsConversationEngine.applyChoice(broke, costChoice)).toBe(broke);
+
+    const hasCoin = {
+      ...initial,
+      resources: { ...initial.resources, coin: 1 },
+    };
+
+    const afterPay = tsConversationEngine.applyChoice(hasCoin, costChoice);
+    expect(afterPay).not.toBe(hasCoin);
+    expect(afterPay.resources.coin).toBe(0);
+  });
+
   it('allows calling the Hall summit without requiring prior leverage (demo-friendly)', () => {
     const initial = tsConversationEngine.startNewGame();
 

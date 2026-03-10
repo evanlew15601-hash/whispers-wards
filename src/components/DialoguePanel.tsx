@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import type { ComponentType, CSSProperties } from 'react';
 import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } from '@/game/engine/uqmTextWrap';
 import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
+import type { ChoiceLockReason } from '@/game/choiceLocks';
 import { useAudio } from '@/audio/useAudio';
 import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
 import type { GameEffect } from '@/game/effects';
@@ -86,6 +87,16 @@ const formatProofRequirement = (choice: Pick<DialogueChoice, 'requiresAllSecrets
   }
 
   return 'proof';
+};
+
+const proofRequirementFromLockReasons = (lockReasons: ChoiceLockReason[]) => {
+  const all = lockReasons.find(r => r.kind === 'secretsAll') as Extract<ChoiceLockReason, { kind: 'secretsAll' }> | undefined;
+  if (all?.missing.length) return all.missing.map(formatSecretLabel).join(' + ');
+
+  const any = lockReasons.find(r => r.kind === 'secretsAny') as Extract<ChoiceLockReason, { kind: 'secretsAny' }> | undefined;
+  if (any?.required.length) return any.required.map(formatSecretLabel).join(' / ');
+
+  return null;
 };
 
 const formatGameEffectLabel = (eff: GameEffect): { label: string; kind: 'good' | 'bad' | 'neutral' } | null => {
@@ -194,7 +205,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         if (shouldHide) return false;
       }
 
-      const secretsLocked = isChoiceLockedBySecrets(choice, knownSecrets);
+      const hint = choiceUiHintById.get(choice.id) ?? null;
+      const lockReasons = hint?.lockReasons ?? [];
+
+      const secretsLocked =
+        lockReasons.some(r => r.kind === 'secretsAll' || r.kind === 'secretsAny') ||
+        isChoiceLockedBySecrets(choice, knownSecrets);
 
       if (choice.hideWhenLockedBySecrets && secretsLocked) {
         return false;
@@ -206,13 +222,15 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         return false;
       }
 
-      const repReq = choice.requiredReputation ?? null;
-      const repLocked = Boolean(
-        repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
-      );
+      const repReq = hint?.requiredReputation ?? choice.requiredReputation ?? null;
+      const repLocked =
+        lockReasons.some(r => r.kind === 'reputation') ||
+        Boolean(repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min);
 
-      const locked = isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
-      if (locked && !repLocked && !secretsLocked) return false;
+      const resourceLocked = lockReasons.some(r => r.kind === 'resource');
+
+      const locked = hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+      if (locked && !repLocked && !secretsLocked && !resourceLocked) return false;
 
       return true;
     });
@@ -226,7 +244,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
 
     // Only hide already-decided responses when the player still has other options in this node.
     return undecided.length ? undecided : candidates;
-  }, [factions, knownSecrets, node.choices, selectedChoiceIds]);
+  }, [choiceUiHintById, factions, knownSecrets, lockedChoiceFlagById, node.choices, selectedChoiceIds]);
 
   const skipReveal = useCallback(() => {
     playSfx('ui.skip');
@@ -589,11 +607,18 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 ? false
                 : hint?.locked ?? lockedChoiceFlagById.get(choice.id) ?? isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
 
+              const lockReasons = hint?.lockReasons ?? [];
+
               const repReq = hint?.requiredReputation ?? choice.requiredReputation;
 
-              const repLocked = Boolean(
-                repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
+              const repLocked =
+                lockReasons.some(r => r.kind === 'reputation') ||
+                Boolean(repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min);
+
+              const resourceReasons = lockReasons.filter(
+                (r): r is Extract<ChoiceLockReason, { kind: 'resource' }> => r.kind === 'resource'
               );
+              const resourceLocked = Boolean(resourceReasons.length);
 
               const reqFactionName = repReq
                 ? factions.find(f => f.id === repReq.factionId)?.name ?? repReq.factionId.replace('-', ' ')
@@ -612,8 +637,15 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                 onChoice(choice);
               };
 
-              const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
-              const proofRequirement = secretsLocked ? formatProofRequirement(choice, knownSecrets) : null;
+              const secretsLocked =
+                locked &&
+                (lockReasons.some(r => r.kind === 'secretsAll' || r.kind === 'secretsAny') ||
+                  isChoiceLockedBySecrets(choice, knownSecrets));
+
+              const proofRequirement = secretsLocked
+                ? proofRequirementFromLockReasons(lockReasons) ?? formatProofRequirement(choice, knownSecrets)
+                : null;
+
               const historyLocked = alreadyDecided;
 
               const displayEffects = alreadyDecided
@@ -632,11 +664,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                   aria-keyshortcuts={hotkey ?? undefined}
                   title={
                     locked
-                      ? repReq
-                        ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}`
-                        : proofRequirement
-                          ? `Requires proof: ${proofRequirement}`
-                          : undefined
+                      ? [
+                          ...(repLocked && repReq ? [`Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}`] : []),
+                          ...(proofRequirement ? [`Requires proof: ${proofRequirement}`] : []),
+                          ...resourceReasons.map(r => `Requires ${r.resourceId} ≥ ${r.min} (you have ${r.current})`),
+                          ...(!repLocked && !proofRequirement && !resourceLocked ? ['Unavailable'] : []),
+                        ].join(' • ')
                       : undefined
                   }
                   onClick={onSelect}
@@ -678,7 +711,7 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                       </span>
 
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {repReq && locked && (
+                        {repReq && repLocked && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
                             <Lock className="h-3 w-3" />
                             requires {reqFactionName ?? repReq.factionId.replace('-', ' ')} ≥ {repReq.min}
@@ -692,9 +725,16 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                           </span>
                         )}
 
-                        {historyLocked && (
+                        {resourceLocked && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
                             <Lock className="h-3 w-3" />
+                            {resourceReasons.map(r => `${r.resourceId} ≥ ${r.min}`).join(', ')}
+                          </span>
+                        )}
+
+                        {historyLocked && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-muted-foreground">
+                            <Sparkles className="h-3 w-3" />
                             already decided
                           </span>
                         )}

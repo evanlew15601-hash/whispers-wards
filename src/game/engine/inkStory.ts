@@ -320,5 +320,5 @@ export const buildDialogueNodeFromInk = (story: Story): DialogueNode => {
 };
 
 export const getInkChoiceLockedFlags = (state: GameState, node: DialogueNode) => {
-  return node.choices.map(choice => isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds));
+  return node.choices.map(choice => isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources));
 };

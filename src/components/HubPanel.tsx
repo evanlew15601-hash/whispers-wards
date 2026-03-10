@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import type { DialogueChoice, DialogueNode, Faction } from '@/game/types';
-import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
+import { getChoiceLockReasons, isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
 import Tip from '@/ui/tips/Tip';
 import {
   AlertDialog,
@@ -29,6 +29,7 @@ interface HubPanelProps {
   onChoice: (choice: DialogueChoice) => void;
   knownSecrets: string[];
   factions: Faction[];
+  resources: Record<'coin' | 'influence' | 'supplies' | 'intel', number>;
   selectedChoiceIds: string[];
   crisisPending?: boolean;
   crisisTurnsLeft?: number | null;
@@ -40,6 +41,7 @@ const HubPanel = ({
   onChoice,
   knownSecrets,
   factions,
+  resources,
   selectedChoiceIds,
   crisisPending = false,
   crisisTurnsLeft = null,
@@ -87,22 +89,33 @@ const HubPanel = ({
         repReq && (factions.find(f => f.id === repReq.factionId)?.reputation ?? -Infinity) < repReq.min
       );
 
-      const locked = isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
-      if (locked && !repLocked && !secretsLocked) return false;
+      const lockReasons = getChoiceLockReasons(choice, factions, knownSecrets, selectedChoiceIds, resources);
+      const resourceLocked = lockReasons.some(r => r.kind === 'resource');
+
+      const locked = isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds, resources);
+      if (locked && !repLocked && !secretsLocked && !resourceLocked) return false;
 
       return true;
     });
 
-    const undecided = candidates.filter(choice => !isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets));
+    const undecided = candidates.filter(choice => {
+      const alreadyDecided =
+        isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets) ||
+        (selectedChoiceIds.includes(choice.id) && Boolean(choice.gameEffects?.length));
+      return !alreadyDecided;
+    });
     return undecided.length ? undecided : candidates;
-  }, [factions, knownSecrets, node.choices, selectedChoiceIds]);
+  }, [factions, knownSecrets, node.choices, resources, selectedChoiceIds]);
 
   const crisisUrgent = crisisPending && crisisTurnsLeft !== null && crisisTurnsLeft <= 1;
 
   const requestChoice = useCallback((choice: DialogueChoice) => {
-    const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+    const alreadyDecided =
+      isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets) ||
+      (selectedChoiceIds.includes(choice.id) && Boolean(choice.gameEffects?.length));
+
     const locked =
-      alreadyDecided ? false : isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+      alreadyDecided ? false : isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds, resources);
 
     if (locked) return;
 
@@ -113,7 +126,7 @@ const HubPanel = ({
 
     setPendingChoice(choice);
     setConfirmOpen(true);
-  }, [crisisUrgent, factions, knownSecrets, onChoice, selectedChoiceIds]);
+  }, [crisisUrgent, factions, knownSecrets, onChoice, resources, selectedChoiceIds]);
 
   const confirmChoice = useCallback(() => {
     if (pendingChoice) onChoice(pendingChoice);
@@ -208,9 +221,18 @@ const HubPanel = ({
           {visibleChoices.map((choice, i) => {
             const hotkey = i < 9 ? String(i + 1) : null;
 
-            const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+            const alreadyDecided =
+              isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets) ||
+              (selectedChoiceIds.includes(choice.id) && Boolean(choice.gameEffects?.length));
+
+            const lockReasons = getChoiceLockReasons(choice, factions, knownSecrets, selectedChoiceIds, resources);
+            const resourceReasons = lockReasons.filter(
+              (r): r is Extract<(typeof lockReasons)[number], { kind: 'resource' }> => r.kind === 'resource'
+            );
+            const resourceLocked = Boolean(resourceReasons.length);
+
             const locked =
-              alreadyDecided ? false : isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds);
+              alreadyDecided ? false : isChoiceLocked(choice, factions, knownSecrets, selectedChoiceIds, resources);
 
             const secretsLocked = locked && isChoiceLockedBySecrets(choice, knownSecrets);
 
@@ -224,11 +246,14 @@ const HubPanel = ({
               : null;
 
             const title = locked
-              ? repLocked && repReq
-                ? `Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}`
-                : secretsLocked
-                  ? 'Requires proof'
-                  : 'Unavailable'
+              ? [
+                  ...(repLocked && repReq
+                    ? [`Requires ${reqFactionName ?? repReq.factionId.replace('-', ' ')} reputation ≥ ${repReq.min}`]
+                    : []),
+                  ...(secretsLocked ? ['Requires proof'] : []),
+                  ...resourceReasons.map(r => `Requires ${r.resourceId} ≥ ${r.min} (you have ${r.current})`),
+                  ...(!repLocked && !secretsLocked && !resourceLocked ? ['Unavailable'] : []),
+                ].join(' • ')
               : undefined;
 
             return (

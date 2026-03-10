@@ -4,7 +4,7 @@ import type { DialogueChoice, GameState } from '../types';
 import { dialogueTree } from '../data';
 import { tsConversationEngine } from './tsConversationEngine';
 import type { UqmWasmRuntime } from './uqmWasmRuntime';
-import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import { getChoiceLockReasons, isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 import { evaluateChapterTransition, getChapter } from '../chapters';
 import { applyEffects } from '../effects';
 
@@ -204,7 +204,7 @@ function applyChoiceUsingWasm(
     return null;
   }
 
-  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds)) {
+  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds, prev.resources)) {
     return prev;
   }
 
@@ -433,7 +433,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
               ? ((hi >>> (i - 32)) & 1) === 1
               : exp.uqm_conv_choice_is_locked(i) === 1;
 
-          return wasmLocked || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
+          return wasmLocked || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources);
         });
       }
 
@@ -441,7 +441,7 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       for (let i = 0; i < count; i++) lockedFlags[i] = exp.uqm_conv_choice_is_locked(i) === 1;
 
       return state.currentDialogue.choices.map((choice, i) =>
-        (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds)
+        (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources)
       );
     },
     getChoiceUiHints(state): ChoiceUiHint[] | null {
@@ -479,12 +479,13 @@ export function createUqmWasmConversationEngine(uqm: UqmWasmRuntime): Conversati
       }
 
       return state.currentDialogue.choices.map((choice, i) => {
-        const locked = (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds);
+        const locked = (lockedFlags[i] ?? false) || isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources);
 
         // Keep UI metadata aligned with the TS engine by using the source graph values.
         // WASM only encodes one reputation delta per faction and does not preserve effect ordering.
         return {
           locked,
+          lockReasons: getChoiceLockReasons(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources),
           requiredReputation: choice.requiredReputation ?? null,
           effects: choice.effects,
           gameEffects: choice.gameEffects ?? [],
