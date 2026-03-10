@@ -173,8 +173,20 @@ describe('tsConversationEngine', () => {
       chapterTurn: 7,
     };
 
-    const choice = atEnding.currentDialogue!.choices[0];
-    const after = tsConversationEngine.applyChoice(atEnding, choice);
+    const endChoice = atEnding.currentDialogue!.choices[0];
+    const afterEnd = tsConversationEngine.applyChoice(atEnding, endChoice);
+
+    expect(afterEnd.chapterId).toBe('chapter-1');
+    expect(afterEnd.currentDialogue?.id).toBe('summit-aftermath-router');
+
+    const route = afterEnd.currentDialogue!.choices.find(c => c.id === 'summit-aftermath-route-compact');
+    if (!route) throw new Error('Expected summit-aftermath-route-compact choice');
+
+    const atAftermath = tsConversationEngine.applyChoice(afterEnd, route);
+    expect(atAftermath.currentDialogue?.id).toBe('summit-aftermath-compact');
+
+    const intoAct2 = atAftermath.currentDialogue!.choices[0];
+    const after = tsConversationEngine.applyChoice(atAftermath, intoAct2);
 
     expect(after.chapterId).toBe('chapter-2');
     expect(after.currentDialogue?.id).toBe('concord-hub-2');
@@ -211,7 +223,17 @@ describe('tsConversationEngine', () => {
     expect(atEnding.currentDialogue?.id).toBe('ending-summit-breakdown');
 
     const endChoice = atEnding.currentDialogue!.choices[0];
-    const after = tsConversationEngine.applyChoice(atEnding, endChoice);
+    const afterEnd = tsConversationEngine.applyChoice(atEnding, endChoice);
+    expect(afterEnd.currentDialogue?.id).toBe('summit-aftermath-router');
+
+    const route = afterEnd.currentDialogue!.choices.find(c => c.id === 'summit-aftermath-route-breakdown');
+    if (!route) throw new Error('Expected summit-aftermath-route-breakdown choice');
+
+    const atAftermath = tsConversationEngine.applyChoice(afterEnd, route);
+    expect(atAftermath.currentDialogue?.id).toBe('summit-aftermath-breakdown');
+
+    const intoAct2 = atAftermath.currentDialogue!.choices[0];
+    const after = tsConversationEngine.applyChoice(atAftermath, intoAct2);
 
     expect(after.chapterId).toBe('chapter-2');
     expect(after.currentDialogue?.id).toBe('concord-hub-2');
