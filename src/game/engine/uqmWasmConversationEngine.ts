@@ -199,7 +199,7 @@ function applyChoiceUsingWasm(
   // choices, fall back to the TS engine which suppresses effects.
   if (
     isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log) ||
-    (choice.repeatable !== true && prev.selectedChoiceIds.includes(choice.id))
+    (prev.selectedChoiceIds.includes(choice.id) && Boolean(choice.gameEffects?.length))
   ) {
     return null;
   }

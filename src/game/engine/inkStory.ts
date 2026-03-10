@@ -186,6 +186,45 @@ const parseInkChoiceTags = (tags: string[] | null | undefined) => {
       continue;
     }
 
+    if (tag.startsWith('route:')) {
+      const rest = tag.slice('route:'.length);
+      const [routeIdRaw, statusRaw, untilTurnRaw, embargoedByRaw] = rest.split(':');
+      const routeId = (routeIdRaw ?? '').trim();
+      const status = (statusRaw ?? '').trim();
+      const untilTurn = untilTurnRaw != null ? Number(untilTurnRaw) : NaN;
+      const embargoedBy = (embargoedByRaw ?? '').trim();
+
+      if (routeId && (status === 'open' || status === 'embargoed' || status === 'raided')) {
+        meta.gameEffects.push({
+          kind: 'tradeRoute:setStatus',
+          routeId,
+          status: status as 'open' | 'embargoed' | 'raided',
+          untilTurn: Number.isFinite(untilTurn) ? untilTurn : undefined,
+          embargoedBy: embargoedBy || undefined,
+        });
+      }
+
+      continue;
+    }
+
+    if (tag.startsWith('region:')) {
+      const rest = tag.slice('region:'.length);
+      const [regionIdRaw, controlRaw, contestedRaw] = rest.split(':');
+      const regionId = (regionIdRaw ?? '').trim();
+      const control = (controlRaw ?? '').trim();
+
+      let contested: boolean | undefined;
+      const c = (contestedRaw ?? '').trim().toLowerCase();
+      if (c === 'contested' || c === 'true' || c === '1') contested = true;
+      else if (c === 'uncontested' || c === 'false' || c === '0') contested = false;
+
+      if (regionId && control) {
+        meta.gameEffects.push({ kind: 'region:setControl', regionId, control, contested });
+      }
+
+      continue;
+    }
+
     if (tag.startsWith('log:')) {
       const message = tag.slice('log:'.length).trim();
       if (message) meta.gameEffects.push({ kind: 'log', message });

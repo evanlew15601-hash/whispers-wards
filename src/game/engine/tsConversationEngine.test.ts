@@ -588,6 +588,39 @@ describe('tsConversationEngine', () => {
     expect(repsAfter).toEqual(repsBefore);
   });
 
+  it('treats gameEffects on a choice as one-shot (resource/tension/world state) on revisit', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const base = {
+      ...initial,
+      rngSeed: 123456789,
+    };
+
+    const choice = {
+      id: 'qa-game-effects',
+      text: 'Exercise gameEffects',
+      effects: [],
+      gameEffects: [
+        { kind: 'resource' as const, resourceId: 'coin' as const, delta: 2 },
+        { kind: 'tension' as const, a: 'iron-pact', b: 'ember-throne', delta: 7 },
+        { kind: 'tradeRoute:setStatus' as const, routeId: 'ashroad', status: 'raided' as const, untilTurn: base.turnNumber + 1 },
+      ],
+      nextNodeId: null,
+    };
+
+    const beforeTension = base.world.tensions['iron-pact']?.['ember-throne'] ?? 0;
+
+    const afterFirst = tsConversationEngine.applyChoice(base, choice);
+    expect(afterFirst.resources.coin).toBe(base.resources.coin + 2);
+    expect(afterFirst.world.tensions['iron-pact']?.['ember-throne']).toBe(beforeTension + 7);
+    expect(afterFirst.world.tradeRoutes['ashroad']?.status).toBe('raided');
+
+    const afterRepeat = tsConversationEngine.applyChoice(afterFirst, choice);
+    expect(afterRepeat.resources.coin).toBe(afterFirst.resources.coin);
+    expect(afterRepeat.world.tensions['iron-pact']?.['ember-throne']).toBe(afterFirst.world.tensions['iron-pact']?.['ember-throne']);
+    expect(afterRepeat.world.tradeRoutes['ashroad']?.status).toBe(afterFirst.world.tradeRoutes['ashroad']?.status);
+  });
+
   it('locks mutually-exclusive choices via exclusiveGroup to prevent branch swapping on revisit', () => {
     const initial = tsConversationEngine.startNewGame();
 

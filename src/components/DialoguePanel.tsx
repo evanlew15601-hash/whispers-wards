@@ -6,6 +6,7 @@ import { splitWrappedLinesIntoParagraphs, wrapTextLinesJs, wrapTextLinesUqm } fr
 import { isChoiceLocked, isChoiceLockedByExclusiveGroup, isChoiceLockedByHistory, isChoiceLockedBySecrets } from '@/game/choiceLocks';
 import { useAudio } from '@/audio/useAudio';
 import { Eye, Flame, Leaf, Lock, Shield, Sparkles } from 'lucide-react';
+import type { GameEffect } from '@/game/effects';
 import CommPortrait from '@/components/CommPortrait';
 import { getPortraitById, getSpeakerPortrait } from '@/game/portraits';
 import Tip from '@/ui/tips/Tip';
@@ -87,6 +88,62 @@ const formatProofRequirement = (choice: Pick<DialogueChoice, 'requiresAllSecrets
   return 'proof';
 };
 
+const formatGameEffectLabel = (eff: GameEffect): { label: string; kind: 'good' | 'bad' | 'neutral' } | null => {
+  if (eff.kind === 'log') return null;
+
+  if (eff.kind === 'resource') {
+    const sign = eff.delta > 0 ? '+' : '';
+    return {
+      label: `${sign}${eff.delta} ${eff.resourceId}`,
+      kind: eff.delta > 0 ? 'good' : eff.delta < 0 ? 'bad' : 'neutral',
+    };
+  }
+
+  if (eff.kind === 'milestone:add') {
+    return { label: 'milestone', kind: 'neutral' };
+  }
+
+  if (eff.kind === 'project:start') {
+    return { label: `start project`, kind: 'neutral' };
+  }
+
+  if (eff.kind === 'project:pause' || eff.kind === 'project:pauseByTemplate') {
+    return { label: `pause project`, kind: 'neutral' };
+  }
+
+  if (eff.kind === 'project:resume' || eff.kind === 'project:resumeByTemplate') {
+    return { label: `resume project`, kind: 'neutral' };
+  }
+
+  if (eff.kind === 'project:cancel' || eff.kind === 'project:cancelByTemplate') {
+    return { label: `cancel project`, kind: 'bad' };
+  }
+
+  if (eff.kind === 'project:accelerate' || eff.kind === 'project:accelerateByTemplate') {
+    return { label: `accelerate project`, kind: 'good' };
+  }
+
+  if (eff.kind === 'tension') {
+    const sign = eff.delta > 0 ? '+' : '';
+    return {
+      label: `tension ${eff.a.replace('-', ' ')}↔${eff.b.replace('-', ' ')} ${sign}${eff.delta}`,
+      kind: eff.delta > 0 ? 'bad' : eff.delta < 0 ? 'good' : 'neutral',
+    };
+  }
+
+  if (eff.kind === 'tradeRoute:setStatus') {
+    const until = eff.untilTurn != null ? ` (until ${eff.untilTurn})` : '';
+    return { label: `route ${eff.routeId} → ${eff.status}${until}`, kind: eff.status === 'open' ? 'good' : 'bad' };
+  }
+
+  if (eff.kind === 'region:setControl') {
+    const contested = eff.contested === true ? ' (contested)' : eff.contested === false ? '' : '';
+    return { label: `region ${eff.regionId} → ${eff.control}${contested}`, kind: 'neutral' };
+  }
+
+  return null;
+};
+
 const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceIds = [], playerPortraitId, playerName, lockedChoices, choiceUiHints }: DialoguePanelProps) => {
   const { playSfx } = useAudio();
 
@@ -160,7 +217,12 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
       return true;
     });
 
-    const undecided = candidates.filter(choice => !isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets));
+    const undecided = candidates.filter(choice => {
+      const alreadyDecided =
+        isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets) ||
+        (selectedChoiceIds.includes(choice.id) && Boolean(choice.gameEffects?.length));
+      return !alreadyDecided;
+    });
 
     // Only hide already-decided responses when the player still has other options in this node.
     return undecided.length ? undecided : candidates;
@@ -314,7 +376,9 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
         const choice = visibleChoices[idx];
         if (!choice) return;
 
-        const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+        const alreadyDecided =
+          isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets) ||
+          (selectedChoiceIds.includes(choice.id) && Boolean(choice.gameEffects?.length));
 
         const hint = choiceUiHintById.get(choice.id);
         const lockedFlag = lockedChoiceFlagById.get(choice.id);
@@ -517,7 +581,9 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
             {visibleChoices.map((choice, i) => {
               const hint = choiceUiHintById.get(choice.id);
 
-              const alreadyDecided = isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets);
+              const alreadyDecided =
+                isChoiceLockedByHistory(choice, selectedChoiceIds, knownSecrets) ||
+                (selectedChoiceIds.includes(choice.id) && Boolean(choice.gameEffects?.length));
 
               const locked = alreadyDecided
                 ? false
@@ -553,6 +619,10 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
               const displayEffects = alreadyDecided
                 ? (hint?.effects ?? choice.effects).map(effect => ({ ...effect, reputationChange: 0 }))
                 : (hint?.effects ?? choice.effects);
+
+              const displayGameEffects = alreadyDecided
+                ? []
+                : (hint?.gameEffects ?? choice.gameEffects ?? []);
 
               return (
                 <motion.button
@@ -643,6 +713,26 @@ const DialoguePanel = ({ node, onChoice, knownSecrets, factions, selectedChoiceI
                             {effect.factionId.replace('-', ' ')} {effect.reputationChange > 0 ? '▲' : effect.reputationChange < 0 ? '▼' : '—'}
                           </span>
                         ))}
+
+                        {displayGameEffects.map((eff, idx) => {
+                          const formatted = formatGameEffectLabel(eff);
+                          if (!formatted) return null;
+
+                          return (
+                            <span
+                              key={`${eff.kind}:${idx}`}
+                              className={`text-[10px] font-display tracking-wider ${
+                                formatted.kind === 'good'
+                                  ? 'text-primary'
+                                  : formatted.kind === 'bad'
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground'
+                              }`}
+                            >
+                              {formatted.label}
+                            </span>
+                          );
+                        })}
 
                         {(hint?.revealsInfo ?? choice.revealsInfo) && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-display tracking-wider text-accent">
