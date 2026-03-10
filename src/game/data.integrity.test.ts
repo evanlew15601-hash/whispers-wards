@@ -29,6 +29,11 @@ describe('dialogueTree integrity', () => {
           expect(dialogueTree[choice.nextNodeId]).toBeTruthy();
         }
 
+        if (choice.repeatable === false) {
+          // "Show-once" hub destinations should always lead somewhere.
+          expect(choice.nextNodeId).not.toBeNull();
+        }
+
         if (choice.nextScene) {
           expect(['title', 'load', 'create', 'game']).toContain(choice.nextScene);
         }

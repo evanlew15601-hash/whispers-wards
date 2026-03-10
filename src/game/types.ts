@@ -18,6 +18,14 @@ export interface DialogueChoice {
   nextNodeId: string | null; // null = end scene (defaults to returning to the chapter hub)
 
   /**
+   * If false, the option is treated as "show once" in hub-style menus.
+   *
+   * This is a UI-only affordance: the engine still records the choice in
+   * `selectedChoiceIds`, but the Hub panel will hide it on revisit.
+   */
+  repeatable?: boolean;
+
+  /**
    * Optional: transition the overall app scene after applying this choice.
    *
    * Used for things like "End of demo" exits.
