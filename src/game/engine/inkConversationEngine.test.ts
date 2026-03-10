@@ -23,6 +23,9 @@ describe('inkConversationEngine', () => {
     expect(iron?.reputation).toBe((initial.factions.find(f => f.id === 'iron-pact')?.reputation ?? 0) - 5);
     expect(verdant?.reputation).toBe((initial.factions.find(f => f.id === 'verdant-court')?.reputation ?? 0) + 10);
 
+    expect(afterDip.resources.influence).toBe(initial.resources.influence + 1);
+    expect(afterDip.milestones).toContain('ink:diplomatic-open');
+
     const about = afterDip.currentDialogue!.choices.find(c => c.id === 'ask-about-thessaly');
     if (!about) throw new Error('Expected ask-about-thessaly choice');
 

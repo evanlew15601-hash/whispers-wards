@@ -36,6 +36,7 @@ describe('HubPanel repeatable choices', () => {
         onChoice={onChoice}
         knownSecrets={[]}
         factions={factions}
+        resources={{ coin: 0, influence: 0, supplies: 0, intel: 0 }}
         selectedChoiceIds={['c1']}
       />,
     );
@@ -62,6 +63,7 @@ describe('HubPanel repeatable choices', () => {
         onChoice={onChoice}
         knownSecrets={['override']}
         factions={factions}
+        resources={{ coin: 0, influence: 0, supplies: 0, intel: 0 }}
         selectedChoiceIds={['c1']}
       />,
     );

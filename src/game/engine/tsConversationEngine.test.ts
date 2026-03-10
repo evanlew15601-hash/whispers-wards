@@ -146,6 +146,66 @@ describe('tsConversationEngine', () => {
     expect(next.knownSecrets).toEqual(['dup']);
   });
 
+  it('applies non-reputation gameEffects (resources, milestones, projects, world effects)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const baseTension = initial.world.tensions['iron-pact']?.['verdant-court'] ?? 0;
+
+    const choice = {
+      id: 'qa-game-effects',
+      text: 'Apply QA game effects',
+      effects: [],
+      gameEffects: [
+        { kind: 'resource' as const, resourceId: 'coin' as const, delta: 2 },
+        { kind: 'milestone:add' as const, id: 'qa-milestone' },
+        { kind: 'project:start' as const, templateId: 'scribe-audit' },
+        { kind: 'tension' as const, a: 'iron-pact', b: 'verdant-court', delta: 5 },
+        { kind: 'log' as const, message: '[QA] extra log' },
+      ],
+      nextNodeId: null,
+    };
+
+    const next = tsConversationEngine.applyChoice(initial, choice);
+
+    expect(next.resources.coin).toBe(initial.resources.coin + 2);
+    expect(next.milestones).toContain('qa-milestone');
+    expect(next.projects.some(p => p.templateId === 'scribe-audit')).toBe(true);
+
+    const nextTension = next.world.tensions['iron-pact']?.['verdant-court'] ?? 0;
+    expect(nextTension).toBe(baseTension + 5);
+
+    expect(next.log).toContain('> Apply QA game effects');
+    expect(next.log).toContain('[QA] extra log');
+  });
+
+  it('locks choices that would spend unavailable resources (negative resource gameEffects)', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const costChoice = {
+      id: 'qa-resource-cost',
+      text: 'Pay 1 coin',
+      effects: [],
+      gameEffects: [{ kind: 'resource' as const, resourceId: 'coin' as const, delta: -1 }],
+      nextNodeId: null,
+    };
+
+    const broke = {
+      ...initial,
+      resources: { ...initial.resources, coin: 0 },
+    };
+
+    expect(tsConversationEngine.applyChoice(broke, costChoice)).toBe(broke);
+
+    const hasCoin = {
+      ...initial,
+      resources: { ...initial.resources, coin: 1 },
+    };
+
+    const afterPay = tsConversationEngine.applyChoice(hasCoin, costChoice);
+    expect(afterPay).not.toBe(hasCoin);
+    expect(afterPay.resources.coin).toBe(0);
+  });
+
   it('allows calling the Hall summit without requiring prior leverage (demo-friendly)', () => {
     const initial = tsConversationEngine.startNewGame();
 
@@ -554,6 +614,39 @@ describe('tsConversationEngine', () => {
 
     const repsAfter = Object.fromEntries(afterRepeat.factions.map(f => [f.id, f.reputation] as const));
     expect(repsAfter).toEqual(repsBefore);
+  });
+
+  it('treats gameEffects on a choice as one-shot (resource/tension/world state) on revisit', () => {
+    const initial = tsConversationEngine.startNewGame();
+
+    const base = {
+      ...initial,
+      rngSeed: 123456789,
+    };
+
+    const choice = {
+      id: 'qa-game-effects',
+      text: 'Exercise gameEffects',
+      effects: [],
+      gameEffects: [
+        { kind: 'resource' as const, resourceId: 'coin' as const, delta: 2 },
+        { kind: 'tension' as const, a: 'iron-pact', b: 'ember-throne', delta: 7 },
+        { kind: 'tradeRoute:setStatus' as const, routeId: 'ashroad', status: 'raided' as const, untilTurn: base.turnNumber + 1 },
+      ],
+      nextNodeId: null,
+    };
+
+    const beforeTension = base.world.tensions['iron-pact']?.['ember-throne'] ?? 0;
+
+    const afterFirst = tsConversationEngine.applyChoice(base, choice);
+    expect(afterFirst.resources.coin).toBe(base.resources.coin + 2);
+    expect(afterFirst.world.tensions['iron-pact']?.['ember-throne']).toBe(beforeTension + 7);
+    expect(afterFirst.world.tradeRoutes['ashroad']?.status).toBe('raided');
+
+    const afterRepeat = tsConversationEngine.applyChoice(afterFirst, choice);
+    expect(afterRepeat.resources.coin).toBe(afterFirst.resources.coin);
+    expect(afterRepeat.world.tensions['iron-pact']?.['ember-throne']).toBe(afterFirst.world.tensions['iron-pact']?.['ember-throne']);
+    expect(afterRepeat.world.tradeRoutes['ashroad']?.status).toBe(afterFirst.world.tradeRoutes['ashroad']?.status);
   });
 
   it('locks mutually-exclusive choices via exclusiveGroup to prevent branch swapping on revisit', () => {

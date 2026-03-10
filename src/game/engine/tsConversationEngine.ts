@@ -5,7 +5,7 @@ import { dialogueTree, initialEvents, initialFactions } from '../data';
 import { createInitialRngSeed, createInitialWorldState } from '../world';
 import { applyExpiredEncounterConsequence, parseEncounterResolutionChoiceId, resolveEncounter } from '../encounters';
 import { simulateWorldTurn } from '../simulation';
-import { isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
+import { getChoiceLockReasons, isChoiceLocked, isChoiceLockedByHistory } from '../choiceLocks';
 import { applyEffects, type GameEffect } from '../effects';
 import { evaluateChapterTransition, getChapter } from '../chapters';
 import { advanceProjectsOneTurn } from '../projects';
@@ -58,10 +58,11 @@ const startNewGame = (): GameState => {
 
 const addChoiceId = (prevIds: string[], id: string) => (prevIds.includes(id) ? prevIds : [...prevIds, id]);
 
-const suppressReputationEffects = (choice: DialogueChoice): DialogueChoice => {
+const suppressOneShotEffects = (choice: DialogueChoice): DialogueChoice => {
   return {
     ...choice,
     effects: choice.effects.map(e => ({ ...e, reputationChange: 0 })),
+    gameEffects: [],
   };
 };
 
@@ -97,6 +98,12 @@ const choiceToEffects = (prev: GameState, choice: DialogueChoice): GameEffect[] 
     effects.push({ kind: 'secret:add', secret: choice.revealsInfo });
   }
 
+  for (const eff of choice.gameEffects ?? []) {
+    // Prevent accidental duplication; reputation + secret learning are still handled by `effects` + `revealsInfo`.
+    if (eff.kind === 'rep' || eff.kind === 'secret:add') continue;
+    effects.push(eff);
+  }
+
   return effects;
 };
 
@@ -114,15 +121,17 @@ const applyChoiceSceneTransition = (state: GameState, choice: DialogueChoice): G
 };
 
 const applyChoice = (prev: GameState, choice: DialogueChoice): GameState => {
-  const alreadyDecided = isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log);
+  const alreadyDecided =
+    isChoiceLockedByHistory(choice, prev.selectedChoiceIds, prev.knownSecrets, prev.log) ||
+    (prev.selectedChoiceIds.includes(choice.id) && Boolean(choice.gameEffects?.length));
 
   // Only block genuinely unavailable choices. If the player already made this decision in
-  // the past, keep it selectable and suppress its reputation effects.
-  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds) && !alreadyDecided) {
-    return prev;
-  }
+  // the past, keep it selectable and suppress one-shot effects.
+  if (isChoiceLocked(choice, prev.factions, prev.knownSecrets, prev.selectedChoiceIds, prev.resources) && !alreadyDecided) {
+      return prev;
+    }
 
-  const effectiveChoice = alreadyDecided ? suppressReputationEffects(choice) : choice;
+  const effectiveChoice = alreadyDecided ? suppressOneShotEffects(choice) : choice;
 
   const secretLearned = Boolean(choice.revealsInfo && !prev.knownSecrets.includes(choice.revealsInfo));
 
@@ -297,15 +306,17 @@ export const tsConversationEngine: ConversationEngine = {
   getChoiceLockedFlags(state) {
     if (!state.currentDialogue) return null;
     return state.currentDialogue.choices.map(choice =>
-      isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds)
+      isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources)
     );
   },
   getChoiceUiHints(state) {
     if (!state.currentDialogue) return null;
     return state.currentDialogue.choices.map(choice => ({
-      locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds),
+      locked: isChoiceLocked(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources),
+      lockReasons: getChoiceLockReasons(choice, state.factions, state.knownSecrets, state.selectedChoiceIds, state.resources),
       requiredReputation: choice.requiredReputation ?? null,
       effects: choice.effects,
+      gameEffects: choice.gameEffects ?? [],
       revealsInfo: choice.revealsInfo ?? null,
     }));
   },

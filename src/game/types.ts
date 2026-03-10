@@ -1,3 +1,5 @@
+import type { GameEffect } from './effects';
+
 export interface Faction {
   id: string;
   name: string;
@@ -15,6 +17,10 @@ export interface DialogueChoice {
     factionId: string;
     reputationChange: number;
   }[];
+
+  /** Non-reputation effects (resources, projects, world state, logs, etc.). */
+  gameEffects?: GameEffect[];
+
   nextNodeId: string | null; // null = end scene (defaults to returning to the chapter hub)
 
   /**
@@ -161,7 +167,7 @@ export interface GameState {
   currentDialogue: DialogueNode | null;
   events: GameEvent[];
   knownSecrets: string[];
-  /** Choice ids previously selected, used to prevent re-applying non-repeatable reputation effects. */
+  /** Choice ids previously selected, used to prevent re-applying one-shot effects on revisits. */
   selectedChoiceIds: string[];
 
   /**

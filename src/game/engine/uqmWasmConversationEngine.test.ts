@@ -81,6 +81,29 @@ describe('uqmWasmConversationEngine', () => {
     expect(nextWasm2.rngSeed).toBe(nextTs2.rngSeed);
   });
 
+  it('applies gameEffects on the WASM engine path (outside the wasm core)', () => {
+    const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
+
+    const start = tsConversationEngine.startNewGame();
+    const seeded = { ...start, rngSeed: 123456789 };
+
+    const choice0 = seeded.currentDialogue!.choices[0];
+
+    const decorated = {
+      ...choice0,
+      gameEffects: [
+        { kind: 'resource' as const, resourceId: 'intel' as const, delta: 1 },
+        { kind: 'log' as const, message: '[QA] wasm extra' },
+      ],
+    };
+
+    const nextTs = tsConversationEngine.applyChoice(seeded, decorated);
+    const nextWasm = wasmEngine.applyChoice(seeded, decorated);
+
+    expect(nextWasm.resources).toEqual(nextTs.resources);
+    expect(nextWasm.log).toContain('[QA] wasm extra');
+  });
+
   it('can transition out of the game scene when a choice sets nextScene', () => {
     const wasmEngine = createUqmWasmConversationEngine(uqmRuntime);
 
@@ -114,7 +137,7 @@ describe('uqmWasmConversationEngine', () => {
     const lockedChoice = seeded.currentDialogue!.choices.find(c => c.id === 'summit-iron');
     if (!lockedChoice) throw new Error('Expected summit-iron choice');
 
-    expect(isChoiceLocked(lockedChoice, seeded.factions, seeded.knownSecrets, seeded.selectedChoiceIds)).toBe(true);
+    expect(isChoiceLocked(lockedChoice, seeded.factions, seeded.knownSecrets, seeded.selectedChoiceIds, seeded.resources)).toBe(true);
 
     const forcedExit = { ...lockedChoice, nextScene: 'title' as const };
 
@@ -267,7 +290,7 @@ describe('uqmWasmConversationEngine', () => {
     expect(wasmEngine.getChoiceUiHints?.(base)).toEqual(tsConversationEngine.getChoiceUiHints?.(base));
 
     for (const choice of base.currentDialogue!.choices) {
-      const helperLocked = isChoiceLocked(choice, base.factions, base.knownSecrets, base.selectedChoiceIds);
+      const helperLocked = isChoiceLocked(choice, base.factions, base.knownSecrets, base.selectedChoiceIds, base.resources);
       const nextTs = tsConversationEngine.applyChoice(base, choice);
       const nextWasm = wasmEngine.applyChoice(base, choice);
 
@@ -284,7 +307,7 @@ describe('uqmWasmConversationEngine', () => {
     const lockedChoice = withOverride.currentDialogue!.choices.find(c => c.requiredReputation);
     if (!lockedChoice) throw new Error('Expected a reputation-locked choice');
 
-    expect(isChoiceLocked(lockedChoice, withOverride.factions, withOverride.knownSecrets, withOverride.selectedChoiceIds)).toBe(false);
+    expect(isChoiceLocked(lockedChoice, withOverride.factions, withOverride.knownSecrets, withOverride.selectedChoiceIds, withOverride.resources)).toBe(false);
     expect(wasmEngine.getChoiceLockedFlags?.(withOverride)).toEqual(withOverride.currentDialogue!.choices.map(() => false));
 
     const nextTs = tsConversationEngine.applyChoice(withOverride, lockedChoice);

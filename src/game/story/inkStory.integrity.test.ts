@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { dialogueTree, initialFactions } from '../data';
+import { getProjectTemplateById } from '../projects';
+import { createInitialWorldState } from '../world';
 
 const readInkSource = async () => {
   const url = new URL('./main.ink', import.meta.url);
@@ -8,12 +10,35 @@ const readInkSource = async () => {
   return fs.readFile(url, 'utf8');
 };
 
+const ALLOWED_SHARED_CHOICE_IDS = new Set([
+  'diplomatic',
+  'pragmatic',
+  'information',
+  'ask-about-thessaly',
+  'thank-proceed',
+  'pragmatic-maps',
+  'pragmatic-motives',
+  'suspicious-accuse',
+  'suspicious-investigate',
+  'thessaly-justice',
+  'thessaly-compromise',
+]);
+
 describe('Ink story integrity', () => {
   it('keeps choice metadata tags stable and valid', async () => {
     const source = await readInkSource();
     const lines = source.split(/\r?\n/);
 
     const factionIds = new Set(initialFactions.map(f => f.id));
+
+    const world = createInitialWorldState(initialFactions);
+    const regionIds = new Set(Object.keys(world.regions));
+    const routeIds = new Set(Object.keys(world.tradeRoutes));
+
+    const tsChoiceIds = new Set<string>();
+    for (const node of Object.values(dialogueTree)) {
+      for (const c of node.choices) tsChoiceIds.add(c.id);
+    }
 
     const choiceIds = new Set<string>();
 
@@ -28,6 +53,9 @@ describe('Ink story integrity', () => {
       expect(choiceId.length).toBeGreaterThan(0);
 
       expect(choiceIds.has(choiceId)).toBe(false);
+      if (tsChoiceIds.has(choiceId)) {
+        expect(ALLOWED_SHARED_CHOICE_IDS.has(choiceId)).toBe(true);
+      }
       choiceIds.add(choiceId);
 
       const gotoMatches = [...line.matchAll(/#goto:([^\s#]+)/g)];
@@ -53,6 +81,62 @@ describe('Ink story integrity', () => {
       for (const m of revealMatches) {
         const secret = (m[1] ?? '').trim();
         expect(secret.length).toBeGreaterThan(0);
+      }
+
+      const resourceMatches = [...line.matchAll(/#res:(coin|influence|supplies|intel):([+-]?[0-9]+)/g)];
+      for (const m of resourceMatches) {
+        const delta = Number((m[2] ?? '').trim());
+        expect(Number.isFinite(delta)).toBe(true);
+      }
+
+      const milestoneMatches = [...line.matchAll(/#milestone:([^\s#]+)/g)];
+      for (const m of milestoneMatches) {
+        const id = (m[1] ?? '').trim();
+        expect(id.length).toBeGreaterThan(0);
+      }
+
+      const projectStartMatches = [...line.matchAll(/#proj:start:([^\s#]+)/g)];
+      for (const m of projectStartMatches) {
+        const templateId = (m[1] ?? '').trim();
+        expect(templateId.length).toBeGreaterThan(0);
+        expect(getProjectTemplateById(templateId)).toBeTruthy();
+      }
+
+      const tensionMatches = [...line.matchAll(/#tension:([^\s:#]+):([^\s:#]+):([+-]?[0-9]+)/g)];
+      for (const m of tensionMatches) {
+        const a = (m[1] ?? '').trim();
+        const b = (m[2] ?? '').trim();
+        const delta = Number((m[3] ?? '').trim());
+        expect(factionIds.has(a)).toBe(true);
+        expect(factionIds.has(b)).toBe(true);
+        expect(Number.isFinite(delta)).toBe(true);
+      }
+
+      const routeMatches = [...line.matchAll(/#route:([^\s:#]+):(open|embargoed|raided)(?::([0-9]+))?(?::([^\s#]+))?/g)];
+      for (const m of routeMatches) {
+        const routeId = (m[1] ?? '').trim();
+        const status = (m[2] ?? '').trim();
+        const untilTurn = m[3] != null ? Number((m[3] ?? '').trim()) : NaN;
+        const embargoedBy = (m[4] ?? '').trim();
+
+        expect(routeIds.has(routeId)).toBe(true);
+        expect(status === 'open' || status === 'embargoed' || status === 'raided').toBe(true);
+        if (m[3] != null) expect(Number.isFinite(untilTurn)).toBe(true);
+        if (embargoedBy) expect(factionIds.has(embargoedBy)).toBe(true);
+      }
+
+      const regionMatches = [...line.matchAll(/#region:([^\s:#]+):([^\s:#]+)(?::(contested|uncontested|true|false|0|1))?/g)];
+      for (const m of regionMatches) {
+        const regionId = (m[1] ?? '').trim();
+        const control = (m[2] ?? '').trim();
+        expect(regionIds.has(regionId)).toBe(true);
+        expect(control === 'neutral' || factionIds.has(control)).toBe(true);
+      }
+
+      const logMatches = [...line.matchAll(/#log:([^\s#].*?)($|\s#)/g)];
+      for (const m of logMatches) {
+        const message = (m[1] ?? '').trim();
+        expect(message.length).toBeGreaterThan(0);
       }
     }
   });

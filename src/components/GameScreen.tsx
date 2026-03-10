@@ -585,6 +585,7 @@ const GameScreen = ({
                   onChoice={makeChoice}
                   knownSecrets={state.knownSecrets}
                   factions={state.factions}
+                  resources={state.resources}
                   selectedChoiceIds={state.selectedChoiceIds}
                   crisisPending={Boolean(state.pendingEncounter)}
                   crisisTurnsLeft={encounterTurnsLeft}

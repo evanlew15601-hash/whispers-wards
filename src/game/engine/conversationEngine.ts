@@ -1,9 +1,16 @@
 import type { DialogueChoice, GameState } from '../types';
+import type { GameEffect } from '../effects';
+import type { ChoiceLockReason } from '../choiceLocks';
 
 export type ChoiceUiHint = {
   locked: boolean;
+
+  /** When locked, provide structured reasons for UI messaging/debugging. */
+  lockReasons: ChoiceLockReason[];
+
   requiredReputation: { factionId: string; min: number } | null;
   effects: { factionId: string; reputationChange: number }[];
+  gameEffects: GameEffect[];
   revealsInfo: string | null;
 };
 
