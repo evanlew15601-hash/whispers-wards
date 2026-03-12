@@ -107,6 +107,14 @@ const GameScreen = ({
   const isInHub = currentDialogueId === chapter.hubNodeId;
   const focusMode = !conversationEnded && !isInHub;
 
+  const isSummitSequence = Boolean(
+    currentDialogueId &&
+      (currentDialogueId === 'summit-start' ||
+        currentDialogueId === 'summit-floor' ||
+        currentDialogueId.startsWith('ending-') ||
+        currentDialogueId.startsWith('summit-aftermath'))
+  );
+
   useEffect(() => {
     if (!focusMode) {
       setUnseenIntelCount(0);
@@ -380,7 +388,7 @@ const GameScreen = ({
               >
                 Return to Hall
               </Button>
-            ) : (
+            ) : isSummitSequence ? null : (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button

@@ -32,6 +32,13 @@ const encounterDialogue: DialogueNode = {
   choices: [],
 };
 
+const summitDialogue: DialogueNode = {
+  id: 'summit-floor',
+  speaker: 'Narrator',
+  text: 'In the summit chamber.',
+  choices: [],
+};
+
 const pendingEncounter: SecondaryEncounter = {
   id: 'enc-1',
   title: 'Test Encounter',
@@ -129,6 +136,15 @@ describe('GameScreen pending encounter controls', () => {
     expect(screen.getByRole('button', { name: /return to hall/i })).toBeInTheDocument();
 
     convo.unmount();
+  });
+
+  it('does not show Return to Hall during the summit sequence (must use explicit summit choices)', () => {
+    renderScreen({
+      ...baseState,
+      currentDialogue: summitDialogue,
+    });
+
+    expect(screen.queryByRole('button', { name: /return to hall/i })).not.toBeInTheDocument();
   });
 
   it('enables Address in the hub agenda while in the hub', () => {
