@@ -1,3 +1,5 @@
+import { LORESTROME_THUMBS_AVAILABLE } from '@/game/lorestromeThumbsAvailable';
+
 export const LORESTROME_SHEET_URL =
   'https://upload.wikimedia.org/wikipedia/commons/3/3d/200_portraits_of_fictional_characters.png';
 
@@ -56,7 +58,7 @@ export function lorestromeThumbUrl(
     return generatedSizes[generatedSizes.length - 1] ?? 192;
   };
 
-  if (import.meta.env.MODE === 'production' && format === 'webp') {
+  if (import.meta.env.MODE === 'production' && format === 'webp' && LORESTROME_THUMBS_AVAILABLE) {
     const idx = lorestromeCellToIndex(cell);
     const s = pickGeneratedSize(size);
     const padded = String(idx).padStart(3, '0');
