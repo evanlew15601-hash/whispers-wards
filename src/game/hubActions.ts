@@ -2,7 +2,7 @@ import type { GameState } from './types';
 
 import { dialogueTree } from './data';
 import { buildEncounterDialogueNode } from './encounters';
-import { getChapter } from './chapters';
+import { evaluateChapterTransition, getChapter } from './chapters';
 
 const getHubNode = (state: GameState) => {
   const chapter = getChapter(state.chapterId);
@@ -17,12 +17,16 @@ export const returnToHub = (prev: GameState): GameState => {
 
   if (prev.currentDialogue?.id === hub.id) return prev;
 
-  return {
+  const returned: GameState = {
     ...prev,
     stepNumber: prev.stepNumber + 1,
     currentDialogue: hub,
     log: [...prev.log, '[HALL] Returned to Concord Hall'],
   };
+
+  // Chapter transitions are keyed off knownSecrets; if the player returns to the hall
+  // via the UI (instead of selecting a dialogue choice), we still want Act changes to apply.
+  return evaluateChapterTransition(returned);
 };
 
 export const enterPendingEncounter = (prev: GameState): GameState => {
